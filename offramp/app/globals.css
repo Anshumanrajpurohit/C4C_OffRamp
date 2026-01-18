@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f3ee;
+  --foreground: #131614;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d1411;
+    --foreground: #f5f7f6;
+  }
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, rgba(52, 168, 83, 0.08), transparent 25%),
+    radial-gradient(circle at 80% 0%, rgba(255, 170, 80, 0.12), transparent 28%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  min-height: 100vh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(19, 22, 20, 0.15) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(19, 22, 20, 0.2);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(19, 22, 20, 0.06);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.08);
+}
+
+.gradient-pill {
+  background: linear-gradient(120deg, #2f6b4a, #6ac489);
+  color: #f7f3ee;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.section-shell {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(19, 22, 20, 0.06);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.06);
+}

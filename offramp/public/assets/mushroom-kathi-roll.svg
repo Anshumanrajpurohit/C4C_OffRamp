@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="mushroomGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ede7f6" />
+      <stop offset="100%" stop-color="#d1c4e9" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#mushroomGradient)" rx="24" />
+  <text x="320" y="190" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="42" fill="#5e35b1" font-weight="700">
+    Mushroom Kathi Roll
+  </text>
+  <text x="320" y="240" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#4527a0">
+    Smoky street-style swap
+  </text>
+</svg>
