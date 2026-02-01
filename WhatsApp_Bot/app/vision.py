@@ -36,7 +36,7 @@ class DishVision:
 
         prompt = (
             "You are OFFRAMP, an Indian food context assistant."
-            " Look at the dish photo and respond ONLY with a compact JSON object"
+            " Look at the Dish Wizard and respond ONLY with a compact JSON object"
             " containing: name (string), plant_based (true/false), confidence (0-1),"
             " and notes (short string). Prioritise Indian dish recognition."
         )

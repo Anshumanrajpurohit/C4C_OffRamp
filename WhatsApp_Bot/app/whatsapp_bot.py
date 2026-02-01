@@ -104,7 +104,7 @@ BTN_DISH_UPLOAD_ANOTHER = "BTN_DISH_UPLOAD_ANOTHER"
 FALLBACK_BUTTONS = [
     {"id": BTN_REPLACE_DISH, "title": "🔁 Swap a dish"},
     {"id": BTN_FIND_NEARBY, "title": "🍽️ Nearby food"},
-    {"id": BTN_DISH_WIZARD, "title": "🧙 Dish photo"},
+    {"id": BTN_DISH_WIZARD, "title": "🧙 Dish Wizard"},
     {"id": BTN_SET_RULES, "title": "🥗 Food rules"},
 ]
 
@@ -686,7 +686,7 @@ def _send_welcome(context: UserContext) -> List[OutgoingMessage]:
     primary = [
         {"id": BTN_FIND_NEARBY, "title": "🍽️ Nearby food"},
         {"id": BTN_REPLACE_DISH, "title": "🔁 Swap a dish"},
-        {"id": BTN_DISH_WIZARD, "title": "🧙 Dish photo"},
+        {"id": BTN_DISH_WIZARD, "title": "🧙 Dish Wizard"},
         {"id": BTN_SET_RULES, "title": "🥗 Food rules"},
         {"id": BTN_HOW_WORKS, "title": "❓ How it works"},
     ]
