@@ -147,6 +147,7 @@ export default function SwapPage() {
   const [budgetLevel, setBudgetLevel] = useState<number>(2);
   const [selectedTastes, setSelectedTastes] = useState<string[]>([]);
   const [prefSaved, setPrefSaved] = useState<string>("");
+  const [showCode, setShowCode] = useState(false);
 
   const cuisineOptions = ["Tamil", "Telugu", "Kerala", "Hyderabadi", "Punjabi", "Gujarati"];
   const allergyOptions = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
@@ -729,7 +730,37 @@ export default function SwapPage() {
             © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowCode(true)}
+            className="rounded-full border-2 border-black bg-highlight px-5 py-2 text-xs font-black uppercase text-black transition hover:-translate-y-1 hover:bg-accent hover:text-white"
+          >
+            View QR Code
+          </button>
+        </div>
       </footer>
+
+      {showCode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md rounded-3xl border-3 border-black bg-white p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
+            <button
+              type="button"
+              aria-label="Close QR"
+              onClick={() => setShowCode(false)}
+              className="absolute right-3 top-3 rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-black text-black transition hover:bg-black hover:text-white"
+            >
+              ✕
+            </button>
+            <div className="flex flex-col items-center gap-3">
+              <p className="font-impact text-2xl uppercase text-black">Scan to Explore</p>
+              <div className="overflow-hidden rounded-2xl border-2 border-black bg-white">
+                <Image src="/code.png" alt="OffRamp QR" width={400} height={400} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
