@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import logo from "@/public/c4c.webp"
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -27,7 +28,7 @@ export function HeaderNav({ onLogin, onSearch }: Props) {
           aria-label="Go to preferences home"
         >
           <Image
-            src="/c4c.webp"
+            src={logo}
             alt="C4C logo"
             width={40}
             height={40}

@@ -1,341 +1,545 @@
-import { HeaderNav } from "./components/HeaderNav";
+'use client';
+
+import { useEffect, useRef } from "react";
+import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
+
+const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-plus-jakarta",
+});
 
 export default function Home() {
-  const heroBefore =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAXwZxhaLsf9uWa51XXlLPSrUKnp1GECxXAqUYkyWjr8fEXt16axHjs0j3GQGfU3ksHrQNc1v4nPiqMOYpcQcKlSHGaUXIN2CpJW99Zq0lXe7kbgF9g3HZLFqpDcmNzC_zrKSCs1sVqPAq62xsNt2oEq8OLj4I5n_QSN4U6GJjS71IaQgH-z_H1EV8DcQnQwrrthk9TI_vFyE0CAly6eqOOI9fIdlVLr68Y72RfBws99QVhsa-l_ejmMGa2tZj-1-7jdu5nqtacxx3Q";
-  const heroAfter =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAPhLLSh_fkbBcTgVHDqE0CV3XjjkIxWE3aiWU2G4WRj0nN0hwm2ZPPfqfPutFAJC8pEZ6kuFCwFBs2QqowLhZ3cflEVfq1pSE0VISxGl7EZwDvcLrGeMNLwUMmvTVKGnIUyLutR366dOlq1ul8to0oNXiRiOM1f7riPzyFVGVBAm3u7qEXbxJjtDnmtdQ9J3LC25Ywi_78IImiNp-Mfuq0ZjPGKXFLzTuS2pklY7MYojJ8blyepciqGzK85kt8htNkojLguuDRPuaN";
-  const cardImage =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBdq7Z-4UWr7OM4AhqbOf3LQdJthdvfINIK6EyDvnTbQAd8RxkQ92Ufm7eIqkYBeICX1Xzu0vPm6Jg0KMy8qYUG2MW6030OtqpyWU4SnfbduwmUqU3CvbCT6CgTQYbVS9UAj4ry3xEDUMcObDgjYCGo1zitxfsna6BTy55p04psF-FWrBwMiyDTdubJ02Dk5vUxEMVxb3EQh8Dj_oxhyYZJSbEp4iSh7m6EuWqcrerLpxHO9e3WwDPyY-rwlsZN-4nR0BEYxGbLONsO";
+  const countersAnimated = useRef(false);
+  const dashboardCountersAnimated = useRef(false);
+
+  useEffect(() => {
+    document.documentElement.classList.add("scroll-smooth");
+
+    const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
+
+    const animateCounters = () => {
+      if (countersAnimated.current) return;
+      countersAnimated.current = true;
+
+      const counters = document.querySelectorAll<HTMLElement>(".counter");
+      counters.forEach((counter) => {
+        const target = parseFloat(counter.getAttribute("data-target") || "0");
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+
+        const update = () => {
+          current += increment;
+          if (current < target) {
+            counter.textContent = current.toFixed(1);
+            requestAnimationFrame(update);
+          } else {
+            if (target === 450) {
+              counter.textContent = "450 TONS";
+            } else {
+              counter.textContent = "1.2M L";
+            }
+          }
+        };
+
+        requestAnimationFrame(update);
+      });
+    };
+
+    const animateDashboardCounters = () => {
+      if (dashboardCountersAnimated.current) return;
+      dashboardCountersAnimated.current = true;
+
+      const swapsCounter = document.querySelector<HTMLElement>(".counter-swaps");
+      if (swapsCounter) {
+        const target = parseInt(swapsCounter.getAttribute("data-target") || "0", 10);
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+
+        const updateSwaps = () => {
+          current += increment;
+          if (current < target) {
+            swapsCounter.textContent = Math.floor(current).toLocaleString();
+            requestAnimationFrame(updateSwaps);
+          } else {
+            swapsCounter.textContent = target.toLocaleString();
+          }
+        };
+
+        setTimeout(updateSwaps, 500);
+      }
+
+      const scoreCounter = document.querySelector<HTMLElement>(".counter-score");
+      if (scoreCounter) {
+        const target = parseFloat(scoreCounter.getAttribute("data-target") || "0");
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+
+        const updateScore = () => {
+          current += increment;
+          if (current < target) {
+            scoreCounter.textContent = current.toFixed(1);
+            requestAnimationFrame(updateScore);
+          } else {
+            scoreCounter.textContent = target.toFixed(1);
+          }
+        };
+
+        setTimeout(updateScore, 500);
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+
+          if ((entry.target as HTMLElement).classList.contains("impact-card")) {
+            animateCounters();
+          }
+
+          const progressBar = entry.target.querySelector<HTMLElement>(".progress-bar");
+          if (progressBar) {
+            setTimeout(() => {
+              progressBar.style.width = "75%";
+              progressBar.style.transition = "width 2s ease-out";
+            }, 300);
+            animateDashboardCounters();
+          }
+        }
+      });
+    }, observerOptions);
+
+    const targets = document.querySelectorAll(
+      ".scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .impact-card"
+    );
+    targets.forEach((el) => observer.observe(el));
+
+    const anchorHandler = (event: Event) => {
+      const target = event.currentTarget as HTMLAnchorElement;
+      if (!target?.hash) return;
+      const destination = document.querySelector(target.hash);
+      if (destination) {
+        event.preventDefault();
+        destination.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+
+    const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'));
+    anchors.forEach((anchor) => anchor.addEventListener("click", anchorHandler));
+
+    return () => {
+      anchors.forEach((anchor) => anchor.removeEventListener("click", anchorHandler));
+      targets.forEach((el) => observer.unobserve(el));
+      observer.disconnect();
+      document.documentElement.classList.remove("scroll-smooth");
+    };
+  }, []);
 
   return (
-    <div className="bg-white text-[#121716]">
-      <div className="sticky top-0 z-50 w-full border-b border-[#f1f4f3] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto max-w-[1280px] px-6 py-4">
-          <HeaderNav />
-        </div>
-      </div>
-
-      <header className="relative w-full overflow-hidden pb-20 pt-12 lg:pb-32 lg:pt-24">
-        <div className="mx-auto max-w-[1280px] px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-            <div className="z-10 flex flex-col gap-8 text-center lg:text-left">
-              <div className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-[#16695b]/20 bg-[#e3ebe9] px-3 py-1 lg:mx-0">
-                <span className="material-symbols-outlined text-[18px] text-[#16695b]">📍</span>
-                <span className="text-xs font-bold uppercase tracking-wide text-[#16695b]">A Vegan Journey</span>
-              </div>
-              <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-[#121716] lg:text-[4rem]">
-                Love your food.
-                <br />
-                <span className="bg-gradient-to-br from-[#16695b] to-[#2d8a78] bg-clip-text text-transparent">Swap the rest.</span>
-              </h1>
-              <p className="mx-auto max-w-xl text-lg leading-relaxed text-[#66857f] lg:mx-0 lg:text-xl">
-                The easiest way to eat plant-based anywhere without giving up the flavors you love. Start your journey
-                with just one meal.
-              </p>
-              <div className="flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
-                <button className="flex h-14 items-center justify-center rounded-xl bg-[#16695b] px-8 text-base font-bold text-white shadow-[0_20px_40px_-10px_rgba(22,105,91,0.18)] transition-all hover:-translate-y-1 hover:bg-[#104f44] hover:shadow-lg">
-                  Find my swap
-                </button>
-                <button className="flex h-14 items-center justify-center rounded-xl border border-[#dce4e3] bg-white px-8 text-base font-medium text-[#121716] transition-all hover:bg-gray-50 hover:border-[#16695b]/50">
-                  View Menu
-                </button>
-              </div>
-              <div className="flex items-center justify-center gap-4 pt-4 lg:justify-start">
-                <div className="-space-x-3 flex">
-                  {[1, 2, 3].map((idx) => (
-                    <div
-                      key={idx}
-                      className="h-10 w-10 rounded-full border-2 border-white bg-gray-200 bg-cover"
-                      style={{
-                        backgroundImage:
-                          "url('https://lh3.googleusercontent.com/aida-public/AB6AXuD4Ja1DvdOFVFLZ9rdxG2j2EZXijc-G_ZOBNczPX56_TWHDoCMujw5BCp3IjGNeuhpwEgCZuXpnTHeLLYYIjBP65R-2jvAQUNl1ASOSTmBfke59lNULb5KGfqEfj7zKDLMuOPyQWEkxrxoEsQEROPx_iF3EazS8aCHkV3m7toC4H2kWGgzgrhjKDBE8D64kijXYR2c8rIoDYwjFrTo8jlmLlLWNyHQ4o58TPjAf37zCUXH6FtgCgbtxVWH12WuTsOzu1-YjaTSOIuug')",
-                      }}
-                    />
-                  ))}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#16695b] text-xs font-bold text-white">
-                    +2k
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-[#66857f]">Joined this week</p>
-              </div>
-            </div>
-
-            <div className="relative mx-auto w-full max-w-md lg:order-2 lg:max-w-full">
-              <div className="absolute -top-10 -right-10 h-64 w-64 rounded-full bg-yellow-400/20 blur-3xl" />
-              <div className="absolute -bottom-10 -left-10 h-72 w-72 rounded-full bg-[#16695b]/20 blur-3xl" />
-              <div className="relative rotate-2 border border-gray-100 bg-white p-6 shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 lg:rotate-3">
-                <div className="group relative h-48 overflow-hidden rounded-xl">
-                  <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-3 left-4 z-20">
-                    <span className="mb-1 inline-block rounded bg-red-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700">
-                      Before
-                    </span>
-                    <h3 className="text-lg font-bold text-white">Butter Chicken</h3>
-                  </div>
-                  <div
-                    className="h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                    style={{ backgroundImage: `url(${heroBefore})` }}
-                  />
-                </div>
-
-                <div className="-my-6 flex h-12 items-center justify-center">
-                  <div className="rounded-full border border-gray-100 bg-white p-2 shadow-lg">
-                    <span className="material-symbols-outlined animate-pulse text-[#16695b]">swap_vert</span>
-                  </div>
-                </div>
-
-                <div className="group relative h-48 overflow-hidden rounded-xl">
-                  <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-3 left-4 z-20">
-                    <span className="mb-1 inline-block rounded bg-green-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-green-700">
-                      After
-                    </span>
-                    <h3 className="text-lg font-bold text-white">Tofu Makhani</h3>
-                  </div>
-                  <div className="absolute right-4 top-3 z-20 flex gap-2">
-                    <div className="flex flex-col items-center justify-center rounded-lg border border-white/30 bg-white/20 p-1.5 text-white backdrop-blur-md">
-                      <span className="material-symbols-outlined text-[16px]">water_drop</span>
-                      <span className="text-[10px] font-bold">900L</span>
-                    </div>
-                  </div>
-                  <div
-                    className="h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                    style={{ backgroundImage: `url(${heroAfter})` }}
-                  />
-                </div>
-                <div className="pt-4 text-sm text-[#66857f]">
-                  <div className="flex items-center justify-between">
-                    <span>Same rich taste.</span>
-                    <span className="font-bold text-[#16695b]">Zero cholesterol.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <main className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
+      <nav className="sticky top-0 z-50 border-b-3 border-black bg-white/95 backdrop-blur-sm transition-all duration-300">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/c4c.webp"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
-        </div>
-      </header>
-
-      <section id="impact" className="border-y border-[#eff2f1] bg-[#f8fafc] py-10">
-        <div className="mx-auto max-w-[1280px] px-6">
-          <div className="flex flex-wrap justify-center gap-8 text-center md:gap-20">
-            <div className="flex flex-col items-center">
-              <span className="mb-1 text-3xl font-black text-[#121716] lg:text-4xl">10k+</span>
-              <span className="text-sm font-medium text-[#66857f]">Conscious Eaters</span>
-            </div>
-            <div className="hidden h-16 w-px bg-gray-200 md:block" />
-            <div className="flex flex-col items-center">
-              <div className="mb-1 flex items-center gap-1">
-                <span className="text-3xl font-black text-[#121716] lg:text-4xl">4.8</span>
-                <span className="material-symbols-outlined text-3xl text-yellow-400">star</span>
-              </div>
-              <span className="text-sm font-medium text-[#66857f]">Average Rating</span>
-            </div>
-            <div className="hidden h-16 w-px bg-gray-200 md:block" />
-            <div className="flex flex-col items-center">
-              <span className="mb-1 text-3xl font-black text-[#121716] lg:text-4xl">50+</span>
-              <span className="text-sm font-medium text-[#66857f]">Restaurant Partners</span>
-            </div>
+          <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
+            <a
+              href="#how-it-works"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              How it Works
+            </a>
+            <a
+              href="#features"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Features
+            </a>
+            <a
+              href="#impact"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Impact
+            </a>
+            <a
+              href="#institutions"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Institutions
+            </a>
           </div>
-        </div>
-      </section>
-
-      <section id="how" className="bg-white py-20 lg:py-28">
-        <div className="mx-auto max-w-[1280px] px-6">
-          <div className="mx-auto mb-16 max-w-2xl text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight text-[#121716] lg:text-4xl">How it works</h2>
-            <p className="text-lg text-[#66857f]">Three simple steps to make a difference without compromising on the taste you crave.</p>
-          </div>
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              {
-                icon: "search",
-                title: "Search",
-                copy: "Find your favorite local dishes instantly. From Biryani to Vada Pav, we've got the map.",
-              },
-              {
-                icon: "published_with_changes",
-                title: "Swap",
-                copy: "See the best plant-based alternative nearby. Order directly or get the recipe.",
-              },
-              {
-                icon: "deceased",
-                title: "Impact",
-                copy: "Track the water and lives you save with every meal. Visualize your positive footprint.",
-              },
-            ].map((card) => (
-              <div
-                key={card.title}
-                className="group rounded-2xl border border-[#eef2f1] bg-white p-8 transition-all duration-300 hover:border-[#16695b]/30 hover:shadow-[0_20px_40px_-10px_rgba(22,105,91,0.08)]"
-              >
-                <div className="mb-6 flex size-14 items-center justify-center rounded-xl bg-[#e3ebe9] text-[#16695b] transition-transform group-hover:scale-110">
-                  <span className="material-symbols-outlined text-3xl">{card.icon}</span>
-                </div>
-                <h3 className="mb-3 text-xl font-bold text-[#121716]">{card.title}</h3>
-                <p className="leading-relaxed text-[#66857f]">{card.copy}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="partners" className="overflow-hidden bg-[#f6f9f8] py-20 lg:py-28">
-        <div className="mx-auto max-w-[1280px] px-6">
-          <div className="grid items-center gap-16 lg:grid-cols-2">
-            <div className="order-2 lg:order-1">
-              <div className="mb-6 inline-block">
-                <span className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#66857f]">
-                  Smart Recommendation Engine
-                </span>
-              </div>
-              <h2 className="mb-6 text-3xl font-bold leading-tight text-[#121716] lg:text-4xl">
-                See the difference instantly.
-                <br />
-                <span className="text-[#16695b]">Better for you, better for the planet.</span>
-              </h2>
-              <p className="mb-8 text-lg leading-relaxed text-[#66857f]">
-                Our algorithm matches nutritional profiles and flavor textures to suggest the perfect plant-based swap.
-                You won't miss a thing.
-              </p>
-              <ul className="mb-8 space-y-4">
-                {["Verified nutritional data", "Local restaurant availability", "Real-time impact tracking"].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[#16695b]">check_circle</span>
-                    <span className="font-medium text-[#121716]">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="relative">
-                <div className="absolute left-1/2 top-1/2 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-40 blur-3xl" />
-                <div className="relative mx-auto max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-xl">
-                  <div className="relative mb-6">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <span className="material-symbols-outlined text-gray-400">search</span>
-                    </div>
-                    <input
-                      readOnly
-                      value="Chicken Biryani"
-                      className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-10 pr-3 text-gray-900 placeholder-gray-500 focus:bg-white focus:outline-none sm:text-sm font-medium"
-                    />
-                  </div>
-                  <div className="relative z-10 -mt-9 mb-4 flex justify-center">
-                    <div className="rounded-full border border-gray-100 bg-white p-1 shadow-sm">
-                      <span className="material-symbols-outlined text-sm text-gray-400">arrow_downward</span>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                    <div className="relative h-48">
-                      <img alt="Jackfruit Biryani with spices" src={cardImage} className="h-full w-full object-cover" />
-                      <div className="absolute right-3 top-3 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs font-bold text-green-800 backdrop-blur shadow-sm">
-                        <span className="material-symbols-outlined text-[16px] text-green-600">eco</span>
-                        Top Match
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <div className="mb-2 flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-bold text-[#121716]">Kathal (Jackfruit) Biryani</h3>
-                          <p className="text-sm text-[#66857f]">By Spice Route Kitchen</p>
-                        </div>
-                        <span className="rounded bg-green-100 px-2 py-1 text-xs font-bold text-green-800">₹320</span>
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1 rounded-lg bg-[#e3ebe9]/50 p-3">
-                          <div className="flex items-center gap-1 text-[#16695b]">
-                            <span className="material-symbols-outlined text-[18px]">water_drop</span>
-                            <span className="text-xs font-bold uppercase">Saved</span>
-                          </div>
-                          <span className="font-bold text-[#121716]">900 Liters</span>
-                        </div>
-                        <div className="flex flex-col gap-1 rounded-lg bg-orange-50 p-3">
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <span className="material-symbols-outlined text-[18px]">pets</span>
-                            <span className="text-xs font-bold uppercase">Saved</span>
-                          </div>
-                          <span className="font-bold text-[#121716]">1 Animal Life</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 text-xs text-[#66857f]">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
-                          <span className="font-medium">High Fiber</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-green-500" />
-                          <span className="font-medium">High Protein</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-gray-100 bg-white py-16">
-        <div className="mx-auto max-w-[1280px] px-6">
-          <div className="relative flex flex-col items-center gap-8 overflow-hidden rounded-2xl bg-[#16695b] p-8 text-white shadow-lg md:flex-row md:p-12">
-            <div className="absolute inset-0 opacity-10" />
-            <div className="relative flex justify-center md:w-1/3 md:justify-start">
-              <div
-                className="h-24 w-24 rounded-full border-4 border-white/20 bg-cover bg-center shadow-lg md:h-32 md:w-32"
-                style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDycMcRMqDRZp5HcOLzmy3kfdg8C-wDXIA91ttPUoZK2XF94vjtQNhLCjJ0KZ828X5YxHEnw2IJCT7aNunXSUpuhb3VrQ12qfodxArqJSkgUi-EmbIt8oEuOPyVmYRZsouuWcsJpt9UGLDbtbEk4hLC_-O9YbGSeO88-N70RWAytXkcU_2gVicJBxFx3DjkjqiYQYnJ3gyBhx8rIDwzBVIKuF5TTSdj1_VqPv4gDdc1jZDhkjtseW08MzryOkL8j44yIRNdT10f3sH6')",
-                }}
-              />
-            </div>
-            <div className="relative text-center text-white md:w-2/3 md:text-left">
-              <span className="mb-4 block text-4xl opacity-50">“</span>
-              <p className="mb-6 text-xl font-medium leading-relaxed md:text-2xl">
-                "I never thought I could give up my Sunday mutton curry. But the mushroom galouti swap was insane. Same
-                texture, better feeling afterwards."
-              </p>
-              <div>
-                <p className="text-lg font-bold">Priya Sharma</p>
-                <p className="text-sm opacity-80">Marketing Executive, Mumbai</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative bg-[#dceae5] py-24">
-        <div className="mx-auto max-w-[1280px] px-6 text-center">
-          <h2 className="mb-6 text-4xl font-black tracking-tight text-[#121716] lg:text-5xl">Start with one meal.</h2>
-          <p className="mx-auto mb-10 max-w-2xl text-xl text-[#121716]/70">
-            Join 10,000+ others anywhere making a difference. It's free, it's delicious, and it's impactful.
-          </p>
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <button className="flex h-14 items-center justify-center rounded-xl bg-[#16695b] px-10 text-lg font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-[#104f44]">
-              Get Started Free
+          <div className="flex items-center gap-4">
+            <button className="hidden transform rounded-full border-2 border-black px-6 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:block">
+              Log In
+            </button>
+            <button className="rounded-full border-2 border-black bg-accent px-6 py-2 text-sm font-bold uppercase text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              Try a Swap
             </button>
           </div>
-          <p className="mt-8 text-sm text-[#66857f]">No credit card required. Pure flavor.</p>
+        </div>
+      </nav>
+
+      <section className="relative overflow-hidden px-6 pt-20 pb-32">
+        <div className="absolute left-10 top-20 hidden h-24 w-24 opacity-20 lg:block animate-float">
+          <img
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8uaXEWp98VwagctoDVdQ0iWcDwy2OUz3VMhE0Ao3PFv_6_zta9UUPpwqMCFqea-AbFgEhGyTA2JGlkQ9UKFDDFdyjNeg_QxDnhpbfDA3F9ZoIyOwbeJ_sHO5HqbeHsZUJTNrxF4s0tYrDp2Lk9SSSdWnMIoEsUxZJG37qldfMz8C7HCtNfT3xQPRLKO6L8FAvK6sSU2AgJPXw2o6dzyPyU7rnLjNfuUtI_QyO-VY3UhxzzJlnAsB8LPs3c4rbc8QRDM7ZdzpVNEmA"
+            alt="Dish decoration"
+            className="h-full w-full rounded-full border-2 border-black object-cover"
+          />
+        </div>
+        <div
+          className="absolute bottom-20 right-10 hidden h-32 w-32 opacity-20 lg:block"
+          style={{ animation: "float 6s ease-in-out infinite", animationDelay: "1s", animationDirection: "reverse" }}
+        >
+          <img
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyvMJxTIMMwc-wRM6Uoq6gZtK8VhvsEdu5kLCANQL6StiRziybbXqp5Chw1NlgSDIc2lHJdOLcX5EnJcKOYYqpri69sgrHm49vHF6nDpGNJt-wHMs-UOvIQJ5u1_lMbT2EcUKjo3TqCfc-GAc8csZh97LKggABoIGomSUEdFvwxC9aLYVZC5TMYk3VsBM_olIrA2-cXcDf2hy8Bz1ntnmnayRFrMZrdJcxjXsxfhhdXF0sNclSWAjV3xFhjsysn4dddY02Wb4QFBfM"
+            alt="Dish decoration"
+            className="h-full w-full rounded-full border-2 border-black object-cover"
+          />
+        </div>
+
+        <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
+          <div className="relative z-10 space-y-8 text-center lg:text-left">
+            <div className="inline-flex animate-slide-up items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-white border-2 border-black">
+              <span className="material-symbols-outlined text-sm animate-pulse-slow">science</span>
+              Behavioral Science Powered
+            </div>
+            <h1 className="animate-slide-up delay-100 font-impact text-6xl uppercase leading-[0.9] text-black md:text-8xl">
+              SMALL FOOD SWAPS.
+              <br />
+              <span className="underline decoration-primary decoration-8 underline-offset-8 text-accent">REAL-WORLD IMPACT.</span>
+            </h1>
+            <p className="mx-auto max-w-lg animate-slide-up delay-200 text-xl font-medium leading-relaxed text-slate-700 lg:mx-0">
+              Transition to plant-based choices through familiar flavors. No pressure, just better plates. Engineered for
+              institutional scale and individual taste.
+            </p>
+            <div className="animate-slide-up delay-300 flex flex-col gap-4 pt-4 sm:flex-row sm:justify-center lg:justify-start">
+              <button className="rounded-xl border-2 border-black bg-black px-10 py-4 text-xl font-bold uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                Start Your Swap
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-3">
+                  <img
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCmXWgfmkBW0knY8iCK19eDfVdjqg9_NJP65h6LW2k3jTASn4RdjbCo4xELyCMIeGx4jO3RtiwfcXlUW7cOIaqfR4FxiiCZLrNOMJeFVMkmbHRDjQ7kJ4bh5CCwyXa-npc78dJaJ7DPqQs5YMIZa4OU1cXB6fLBW7ifYsDAGTRJOKWiAEm-68s0eTvrwsPVJ1B1tQ80r3elbuKnAFsBbnoXIjrBEn0FaGYtuhlUS7a7-9Xex1iRgepRVFJOZUY3zHs0hofs5DEY-Kd"
+                    alt="User"
+                    className="h-10 w-10 rounded-full border-2 border-black object-cover transition-transform duration-300 hover:z-10 hover:scale-110"
+                  />
+                  <img
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDC-wUuBeHTpb0D5Oq_svjSJUoctnJN5UD585xUjSYtqWkWuLJL1ux4OTkDAk3koTGxz4u5qCwaDnEpd37rHLyjYG6w7l_ZrNkdH-LU5AGwxSDfyaJMjMlsZj960iLmV-uS6-_6IQxM7RWvywEa_JhZHlhBcyjWn2ArCRNXQe__lImKwv34_MBNaxsLM7NcJlE--ogksjWXixK8CacJMpbtC29lr9vfii0Mnhi2q6KOMdg0r3l2odGMGwl4FTzrsjKkWS-yje7Mz6OX"
+                    alt="User"
+                    className="h-10 w-10 rounded-full border-2 border-black object-cover transition-transform duration-300 hover:z-10 hover:scale-110"
+                  />
+                </div>
+                <span className="text-sm font-bold uppercase tracking-tight">12k+ Swappers</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex justify-center animate-scale-in delay-400">
+            <div className="relative w-full max-w-[400px] rotate-2 rounded-[3rem] border-4 border-black bg-black p-4 shadow-2xl transition-transform duration-500 hover:scale-105 hover:rotate-0">
+              <div className="relative aspect-[9/19] overflow-hidden rounded-[2.5rem] bg-white">
+                <div className="flex h-full flex-col p-6">
+                  <div className="mb-8 flex items-center justify-between">
+                    <span className="font-impact text-xl">OFFRAMP</span>
+                    <span className="material-symbols-outlined">menu</span>
+                  </div>
+                  <div className="flex-1 space-y-6">
+                    <div className="group relative h-48 overflow-hidden rounded-2xl border-3 border-black">
+                      <img
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8uaXEWp98VwagctoDVdQ0iWcDwy2OUz3VMhE0Ao3PFv_6_zta9UUPpwqMCFqea-AbFgEhGyTA2JGlkQ9UKFDDFdyjNeg_QxDnhpbfDA3F9ZoIyOwbeJ_sHO5HqbeHsZUJTNrxF4s0tYrDp2Lk9SSSdWnMIoEsUxZJG37qldfMz8C7HCtNfT3xQPRLKO6L8FAvK6sSU2AgJPXw2o6dzyPyU7rnLjNfuUtI_QyO-VY3UhxzzJlnAsB8LPs3c4rbc8QRDM7ZdzpVNEmA"
+                        alt="Before"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute left-2 top-2 rounded bg-black px-3 py-1 text-[10px] font-bold text-white">BEFORE</div>
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="animate-bounce-slow rounded-full border-2 border-black bg-accent p-2 text-white">
+                        <span className="material-symbols-outlined font-bold">keyboard_double_arrow_down</span>
+                      </div>
+                    </div>
+                    <div className="group relative h-48 overflow-hidden rounded-2xl border-3 border-black">
+                      <img
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyvMJxTIMMwc-wRM6Uoq6gZtK8VhvsEdu5kLCANQL6StiRziybbXqp5Chw1NlgSDIc2lHJdOLcX5EnJcKOYYqpri69sgrHm49vHF6nDpGNJt-wHMs-UOvIQJ5u1_lMbT2EcUKjo3TqCfc-GAc8csZh97LKggABoIGomSUEdFvwxC9aLYVZC5TMYk3VsBM_olIrA2-cXcDf2hy8Bz1ntnmnayRFrMZrdJcxjXsxfhhdXF0sNclSWAjV3xFhjsysn4dddY02Wb4QFBfM"
+                        alt="After"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute left-2 top-2 rounded bg-primary px-3 py-1 text-[10px] font-bold text-white">AFTER</div>
+                    </div>
+                    <div className="rounded-xl border-2 border-black bg-highlight p-4 text-sm font-bold italic">
+                      "Mushroom Keema: 95% texture match"
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -z-10 top-1/2 left-1/2 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-grid opacity-50 grid-pattern animate-pulse-slow" />
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-[#dce4e3] bg-white py-12">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-6 px-6 md:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded bg-[#16695b] text-white">
-              <span className="material-symbols-outlined text-sm">eco</span>
+      <section id="how-it-works" className="scroll-reveal relative border-y-3 border-black bg-primary py-24 text-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-20 text-center">
+            <h2 className="mb-4 font-impact text-6xl uppercase tracking-tight md:text-7xl">HOW IT WORKS</h2>
+            <p className="font-bold uppercase tracking-widest text-white/80">Three steps to a better plate</p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-3">
+            <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-100">
+              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[-10deg] items-center justify-center rounded-full border-2 border-black bg-grid transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined text-3xl font-black text-black">restaurant_menu</span>
+              </div>
+              <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">1. CHOOSE</h3>
+              <p className="font-semibold leading-relaxed text-slate-600">Pick the traditional dish you love from our deep cultural catalog.</p>
             </div>
-            <span className="font-bold text-[#121716]">PlantSwap</span>
+            <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-200">
+              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[15deg] items-center justify-center rounded-full border-2 border-black bg-accent transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined text-3xl font-black text-white">cached</span>
+              </div>
+              <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">2. SUBSTITUTE</h3>
+              <p className="font-semibold leading-relaxed text-slate-600">Our engine suggests a swap that respects every spice and texture.</p>
+            </div>
+            <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-300">
+              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[-5deg] items-center justify-center rounded-full border-2 border-black bg-primary transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined text-3xl font-black text-white">cooking</span>
+              </div>
+              <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">3. COOK</h3>
+              <p className="font-semibold leading-relaxed text-slate-600">Follow visual guides optimized for both home cooks and chefs.</p>
+            </div>
           </div>
-          <div className="flex gap-8 text-sm text-[#66857f]">
-            <a className="hover:text-[#16695b]" href="#">Privacy</a>
-            <a className="hover:text-[#16695b]" href="#">Terms</a>
-            <a className="hover:text-[#16695b]" href="#partners">Restaurants</a>
+        </div>
+      </section>
+
+      <section id="features" className="grid-pattern border-b-3 border-black py-24">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-16 flex flex-col justify-between gap-6 md:flex-row md:items-end scroll-reveal">
+            <div className="inline-block rounded-2xl border-3 border-black bg-white p-8 transition-transform duration-300 hover:scale-105">
+              <h2 className="font-impact text-5xl uppercase leading-none md:text-6xl">
+                Built for Transition,
+                <br />
+                <span className="italic text-primary">Not Perfection</span>
+              </h2>
+            </div>
+            <div className="flex gap-4">
+              <button className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-black bg-black text-white transition-all duration-300 hover:scale-110 hover:rotate-12 hover:bg-accent">
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              <button className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-black bg-black text-white transition-all duration-300 hover:scale-110 hover:-rotate-12 hover:bg-accent">
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
           </div>
-          <p className="text-sm text-[#66857f]">© 2026 PlantSwap India.</p>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="hover-lift scroll-reveal delay-100 rounded-3xl border-3 border-black bg-white p-8">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
+                <span className="material-symbols-outlined">settings_suggest</span>
+              </div>
+              <h3 className="mb-3 font-impact text-2xl uppercase">Substitution Engine</h3>
+              <p className="text-sm font-bold leading-relaxed text-slate-600">AI texture-mapping for the perfect spice-for-spice match.</p>
+            </div>
+            <div className="hover-lift scroll-reveal delay-200 rounded-3xl border-3 border-black bg-white p-8">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-accent text-white transition-transform duration-300 hover:rotate-12">
+                <span className="material-symbols-outlined">public</span>
+              </div>
+              <h3 className="mb-3 font-impact text-2xl uppercase">Cultural Context</h3>
+              <p className="text-sm font-bold leading-relaxed text-slate-600">Preserving heritage while updating the plate for the future.</p>
+            </div>
+            <div className="hover-lift scroll-reveal delay-300 rounded-3xl border-3 border-black bg-white p-8">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-black text-white transition-transform duration-300 hover:rotate-12">
+                <span className="material-symbols-outlined">menu_book</span>
+              </div>
+              <h3 className="mb-3 font-impact text-2xl uppercase">Guided Visuals</h3>
+              <p className="text-sm font-bold leading-relaxed text-slate-600">Step-by-step behavioral cues for seamless habit change.</p>
+            </div>
+            <div className="hover-lift scroll-reveal delay-400 rounded-3xl border-3 border-black bg-white p-8">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
+                <span className="material-symbols-outlined">analytics</span>
+              </div>
+              <h3 className="mb-3 font-impact text-2xl uppercase">Measured Impact</h3>
+              <p className="text-sm font-bold leading-relaxed text-slate-600">Real-time stats on carbon and water saved per swap.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="impact" className="scroll-reveal-left border-b-3 border-black bg-white px-6 py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
+          <div>
+            <h2 className="mb-8 font-impact text-7xl uppercase leading-none text-black md:text-8xl">
+              REAL-WORLD
+              <br />
+              <span className="text-accent">METRICS.</span>
+            </h2>
+            <div className="mt-12 grid gap-6 sm:grid-cols-2">
+              <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-primary p-8 text-white hover-lift">
+                <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">water_drop</span>
+                <div className="counter text-5xl font-impact uppercase" data-target="1.2">
+                  0
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Million Liters Freshwater Saved</p>
+              </div>
+              <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-accent p-8 text-white hover-lift">
+                <span
+                  className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow"
+                  style={{ animationDelay: "0.5s" }}
+                >
+                  co2
+                </span>
+                <div className="counter text-5xl font-impact uppercase" data-target="450">
+                  0
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Tons CO2 Emissions Avoided</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative scroll-reveal-right">
+            <div className="rounded-[3rem] border-3 border-black bg-black p-8 shadow-2xl transition-transform duration-500 hover:scale-105 hover:rotate-0 transform lg:rotate-3">
+              <div className="rounded-[2rem] border-2 border-black bg-highlight p-6">
+                <div className="mb-8 flex items-center justify-between border-b-2 border-black/10 pb-4">
+                  <h4 className="font-impact text-2xl uppercase">Community Dashboard</h4>
+                  <span className="animate-pulse-slow rounded bg-primary px-3 py-1 text-[10px] font-black uppercase text-white border-2 border-black">
+                    LIVE DATA
+                  </span>
+                </div>
+                <div className="space-y-6">
+                  <div className="h-6 overflow-hidden rounded-full border-2 border-black bg-slate-200">
+                    <div className="progress-bar h-full w-0 rounded-full bg-accent" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL SWAPS</p>
+                      <p className="counter-swaps font-impact text-4xl text-black" data-target="128450">
+                        0
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">ECO-SCORE</p>
+                      <p className="counter-score font-impact text-4xl text-accent" data-target="9.2">
+                        0
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <img
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDufMJacStbAFdf7Q8-89ljksa8FW-kwlZGPlLaZWYDnBhSZirOWG5YY97EKERs4JAe4Q4Nif39PxcO603XzpIqLFz-L8029eGJKUMFUs8iIHP8fQM7SBYSszsqAAqxyKi6j7Bt5zWvsgMtWqJGLlGn-F08rWd9PdgC4l0ujgZxiv30mgnSqv-ju8-n_WG_t5feEvhR7nDETEhy85-HGFMiEfg0a6gFvWgL89YNI5cGWcLSJCmcAFQ9-gqCpXA2D2gaL7NhqJGiYKdf"
+                  alt="Graph visual"
+                  className="mt-8 h-48 w-full rounded-2xl border-2 border-black object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="institutions" className="scroll-reveal border-y-3 border-black bg-highlight px-6 py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 text-center">
+            <h2 className="mb-4 font-impact text-6xl uppercase">INSTITUTIONAL GRADE</h2>
+            <p className="font-bold uppercase tracking-widest text-slate-500">Scaleable solutions for campuses & corporations</p>
+          </div>
+          <div className="grid gap-10 md:grid-cols-3">
+            <div className="bold-shadow hover-lift scroll-reveal delay-100 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
+              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-grid transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined text-4xl">branding_watermark</span>
+              </div>
+              <h4 className="mb-4 font-impact text-3xl uppercase">White-Label</h4>
+              <p className="font-semibold text-slate-600">Seamless integration into your cafeteria apps and dining ecosystem.</p>
+            </div>
+            <div className="bold-shadow hover-lift scroll-reveal delay-200 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
+              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-accent transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined text-4xl text-white">inventory_2</span>
+              </div>
+              <h4 className="mb-4 font-impact text-3xl uppercase">Inventory Sync</h4>
+              <p className="font-semibold text-slate-600">Dynamic swap logic based on your real-time stock levels.</p>
+            </div>
+            <div className="bold-shadow hover-lift scroll-reveal delay-300 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
+              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-primary transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined text-4xl text-white">groups</span>
+              </div>
+              <h4 className="mb-4 font-impact text-3xl uppercase">Org Analytics</h4>
+              <p className="font-semibold text-slate-600">Aggregate reports for your sustainability and ESG board meetings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="scroll-reveal relative overflow-hidden border-y-3 border-black bg-black py-32 text-white">
+        <div className="absolute right-0 top-0 h-full w-1/3 grid-pattern opacity-10" />
+        <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+          <h2 className="mb-12 font-impact text-7xl uppercase tracking-tighter md:text-8xl">WHY AN OFFRAMP?</h2>
+          <div className="bold-shadow -rotate-1 rounded-[3rem] border-4 border-black bg-white p-12 text-black transition-transform duration-500 hover:rotate-0">
+            <p className="text-3xl font-bold italic leading-tight md:text-4xl">
+              "Transitions aren't made of giant leaps; they are made of accessible exits from old habits. Behavioral science is the bridge to sustainable change."
+            </p>
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <span className="h-[3px] w-12 bg-accent transition-all duration-500 hover:w-20" />
+              <span className="font-impact text-xl uppercase tracking-widest text-primary">THE C4C PHILOSOPHY</span>
+              <span className="h-[3px] w-12 bg-accent transition-all duration-500 hover:w-20" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="scroll-reveal bg-highlight px-6 py-24">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[4rem] border-4 border-black bg-primary p-12 text-center text-white bold-shadow md:p-24">
+          <div className="pointer-events-none absolute inset-0 grid-pattern opacity-10" />
+          <div className="relative z-10">
+            <h2 className="mb-8 font-impact text-7xl uppercase leading-none md:text-9xl">READY TO SWAP?</h2>
+            <p className="mx-auto mb-16 max-w-2xl text-xl font-bold uppercase tracking-widest text-white/80">
+              Join the movement of institutions and individuals redesigning the plate.
+            </p>
+            <div className="flex flex-col items-center justify-center gap-8 sm:flex-row">
+              <button className="w-full rounded-full border-4 border-black bg-accent px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:w-auto">
+                Try a Swap Now
+              </button>
+              <button className="w-full rounded-full border-4 border-black bg-white px-12 py-6 text-2xl font-black uppercase text-black transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:w-auto">
+                For Institutions
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t-3 border-black bg-white px-6 py-16">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/c4c.webp"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-4xl uppercase">OffRamp</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Privacy
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Terms
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              LinkedIn
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Contact
+            </a>
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
+          </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }
