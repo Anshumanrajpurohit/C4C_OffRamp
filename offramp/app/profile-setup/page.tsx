@@ -114,29 +114,55 @@ export default function ProfileSetupPage() {
         impact.variable
       )}
     >
-      <header className="bg-white border-b-3 border-black sticky top-0 z-50 backdrop-blur-sm bg-white/95">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-primary border-2 border-black rounded flex items-center justify-center transition-transform duration-300 group-hover:rotate-180">
-              <span className="material-symbols-outlined text-white">alt_route</span>
-            </div>
-            <span className="font-impact text-3xl tracking-wide text-black uppercase">OffRamp</span>
+      <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300 border-b-3 border-black">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/c4c.webp"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-bold uppercase tracking-wider">
-            <a className="hover:text-accent transition-colors duration-300" href="#">How it works</a>
-            <a className="hover:text-accent transition-colors duration-300" href="#">Impact</a>
-            <button className="bg-accent text-white px-6 py-2 rounded-full font-bold border-2 border-black hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
-              Find a Dish Swap
-            </button>
+          <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
+            <a
+              href="#how-it-works"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              How it Works
+            </a>
+            <a
+              href="#features"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Features
+            </a>
+            <a
+              href="#impact"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Impact
+            </a>
+            <a
+              href="#institutions"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Institutions
+            </a>
           </div>
-          <div className="flex items-center gap-2 text-slate-500">
-            <span className="material-symbols-outlined">person</span>
-            <span className="hidden sm:inline font-bold text-sm uppercase">Profile Setup</span>
+          <div className="flex items-center gap-4">
+            <a
+              href="/profile-setup"
+              className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
+            >
+              <span className="material-symbols-outlined text-base">login</span>
+              Log In
+            </a>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="flex-1 py-12 px-6 grid-pattern-subtle">
+      <section className="flex-1 py-12 px-6 grid-pattern-subtle">
         <div className="max-w-4xl mx-auto">
           <div className="mb-12 fade-in">
             <div className="relative">
@@ -282,18 +308,34 @@ export default function ProfileSetupPage() {
             </div>
           </div>
         </div>
-      </main>
+      </section>
 
-      <footer className="py-12 bg-white border-t-3 border-black">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary border-2 border-black rounded flex items-center justify-center">
-                <span className="material-symbols-outlined text-white text-lg">alt_route</span>
-              </div>
-              <span className="font-impact text-3xl uppercase">OffRamp</span>
-            </div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">© 2024 C4C OFFRAMP. BE BOLD. EAT WELL.</p>
+      <footer className="border-t-3 border-black bg-white px-6 py-16">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/c4c.webp"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-4xl uppercase">OffRamp</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Privacy
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Terms
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              LinkedIn
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Contact
+            </a>
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
       </footer>

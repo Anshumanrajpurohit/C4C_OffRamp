@@ -177,10 +177,13 @@ export default function Home() {
             </a>
           </div>
           <div className="flex items-center gap-4">
-            <button className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex">
+            <a
+              href="/profile-setup"
+              className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
+            >
               <span className="material-symbols-outlined text-base">login</span>
               Log In
-            </button>
+            </a>
           </div>
         </div>
       </nav>
