@@ -220,9 +220,12 @@ export default function Home() {
               institutional scale and individual taste.
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-4 pt-4">
-              <button className="rounded-2xl border-2 border-black bg-black px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <Link
+                href="/swap"
+                className="rounded-2xl border-2 border-black bg-black px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+              >
                 Start Your Swap
-              </button>
+              </Link>
               <div className="flex items-center justify-center gap-3">
                 <div className="flex">
                   <img

@@ -1,37 +1,42 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState } from "react";
-=======
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
->>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
 import Link from "next/link";
 
 export default function AuthPage() {
-<<<<<<< HEAD
+  const router = useRouter();
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState("");
-=======
-  const router = useRouter();
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
->>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (session) {
-      router.replace("/profile-setup");
-    }
-  }, [router, session]);
+  const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus("UI only: authentication will be enabled when backend is connected.");
+    const demoAccounts = [
+      { email: "demo@offramp.app", password: "offramptest123", flag: "1" },
+      { email: "demo2@offramp.app", password: "offramptest456", flag: "2" },
+      { email: "demoform@offramp.app", password: "offramptest789", flag: "3" },
+    ];
+
+    const match = demoAccounts.find(
+      (acct) => email.trim().toLowerCase() === acct.email && password === acct.password
+    );
+
+    if (match) {
+      setStatusType("success");
+      setStatus("Logged in successfully. Redirecting to swaps...");
+      router.push(`/swap?demo=${match.flag}#preferences`);
+      return;
+    }
+
+    setStatusType("error");
+    setStatus("Incorrect email or password.");
   };
 
   return (
@@ -176,7 +181,35 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {status && <p className="mt-4 text-center text-xs font-semibold text-primary">{status}</p>}
+          {status && (
+            <div
+              className={`fixed left-1/2 top-6 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border-2 px-4 py-3 text-sm font-bold shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] ${
+                statusType === "success"
+                  ? "border-emerald-700 bg-emerald-100 text-emerald-900"
+                  : "border-red-700 bg-red-100 text-red-900"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base">
+                    {statusType === "success" ? "check_circle" : "error"}
+                  </span>
+                  {status}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Close alert"
+                  className="text-xs text-current transition hover:opacity-70"
+                  onClick={() => {
+                    setStatus(null);
+                    setStatusType(null);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase text-slate-400">
             <span className="h-px flex-1 bg-slate-200" />
