@@ -178,7 +178,11 @@ export default function Home() {
             </a>
           </div>
           <div className="flex items-center gap-4">
+<<<<<<< HEAD
             <Link
+=======
+            <a
+>>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
               href="/auth"
               className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
             >

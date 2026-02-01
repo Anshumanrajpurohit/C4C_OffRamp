@@ -1,17 +1,33 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+>>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
 import Link from "next/link";
 
 export default function AuthPage() {
+<<<<<<< HEAD
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState("");
+=======
+  const router = useRouter();
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+>>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session) {
+      router.replace("/profile-setup");
+    }
+  }, [router, session]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
