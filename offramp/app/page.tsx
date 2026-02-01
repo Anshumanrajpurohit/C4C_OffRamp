@@ -178,7 +178,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="/profile-setup"
+              href="/auth"
               className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
             >
               <span className="material-symbols-outlined text-base">login</span>

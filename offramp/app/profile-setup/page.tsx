@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
@@ -47,6 +50,8 @@ const cn = (...classes: Array<string | null | undefined | false>) =>
   classes.filter(Boolean).join(" ");
 
 export default function ProfileSetupPage() {
+  const router = useRouter();
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [currentStep, setCurrentStep] = useState(1);
   const [prevStep, setPrevStep] = useState<number | null>(null);
   const [region, setRegion] = useState("south-india");
@@ -54,9 +59,34 @@ export default function ProfileSetupPage() {
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(1);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const totalSteps = 4;
 
   const budget = useMemo(() => budgetLevels[budgetLevel], [budgetLevel]);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const active = data.session ?? null;
+      setSession(active);
+      setCheckingSession(false);
+      if (!active) {
+        router.replace("/auth");
+      }
+    };
+    init();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) {
+        router.replace("/profile-setup");
+      }
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, [router, supabase]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -107,13 +137,19 @@ export default function ProfileSetupPage() {
   };
 
   return (
-    <main
-      className={cn(
-        "profile-setup min-h-screen flex flex-col bg-highlight text-slate-900",
-        jakarta.className,
-        impact.variable
-      )}
-    >
+    <>
+      {checkingSession ? (
+        <div className="min-h-screen flex items-center justify-center bg-highlight text-slate-800">
+          <p className="font-bold">Checking session...</p>
+        </div>
+      ) : !session ? null : (
+        <main
+          className={cn(
+            "profile-setup min-h-screen flex flex-col bg-highlight text-slate-900",
+            jakarta.className,
+            impact.variable
+          )}
+        >
       <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300 border-b-3 border-black">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
@@ -152,7 +188,7 @@ export default function ProfileSetupPage() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="/profile-setup"
+              href="/auth"
               className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
             >
               <span className="material-symbols-outlined text-base">login</span>
@@ -415,7 +451,9 @@ export default function ProfileSetupPage() {
         @keyframes bounceEmoji { 0%, 100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.25) translateY(-8px); } }
         @keyframes popOut { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.3) translateY(-10px); } 100% { transform: scale(1.25) translateY(-8px); } }
       `}</style>
-    </main>
+        </main>
+      )}
+    </>
   );
 }
 

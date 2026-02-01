@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "../../lib/supabaseClient";
 
 export default function AuthPage() {
+  const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -23,6 +25,12 @@ export default function AuthPage() {
       listener.subscription.unsubscribe();
     };
   }, [supabase]);
+
+  useEffect(() => {
+    if (session) {
+      router.replace("/profile-setup");
+    }
+  }, [router, session]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
