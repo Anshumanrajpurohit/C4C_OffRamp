@@ -26,6 +26,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0"
+        />
+      </head>
       <body
         suppressHydrationWarning
         className={`${sans.variable} ${mono.variable} antialiased bg-[#f7f3ee] text-[#131614]`}

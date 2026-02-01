@@ -142,7 +142,7 @@ export default function Home() {
 
   return (
     <main className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
-      <nav className="sticky top-0 z-50 border-b-3 border-black bg-white/95 backdrop-blur-sm transition-all duration-300">
+      <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
             <img
@@ -179,11 +179,9 @@ export default function Home() {
             </a>
           </div>
           <div className="flex items-center gap-4">
-            <button className="hidden transform rounded-full border-2 border-black px-6 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:block">
+            <button className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex">
+              <span className="material-symbols-outlined text-base">login</span>
               Log In
-            </button>
-            <button className="rounded-full border-2 border-black bg-accent px-6 py-2 text-sm font-bold uppercase text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              Try a Swap
             </button>
           </div>
         </div>
@@ -209,35 +207,26 @@ export default function Home() {
         </div>
 
         <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
-          <div className="relative z-10 space-y-8 text-center lg:text-left">
-            <div className="inline-flex animate-slide-up items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-white border-2 border-black">
-              <span className="material-symbols-outlined text-sm animate-pulse-slow">science</span>
-              Behavioral Science Powered
-            </div>
+          <div className="relative z-10 space-y-8 text-center">
             <h1 className="animate-slide-up delay-100 font-impact text-6xl uppercase leading-[0.9] text-black md:text-8xl">
-              SMALL FOOD SWAPS.
+               LOVE THE FOOD
               <br />
-              <span className="underline decoration-primary decoration-8 underline-offset-8 text-accent">REAL-WORLD IMPACT.</span>
+              <span className="text-accent">SWAP THE REST.</span>
             </h1>
-            <p className="mx-auto max-w-lg animate-slide-up delay-200 text-xl font-medium leading-relaxed text-slate-700 lg:mx-0">
+            <p className="mx-auto max-w-lg animate-slide-up delay-200 text-xl font-medium leading-relaxed text-slate-700">
               Transition to plant-based choices through familiar flavors. No pressure, just better plates. Engineered for
               institutional scale and individual taste.
             </p>
-            <div className="animate-slide-up delay-300 flex flex-col gap-4 pt-4 sm:flex-row sm:justify-center lg:justify-start">
-              <button className="rounded-xl border-2 border-black bg-black px-10 py-4 text-xl font-bold uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <div className="animate-slide-up delay-300 flex flex-col items-center gap-4 pt-4">
+              <button className="rounded-2xl border-2 border-black bg-black px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 Start Your Swap
               </button>
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-3">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex">
                   <img
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCmXWgfmkBW0knY8iCK19eDfVdjqg9_NJP65h6LW2k3jTASn4RdjbCo4xELyCMIeGx4jO3RtiwfcXlUW7cOIaqfR4FxiiCZLrNOMJeFVMkmbHRDjQ7kJ4bh5CCwyXa-npc78dJaJ7DPqQs5YMIZa4OU1cXB6fLBW7ifYsDAGTRJOKWiAEm-68s0eTvrwsPVJ1B1tQ80r3elbuKnAFsBbnoXIjrBEn0FaGYtuhlUS7a7-9Xex1iRgepRVFJOZUY3zHs0hofs5DEY-Kd"
-                    alt="User"
-                    className="h-10 w-10 rounded-full border-2 border-black object-cover transition-transform duration-300 hover:z-10 hover:scale-110"
-                  />
-                  <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDC-wUuBeHTpb0D5Oq_svjSJUoctnJN5UD585xUjSYtqWkWuLJL1ux4OTkDAk3koTGxz4u5qCwaDnEpd37rHLyjYG6w7l_ZrNkdH-LU5AGwxSDfyaJMjMlsZj960iLmV-uS6-_6IQxM7RWvywEa_JhZHlhBcyjWn2ArCRNXQe__lImKwv34_MBNaxsLM7NcJlE--ogksjWXixK8CacJMpbtC29lr9vfii0Mnhi2q6KOMdg0r3l2odGMGwl4FTzrsjKkWS-yje7Mz6OX"
-                    alt="User"
-                    className="h-10 w-10 rounded-full border-2 border-black object-cover transition-transform duration-300 hover:z-10 hover:scale-110"
+                    alt="Community"
+                    className="h-10 w-10 rounded-full border-2 border-black object-cover"
                   />
                 </div>
                 <span className="text-sm font-bold uppercase tracking-tight">12k+ Swappers</span>
@@ -295,22 +284,22 @@ export default function Home() {
           </div>
           <div className="grid gap-8 md:grid-cols-3">
             <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-100">
-              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[-10deg] items-center justify-center rounded-full border-2 border-black bg-grid transition-transform duration-300 group-hover:rotate-0">
-                <span className="material-symbols-outlined text-3xl font-black text-black">restaurant_menu</span>
+              <div className="icon-badge absolute -top-9 left-8 mb-8 flex rotate-[-10deg] items-center justify-center border-2 border-black bg-grid transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined font-black text-black">restaurant_menu</span>
               </div>
               <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">1. CHOOSE</h3>
               <p className="font-semibold leading-relaxed text-slate-600">Pick the traditional dish you love from our deep cultural catalog.</p>
             </div>
             <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-200">
-              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[15deg] items-center justify-center rounded-full border-2 border-black bg-accent transition-transform duration-300 group-hover:rotate-0">
-                <span className="material-symbols-outlined text-3xl font-black text-white">cached</span>
+              <div className="icon-badge absolute -top-9 left-8 mb-8 flex rotate-[15deg] items-center justify-center border-2 border-black bg-accent transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined font-black text-white">cached</span>
               </div>
               <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">2. SUBSTITUTE</h3>
               <p className="font-semibold leading-relaxed text-slate-600">Our engine suggests a swap that respects every spice and texture.</p>
             </div>
             <div className="bold-shadow group relative rounded-3xl border-3 border-black bg-white p-8 text-black hover-lift scroll-reveal delay-300">
-              <div className="absolute -top-8 left-8 mb-8 flex h-16 w-16 rotate-[-5deg] items-center justify-center rounded-full border-2 border-black bg-primary transition-transform duration-300 group-hover:rotate-0">
-                <span className="material-symbols-outlined text-3xl font-black text-white">cooking</span>
+              <div className="icon-badge absolute -top-9 left-8 mb-8 flex rotate-[-5deg] items-center justify-center border-2 border-black bg-primary transition-transform duration-300 group-hover:rotate-0">
+                <span className="material-symbols-outlined font-black text-white">cooking</span>
               </div>
               <h3 className="mt-4 mb-4 font-impact text-4xl uppercase">3. COOK</h3>
               <p className="font-semibold leading-relaxed text-slate-600">Follow visual guides optimized for both home cooks and chefs.</p>
@@ -341,28 +330,28 @@ export default function Home() {
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="hover-lift scroll-reveal delay-100 rounded-3xl border-3 border-black bg-white p-8">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
+              <div className="icon-badge mb-6 flex items-center justify-center border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
                 <span className="material-symbols-outlined">settings_suggest</span>
               </div>
               <h3 className="mb-3 font-impact text-2xl uppercase">Substitution Engine</h3>
               <p className="text-sm font-bold leading-relaxed text-slate-600">AI texture-mapping for the perfect spice-for-spice match.</p>
             </div>
             <div className="hover-lift scroll-reveal delay-200 rounded-3xl border-3 border-black bg-white p-8">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-accent text-white transition-transform duration-300 hover:rotate-12">
+              <div className="icon-badge mb-6 flex items-center justify-center border-2 border-black bg-accent text-white transition-transform duration-300 hover:rotate-12">
                 <span className="material-symbols-outlined">public</span>
               </div>
               <h3 className="mb-3 font-impact text-2xl uppercase">Cultural Context</h3>
               <p className="text-sm font-bold leading-relaxed text-slate-600">Preserving heritage while updating the plate for the future.</p>
             </div>
             <div className="hover-lift scroll-reveal delay-300 rounded-3xl border-3 border-black bg-white p-8">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-black text-white transition-transform duration-300 hover:rotate-12">
+              <div className="icon-badge mb-6 flex items-center justify-center border-2 border-black bg-black text-white transition-transform duration-300 hover:rotate-12">
                 <span className="material-symbols-outlined">menu_book</span>
               </div>
               <h3 className="mb-3 font-impact text-2xl uppercase">Guided Visuals</h3>
               <p className="text-sm font-bold leading-relaxed text-slate-600">Step-by-step behavioral cues for seamless habit change.</p>
             </div>
             <div className="hover-lift scroll-reveal delay-400 rounded-3xl border-3 border-black bg-white p-8">
-              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
+              <div className="icon-badge mb-6 flex items-center justify-center border-2 border-black bg-primary text-white transition-transform duration-300 hover:rotate-12">
                 <span className="material-symbols-outlined">analytics</span>
               </div>
               <h3 className="mb-3 font-impact text-2xl uppercase">Measured Impact</h3>
@@ -450,22 +439,22 @@ export default function Home() {
           </div>
           <div className="grid gap-10 md:grid-cols-3">
             <div className="bold-shadow hover-lift scroll-reveal delay-100 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
-              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-grid transition-transform duration-300 hover:rotate-180">
-                <span className="material-symbols-outlined text-4xl">branding_watermark</span>
+              <div className="icon-badge mb-8 flex items-center justify-center border-3 border-black bg-grid transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined">branding_watermark</span>
               </div>
               <h4 className="mb-4 font-impact text-3xl uppercase">White-Label</h4>
               <p className="font-semibold text-slate-600">Seamless integration into your cafeteria apps and dining ecosystem.</p>
             </div>
             <div className="bold-shadow hover-lift scroll-reveal delay-200 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
-              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-accent transition-transform duration-300 hover:rotate-180">
-                <span className="material-symbols-outlined text-4xl text-white">inventory_2</span>
+              <div className="icon-badge mb-8 flex items-center justify-center border-3 border-black bg-accent transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined text-white">inventory_2</span>
               </div>
               <h4 className="mb-4 font-impact text-3xl uppercase">Inventory Sync</h4>
               <p className="font-semibold text-slate-600">Dynamic swap logic based on your real-time stock levels.</p>
             </div>
             <div className="bold-shadow hover-lift scroll-reveal delay-300 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
-              <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border-3 border-black bg-primary transition-transform duration-300 hover:rotate-180">
-                <span className="material-symbols-outlined text-4xl text-white">groups</span>
+              <div className="icon-badge mb-8 flex items-center justify-center border-3 border-black bg-primary transition-transform duration-300 hover:rotate-180">
+                <span className="material-symbols-outlined text-white">groups</span>
               </div>
               <h4 className="mb-4 font-impact text-3xl uppercase">Org Analytics</h4>
               <p className="font-semibold text-slate-600">Aggregate reports for your sustainability and ESG board meetings.</p>
