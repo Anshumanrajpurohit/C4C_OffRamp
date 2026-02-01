@@ -7,11 +7,26 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+envi
 node_modules
 dist
 dist-ssr
 *.local
 .env*
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
