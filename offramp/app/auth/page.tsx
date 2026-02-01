@@ -1,21 +1,17 @@
 "use client";
 
-<<<<<<< HEAD
-import { useState } from "react";
-=======
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
->>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import Link from "next/link";
 
 export default function AuthPage() {
-<<<<<<< HEAD
-  const [isSignup, setIsSignup] = useState(false);
-  const [name, setName] = useState("");
-=======
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
->>>>>>> e83ac8a6c1fa6b00357056ffbf220d7a339fbe36
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,10 +20,32 @@ export default function AuthPage() {
   const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) {
-      router.replace("/profile-setup");
-    }
-  }, [router, session]);
+    let isMounted = true;
+
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      const active = data.session ?? null;
+      setSession(active);
+      if (active) {
+        router.replace("/profile-setup");
+      }
+    };
+
+    init();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) {
+        router.replace("/profile-setup");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      listener?.subscription?.unsubscribe();
+    };
+  }, [router, supabase]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
