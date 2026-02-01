@@ -1,20 +1,65 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+=======
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
+>>>>>>> 73c80fc205aeda8dc3927909076ab39609542894
 import Link from "next/link";
 
 export default function AuthPage() {
   const router = useRouter();
+<<<<<<< HEAD
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState("");
+=======
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+>>>>>>> 73c80fc205aeda8dc3927909076ab39609542894
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+<<<<<<< HEAD
   const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
+=======
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      const active = data.session ?? null;
+      setSession(active);
+      if (active) {
+        router.replace("/profile-setup");
+      }
+    };
+
+    init();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) {
+        router.replace("/profile-setup");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      listener?.subscription?.unsubscribe();
+    };
+  }, [router, supabase]);
+>>>>>>> 73c80fc205aeda8dc3927909076ab39609542894
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
