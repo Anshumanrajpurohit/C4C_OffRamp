@@ -10,87 +10,82 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 });
 
+// Centralized mock metrics for future API replacement
+const mockMetrics = {
+  impact: {
+    waterSavedML: 1.2,
+    co2AvoidedTons: 450,
+    dailySwaps: 1320,
+    weeklyTransitions: 8420,
+    mealsInfluenced: 18250,
+  },
+  dashboard: {
+    totalSwaps: 128450,
+    ecoScore: 9.2,
+    progressPercent: 75,
+    todaysImpact: 320,
+    monthlySwaps: 28450,
+    avgEcoScoreToday: 9.1,
+  },
+  micro: {
+    liveSwapsNow: 87,
+    campuses: 64,
+  },
+};
+
 export default function Home() {
-  const countersAnimated = useRef(false);
-  const dashboardCountersAnimated = useRef(false);
+  const animatedElements = useRef(new WeakSet<HTMLElement>());
 
   useEffect(() => {
     document.documentElement.classList.add("scroll-smooth");
 
     const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
 
-    const animateCounters = () => {
-      if (countersAnimated.current) return;
-      countersAnimated.current = true;
-
-      const counters = document.querySelectorAll<HTMLElement>(".counter");
-      counters.forEach((counter) => {
-        const target = parseFloat(counter.getAttribute("data-target") || "0");
-        const duration = 2000;
-        const increment = target / (duration / 16);
-        let current = 0;
-
-        const update = () => {
-          current += increment;
-          if (current < target) {
-            counter.textContent = current.toFixed(1);
-            requestAnimationFrame(update);
-          } else {
-            if (target === 450) {
-              counter.textContent = "450 TONS";
-            } else {
-              counter.textContent = "1.2M L";
-            }
-          }
-        };
-
-        requestAnimationFrame(update);
-      });
+    const formatValue = (value: number, format?: string, suffix?: string) => {
+      let formatted = String(value);
+      switch (format) {
+        case "fixed-1":
+          formatted = value.toFixed(1);
+          break;
+        case "fixed-0":
+          formatted = Math.round(value).toString();
+          break;
+        case "int":
+          formatted = Math.round(value).toLocaleString();
+          break;
+        case "compact":
+          formatted = new Intl.NumberFormat("en", {
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(Math.round(value));
+          break;
+        default:
+          formatted = value.toString();
+      }
+      return `${formatted}${suffix || ""}`;
     };
 
-    const animateDashboardCounters = () => {
-      if (dashboardCountersAnimated.current) return;
-      dashboardCountersAnimated.current = true;
+    const animateCounterEl = (el: HTMLElement) => {
+      if (animatedElements.current.has(el)) return;
+      const target = parseFloat(el.dataset.target || "0");
+      const duration = parseInt(el.dataset.duration || "2000", 10);
+      const format = el.dataset.format;
+      const suffix = el.dataset.suffix;
+      let current = 0;
+      const increment = target / Math.max(duration / 16, 1);
 
-      const swapsCounter = document.querySelector<HTMLElement>(".counter-swaps");
-      if (swapsCounter) {
-        const target = parseInt(swapsCounter.getAttribute("data-target") || "0", 10);
-        const duration = 2000;
-        const increment = target / (duration / 16);
-        let current = 0;
+      const update = () => {
+        current += increment;
+        if (current < target) {
+          el.textContent = formatValue(current, format, suffix);
+          requestAnimationFrame(update);
+        } else {
+          el.textContent = formatValue(target, format, suffix);
+          animatedElements.current.add(el);
+        }
+      };
 
-        const updateSwaps = () => {
-          current += increment;
-          if (current < target) {
-            swapsCounter.textContent = Math.floor(current).toLocaleString();
-            requestAnimationFrame(updateSwaps);
-          } else {
-            swapsCounter.textContent = target.toLocaleString();
-          }
-        };
-
-        setTimeout(updateSwaps, 500);
-      }
-
-      const scoreCounter = document.querySelector<HTMLElement>(".counter-score");
-      if (scoreCounter) {
-        const target = parseFloat(scoreCounter.getAttribute("data-target") || "0");
-        const duration = 2000;
-        const increment = target / (duration / 16);
-        let current = 0;
-
-        const updateScore = () => {
-          current += increment;
-          if (current < target) {
-            scoreCounter.textContent = current.toFixed(1);
-            requestAnimationFrame(updateScore);
-          } else {
-            scoreCounter.textContent = target.toFixed(1);
-          }
-        };
-
-        setTimeout(updateScore, 500);
-      }
+      requestAnimationFrame(update);
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -98,24 +93,27 @@ export default function Home() {
         if (entry.isIntersecting) {
           entry.target.classList.add("active");
 
-          if ((entry.target as HTMLElement).classList.contains("impact-card")) {
-            animateCounters();
-          }
+          const counters = entry.target.querySelectorAll<HTMLElement>(
+            ".counter, .counter-swaps, .counter-score, .counter-dashboard, .counter-micro"
+          );
+          counters.forEach(animateCounterEl);
 
-          const progressBar = entry.target.querySelector<HTMLElement>(".progress-bar");
-          if (progressBar) {
+          const progressBars = entry.target.querySelectorAll<HTMLElement>("[data-progress-target]");
+          progressBars.forEach((bar) => {
+            if (animatedElements.current.has(bar)) return;
+            const targetWidth = bar.dataset.progressTarget || "75";
             setTimeout(() => {
-              progressBar.style.width = "75%";
-              progressBar.style.transition = "width 2s ease-out";
+              bar.style.width = `${targetWidth}%`;
+              bar.style.transition = "width 2s ease-out";
             }, 300);
-            animateDashboardCounters();
-          }
+            animatedElements.current.add(bar);
+          });
         }
       });
     }, observerOptions);
 
     const targets = document.querySelectorAll(
-      ".scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .impact-card"
+      ".scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .impact-card, .counter-trigger, .progress-trigger"
     );
     targets.forEach((el) => observer.observe(el));
 
@@ -383,7 +381,12 @@ export default function Home() {
             <div className="mt-12 grid gap-6 sm:grid-cols-2">
               <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-primary p-8 text-white hover-lift">
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">water_drop</span>
-                <div className="counter text-5xl font-impact uppercase" data-target="1.2">
+                <div
+                  className="counter text-5xl font-impact uppercase"
+                  data-target={mockMetrics.impact.waterSavedML}
+                  data-format="fixed-1"
+                  data-suffix="M L"
+                >
                   0
                 </div>
                 <p className="text-xs font-bold uppercase tracking-widest text-white/80">Million Liters Freshwater Saved</p>
@@ -395,10 +398,51 @@ export default function Home() {
                 >
                   co2
                 </span>
-                <div className="counter text-5xl font-impact uppercase" data-target="450">
+                <div
+                  className="counter text-5xl font-impact uppercase"
+                  data-target={mockMetrics.impact.co2AvoidedTons}
+                  data-format="int"
+                  data-suffix=" TONS"
+                >
                   0
                 </div>
                 <p className="text-xs font-bold uppercase tracking-widest text-white/80">Tons CO2 Emissions Avoided</p>
+              </div>
+              <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-secondary p-8 text-white hover-lift">
+                <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">swap_horiz</span>
+                <div
+                  className="counter text-5xl font-impact uppercase"
+                  data-target={mockMetrics.impact.dailySwaps}
+                  data-format="int"
+                  data-suffix=" DAILY"
+                >
+                  0
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Daily Swaps Completed</p>
+              </div>
+              <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-highlight p-8 text-black hover-lift">
+                <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">trending_up</span>
+                <div
+                  className="counter text-5xl font-impact uppercase"
+                  data-target={mockMetrics.impact.weeklyTransitions}
+                  data-format="int"
+                  data-suffix=" /WK"
+                >
+                  0
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-black/80">Weekly Plant-Based Transitions</p>
+              </div>
+              <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-white p-8 text-black hover-lift">
+                <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">restaurant</span>
+                <div
+                  className="counter text-5xl font-impact uppercase"
+                  data-target={mockMetrics.impact.mealsInfluenced}
+                  data-format="int"
+                  data-suffix=" MEALS"
+                >
+                  0
+                </div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Estimated Meals Influenced</p>
               </div>
             </div>
           </div>
@@ -413,19 +457,60 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="space-y-6">
-                  <div className="h-6 overflow-hidden rounded-full border-2 border-black bg-slate-200">
-                    <div className="progress-bar h-full w-0 rounded-full bg-accent" />
+                  <div className="h-6 overflow-hidden rounded-full border-2 border-black bg-slate-200 progress-trigger">
+                    <div className="progress-bar h-full w-0 rounded-full bg-accent" data-progress-target={mockMetrics.dashboard.progressPercent} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL SWAPS</p>
-                      <p className="counter-swaps font-impact text-4xl text-black" data-target="128450">
+                      <p
+                        className="counter counter-swaps font-impact text-4xl text-black"
+                        data-target={mockMetrics.dashboard.totalSwaps}
+                        data-format="int"
+                      >
                         0
                       </p>
                     </div>
                     <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">ECO-SCORE</p>
-                      <p className="counter-score font-impact text-4xl text-accent" data-target="9.2">
+                      <p
+                        className="counter counter-score font-impact text-4xl text-accent"
+                        data-target={mockMetrics.dashboard.ecoScore}
+                        data-format="fixed-1"
+                      >
+                        0
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 counter-trigger">
+                    <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Today's Impact</p>
+                      <p
+                        className="counter counter-dashboard font-impact text-3xl text-black"
+                        data-target={mockMetrics.dashboard.todaysImpact}
+                        data-format="int"
+                        data-suffix=" kcal"
+                      >
+                        0
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">This Month's Swaps</p>
+                      <p
+                        className="counter counter-dashboard font-impact text-3xl text-accent"
+                        data-target={mockMetrics.dashboard.monthlySwaps}
+                        data-format="int"
+                      >
+                        0
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Avg. Eco Score Today</p>
+                      <p
+                        className="counter counter-dashboard font-impact text-3xl text-primary"
+                        data-target={mockMetrics.dashboard.avgEcoScoreToday}
+                        data-format="fixed-1"
+                      >
                         0
                       </p>
                     </div>
@@ -447,6 +532,17 @@ export default function Home() {
           <div className="mb-16 text-center">
             <h2 className="mb-4 font-impact text-6xl uppercase">INSTITUTIONAL GRADE</h2>
             <p className="font-bold uppercase tracking-widest text-slate-500">Scaleable solutions for campuses & corporations</p>
+          </div>
+          <div className="counter-trigger mb-10 flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-600">
+            <span className="material-symbols-outlined text-primary">apartment</span>
+            <span
+              className="counter counter-micro font-impact text-2xl text-primary"
+              data-target={mockMetrics.micro.campuses}
+              data-format="int"
+              data-suffix=" CAMPUSES ONBOARD"
+            >
+              0
+            </span>
           </div>
           <div className="grid gap-10 md:grid-cols-3">
             <div className="bold-shadow hover-lift scroll-reveal delay-100 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
@@ -506,6 +602,17 @@ export default function Home() {
               <button className="w-full rounded-full border-4 border-black bg-white px-12 py-6 text-2xl font-black uppercase text-black transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:w-auto">
                 For Institutions
               </button>
+            </div>
+            <div className="counter-trigger mt-8 flex items-center justify-center gap-3 text-sm font-bold uppercase tracking-widest text-white/80">
+              <span className="material-symbols-outlined text-white">bolt</span>
+              <span
+                className="counter counter-micro font-impact text-2xl text-white"
+                data-target={mockMetrics.micro.liveSwapsNow}
+                data-format="int"
+                data-suffix=" LIVE SWAPS NOW"
+              >
+                0
+              </span>
             </div>
           </div>
         </div>
