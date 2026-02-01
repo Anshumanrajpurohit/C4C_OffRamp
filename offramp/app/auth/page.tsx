@@ -1,191 +1,237 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
-import { getSupabaseBrowserClient } from "../../lib/supabaseClient";
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
+import Link from "next/link";
 
 export default function AuthPage() {
+  const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState("");
   const [session, setSession] = useState<Session | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
+    let isMounted = true;
+
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      const active = data.session ?? null;
+      setSession(active);
+      if (active) {
+        router.replace("/profile-setup");
+      }
+    };
+
+    init();
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
+      if (newSession) {
+        router.replace("/profile-setup");
+      }
     });
+
     return () => {
-      listener.subscription.unsubscribe();
+      isMounted = false;
+      listener?.subscription?.unsubscribe();
     };
-  }, [supabase]);
+  }, [router, supabase]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus("Sending magic link...");
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) {
-      setStatus(error.message);
-    } else {
-      setStatus("Check your email for a magic link.");
-    }
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setStatus("Signed out.");
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setProfileStatus("Saving...");
-    const res = await fetch("/api/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ full_name: fullName, avatar_url: avatarUrl }),
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      setProfileStatus(body.error || "Failed to save profile");
-    } else {
-      setProfileStatus("Profile saved");
-    }
+    setStatus("UI only: authentication will be enabled when backend is connected.");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f9fbf9] via-white to-[#eef6ef] text-[#121716]">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-5 py-10 md:px-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#16695b]/10 text-[#16695b]">
-              <span className="material-symbols-outlined">eco</span>
-            </div>
+    <div className="min-h-screen bg-highlight text-slate-900">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-12">
+        <div className="mb-8 flex w-full items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src="/c4c.webp"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover"
+            />
             <div className="leading-tight">
-              <p className="text-xs font-semibold uppercase text-[#66857f]">OffRamp</p>
-              <p className="text-lg font-bold text-[#121716]">PlantSwap Account</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">OffRamp</p>
+              <p className="text-lg font-impact uppercase text-black">Sign In</p>
             </div>
           </div>
           <Link
             href="/"
-            className="rounded-full border border-[#dce4e3] bg-white px-4 py-2 text-sm font-semibold text-[#16695b] transition hover:border-[#16695b] hover:bg-[#e3ebe9]"
+            className="rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-bold uppercase text-black transition hover:scale-105 hover:bg-black hover:text-white"
           >
             ← Back home
           </Link>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-2xl border border-[#eef2f1] bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-[#66857f]">Sign in</p>
-                <h1 className="text-2xl font-bold text-[#121716]">Magic link login</h1>
-                <p className="text-sm text-[#66857f]">No password. Just your email.</p>
-              </div>
-              <div className="rounded-full bg-[#e3ebe9] px-3 py-1 text-xs font-bold uppercase text-[#16695b]">Secure</div>
+        <div className="bold-shadow w-full max-w-md rounded-[2.5rem] border-3 border-black bg-white p-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-highlight">
+              <span className="material-symbols-outlined text-xl">login</span>
             </div>
+            <h1 className="font-impact text-3xl uppercase text-black">
+              {isSignup ? "Create your account" : "Sign in with email"}
+            </h1>
+            <p className="text-sm font-semibold text-slate-600">
+              {isSignup
+                ? "Join OffRamp to save swaps and track impact."
+                : "Access your swaps, favorites, and impact."}
+            </p>
+          </div>
 
-            <form onSubmit={handleSignIn} className="mt-6 flex flex-col gap-4">
-              <label className="text-sm font-medium text-[#121716]">
-                Work or personal email
+          <form onSubmit={handleSignIn} className="mt-6 flex flex-col gap-4">
+            {isSignup && (
+              <label className="text-sm font-bold text-black">
+                Name
+                <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                  <span className="material-symbols-outlined text-lg text-slate-500">person</span>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
+                  />
+                </div>
+              </label>
+            )}
+
+            <label className="text-sm font-bold text-black">
+              Email
+              <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                <span className="material-symbols-outlined text-lg text-slate-500">mail</span>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="mt-2 w-full rounded-xl border border-[#dce4e3] bg-white px-4 py-3 text-[#121716] shadow-sm focus:border-[#16695b] focus:outline-none"
+                  className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
                 />
-              </label>
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-xl bg-[#16695b] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_-12px_rgba(22,105,91,0.35)] transition hover:-translate-y-[1px] hover:bg-[#104f44]"
-              >
-                Send magic link
-              </button>
-            </form>
-            {status && <p className="mt-3 text-sm text-[#16695b]">{status}</p>}
-          </div>
-
-          <div className="rounded-2xl border border-[#eef2f1] bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#121716]">Session</h2>
-              <button
-                onClick={handleSignOut}
-                className="rounded-full bg-[#f1f5f3] px-3 py-1 text-sm font-semibold text-[#121716] transition hover:bg-[#e3ebe9]"
-              >
-                Sign out
-              </button>
-            </div>
-            <p className="mt-2 text-sm text-[#66857f]">
-              {session ? `Signed in as ${session.user.email}` : "No active session"}
-            </p>
-
-            <div className="mt-6 rounded-xl border border-dashed border-[#dce4e3] bg-[#f9fbf9] p-4 text-sm text-[#66857f]">
-              Use the same email you entered to finish login from your inbox. Magic link works on web and mobile.
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-2xl border border-[#eef2f1] bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-[#66857f]">Profile</p>
-                <h2 className="text-xl font-semibold text-[#121716]">Personalize your swaps</h2>
-                <p className="text-sm text-[#66857f]">Update your display name and avatar. Requires an active session.</p>
               </div>
-              <span className="rounded-full bg-[#f1f5f3] px-3 py-1 text-xs font-semibold text-[#16695b]">Optional</span>
-            </div>
-            <form onSubmit={handleSaveProfile} className="mt-6 flex flex-col gap-4">
-              <label className="text-sm font-medium text-[#121716]">
-                Full name
+            </label>
+
+            <label className="text-sm font-bold text-black">
+              Password
+              <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                <span className="material-symbols-outlined text-lg text-slate-500">lock</span>
                 <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-[#dce4e3] bg-white px-4 py-3 text-[#121716] shadow-sm focus:border-[#16695b] focus:outline-none"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
                 />
-              </label>
-              <label className="text-sm font-medium text-[#121716]">
-                Avatar URL
-                <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-[#dce4e3] bg-white px-4 py-3 text-[#121716] shadow-sm focus:border-[#16695b] focus:outline-none"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={!session}
-                className="inline-flex items-center justify-center rounded-xl bg-[#16695b] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_-12px_rgba(22,105,91,0.35)] transition hover:-translate-y-[1px] hover:bg-[#104f44] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Save profile
-              </button>
-            </form>
-            {profileStatus && <p className="mt-3 text-sm text-[#16695b]">{profileStatus}</p>}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="text-slate-500 transition hover:text-black"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <span className="material-symbols-outlined text-lg">visibility</span>
+                </button>
+              </div>
+            </label>
+
+            {isSignup && (
+              <>
+                <label className="text-sm font-bold text-black">
+                  Phone
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                    <span className="material-symbols-outlined text-lg text-slate-500">call</span>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+1 555 123 4567"
+                      className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </label>
+                <label className="text-sm font-bold text-black">
+                  City
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                    <span className="material-symbols-outlined text-lg text-slate-500">location_city</span>
+                    <input
+                      type="text"
+                      required
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Your city"
+                      className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </label>
+              </>
+            )}
+
+            {!isSignup && (
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span>Forgot password?</span>
+                <span className="text-primary">Reset</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="mt-2 inline-flex items-center justify-center rounded-xl border-2 border-black bg-black px-5 py-3 text-sm font-bold uppercase text-white transition hover:-translate-y-[2px] hover:bg-accent hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+            >
+              {isSignup ? "Create account" : "Get Started"}
+            </button>
+          </form>
+
+          {status && <p className="mt-4 text-center text-xs font-semibold text-primary">{status}</p>}
+
+          <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            Or {isSignup ? "sign up" : "sign in"} with
+            <span className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="rounded-2xl border border-[#eef2f1] bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[#121716]">Why sign in?</h3>
-            <ul className="mt-4 space-y-3 text-sm text-[#66857f]">
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-[#16695b]">check_circle</span>
-                <span>Save your favorite swaps and restaurant picks across devices.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-[#16695b]">check_circle</span>
-                <span>Track your water, carbon, and animal impact over time.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-[#16695b]">check_circle</span>
-                <span>Get personalized recommendations based on your cuisine and protein preferences.</span>
-              </li>
-            </ul>
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              className="rounded-xl border-2 border-black bg-white py-2 text-xs font-bold uppercase text-black transition hover:bg-black hover:text-white"
+            >
+              Google
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border-2 border-black bg-white py-2 text-xs font-bold uppercase text-black transition hover:bg-black hover:text-white"
+            >
+              Facebook
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border-2 border-black bg-white py-2 text-xs font-bold uppercase text-black transition hover:bg-black hover:text-white"
+            >
+              Apple
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-xs font-semibold text-slate-600">
+            {isSignup ? "Already have an account?" : "New here?"}
+            <button
+              type="button"
+              onClick={() => setIsSignup((prev) => !prev)}
+              className="ml-2 font-bold uppercase text-primary transition hover:text-accent"
+            >
+              {isSignup ? "Sign in" : "Create account"}
+            </button>
           </div>
         </div>
       </div>
