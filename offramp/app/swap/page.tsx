@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { useSearchParams } from "next/navigation";
+import { findReplacementGroups, DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
+import { DishDetail } from "../components/DishDetail";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -135,6 +137,8 @@ const dishes: Dish[] = [
 
 export default function SwapPage() {
   const [query, setQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
   const searchParams = useSearchParams();
   const demoParam = searchParams.get("demo");
   const isDemoTable = demoParam === "1" || demoParam === "2";
@@ -152,20 +156,58 @@ export default function SwapPage() {
   const cuisineOptions = ["Tamil", "Telugu", "Kerala", "Hyderabadi", "Punjabi", "Gujarati"];
   const allergyOptions = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
   const tasteOptions = ["Spicy", "Savory", "Umami", "Sweet", "Tangy"];
+
+  // Search suggestions from static dishes for autocomplete
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
-    return dishes
-      .map((d) => d.name)
-      .filter((name) => name.toLowerCase().includes(query.trim().toLowerCase()))
-      .slice(0, 6);
+    const lower = query.trim().toLowerCase();
+    // Also include common non-veg keywords for swap suggestions
+    const nonVegKeywords = ["chicken", "mutton", "fish", "prawn", "egg", "beef", "lamb", "biryani", "kebab", "tikka"];
+    const matchingNonVeg = nonVegKeywords.filter((kw) => kw.includes(lower) || lower.includes(kw));
+    const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
+    return [...new Set([...matchingNonVeg, ...dishNames])].slice(0, 6);
   }, [query]);
+
+  // Use the swap engine to find plant-based alternatives
+  const swapResults = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return findReplacementGroups(searchTerm);
+  }, [searchTerm]);
+
+  const hasSwapResults = swapResults.length > 0;
+
+  // Handle search submission
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  // Handle dish selection
+  const handleSelectDish = (dish: DishDetailType) => {
+    setSelectedDish(dish);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Handle back from dish detail
+  const handleBackFromDetail = () => {
+    setSelectedDish(null);
+  };
+
+  // Map catalog dishes to card format for recommended section
+  const recommended = useMemo(() => DISH_CATALOG.slice(0, 6).map((d) => ({
+    id: d.slug,
+    name: d.name,
+    image: d.image,
+    rating: d.rating ?? 4.8,
+    reviewCount: d.reviews ?? 500,
+    restaurant: d.region,
+    category: d.course,
+    detail: d,
+  })), []);
 
   const filteredTopPicks = useMemo(() => {
     if (!query.trim()) return dishes.slice(0, 8);
     return dishes.filter((d) => d.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8);
   }, [query]);
-
-  const recommended = useMemo(() => dishes.slice(2, 8), []);
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
@@ -195,6 +237,36 @@ export default function SwapPage() {
     setPrefSaved("Preferences saved for this demo session.");
     setTimeout(() => setPrefSaved(""), 3200);
   };
+
+  // If a dish is selected, show the detail view
+  if (selectedDish) {
+    return (
+      <main className={`${jakarta.className} ${impact.variable} min-h-screen bg-highlight text-slate-900`}>
+        <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+            <div className="group flex items-center gap-2">
+              <img
+                src="/c4c.webp"
+                alt="OffRamp logo"
+                className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+              />
+              <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
+            </div>
+            <button
+              onClick={handleBackFromDetail}
+              className="flex items-center gap-2 rounded-full border-2 border-black bg-white px-6 py-2 text-sm font-bold uppercase transition hover:bg-black hover:text-white"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              Back to Search
+            </button>
+          </div>
+        </nav>
+        <div className="mx-auto max-w-6xl px-6 py-8">
+          <DishDetail dish={selectedDish} onBack={handleBackFromDetail} />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={`${jakarta.className} ${impact.variable} min-h-screen bg-highlight text-slate-900`}>
@@ -269,7 +341,7 @@ export default function SwapPage() {
             </div>
           </div>
 
-          <div className="relative flex justify-center">
+          {/* <div className="relative flex justify-center">
             <div className="relative w-full max-w-[420px] rotate-2 rounded-[3rem] border-4 border-black bg-black p-4 shadow-2xl transition-transform duration-500 hover:scale-105 hover:rotate-0">
               <div className="relative aspect-[9/19] overflow-hidden rounded-[2.5rem] bg-white">
                 <div className="flex h-full flex-col p-6">
@@ -312,40 +384,58 @@ export default function SwapPage() {
               </div>
             </div>
             <div className="absolute -z-10 top-1/2 left-1/2 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-grid opacity-50 grid-pattern animate-pulse-slow" />
-          </div>
+          </div> */}
         </div>
       </section>
 
       <section id="search" className="px-6 pb-6">
         <div className="mx-auto max-w-6xl">
           <div className="relative mb-4">
-            <div className="flex items-center gap-3 rounded-2xl border-3 border-black bg-white px-5 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSearch(query);
+              }}
+              className="flex items-center gap-3 rounded-2xl border-3 border-black bg-white px-5 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            >
               <span className="material-symbols-outlined text-xl text-slate-500">search</span>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for a dish (e.g. Paneer Tikka, Biryani, Stir Fry)"
+                placeholder="Search your favorite dish (e.g., Chicken Biryani, Mutton Curry)"
                 className="w-full bg-transparent text-base font-semibold text-black placeholder:text-slate-400 focus:outline-none"
               />
               {query && (
                 <button
                   type="button"
-                  onClick={() => setQuery("")}
+                  onClick={() => {
+                    setQuery("");
+                    setSearchTerm("");
+                  }}
                   className="text-slate-500 transition hover:text-black"
                   aria-label="Clear search"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>
               )}
-            </div>
-            {suggestions.length > 0 && (
+              <button
+                type="submit"
+                className="rounded-xl border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white transition hover:bg-accent"
+              >
+                Find Swaps
+              </button>
+            </form>
+            {suggestions.length > 0 && !searchTerm && (
               <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <ul className="divide-y divide-black/10">
                   {suggestions.map((sugg) => (
                     <li key={sugg}>
                       <button
                         type="button"
-                        onClick={() => setQuery(sugg)}
+                        onClick={() => {
+                          setQuery(sugg);
+                          handleSearch(sugg);
+                        }}
                         className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-highlight"
                       >
                         {sugg}
@@ -360,6 +450,56 @@ export default function SwapPage() {
         </div>
       </section>
 
+      {/* Swap Results Section */}
+      {hasSwapResults && (
+        <section id="swap-results" className="px-6 pb-12">
+          <div className="mx-auto max-w-6xl space-y-6">
+            {swapResults.map((group) => (
+              <div key={group.id} className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
+                        Plant-based alternative for "{searchTerm}"
+                      </span>
+                    </div>
+                    <p className="font-impact text-4xl uppercase text-black">{group.title}</p>
+                    <p className="text-sm font-semibold text-slate-600">{group.description}</p>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    {group.dishes.length} swap{group.dishes.length !== 1 ? "s" : ""} found
+                  </span>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.dishes.map((dish) => (
+                    <SwapResultCard key={dish.slug} dish={dish} onSelect={() => handleSelectDish(dish)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Ethical Micro-Feedback */}
+            <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-4 text-center">
+              <p className="text-sm font-medium text-primary">
+                🌱 Small swaps like these reduce environmental impact without changing what you love to eat.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* No Results Message */}
+      {searchTerm && !hasSwapResults && (
+        <section className="px-6 pb-12">
+          <div className="mx-auto max-w-2xl rounded-2xl border-3 border-black bg-white px-6 py-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <p className="font-impact text-2xl uppercase text-black">No swaps found for "{searchTerm}"</p>
+            <p className="mt-2 text-sm font-semibold text-slate-600">
+              Try searching for dishes like Chicken Biryani, Mutton Curry, Fish Fry, or Egg Bhurji to see plant-based alternatives.
+            </p>
+          </div>
+        </section>
+      )}
+
       <section id="recommended" className="px-6 pb-12">
         <div className="mx-auto max-w-6xl space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -371,7 +511,7 @@ export default function SwapPage() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {recommended.map((dish) => (
-              <RecommendedCard key={dish.id} dish={dish} />
+              <RecommendedCard key={dish.id} dish={dish} onSelect={() => handleSelectDish(dish.detail)} />
             ))}
           </div>
         </div>
@@ -767,7 +907,7 @@ export default function SwapPage() {
 
 function DishCard({ dish }: { dish: Dish }) {
   return (
-    <div className="group relative w-72 shrink-0 snap-start overflow-hidden rounded-3xl border-3 border-black bg-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
+    <div className="group relative w-72 shrink-0 cursor-pointer snap-start overflow-hidden rounded-3xl border-3 border-black bg-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
       <div className="relative h-56 w-full overflow-hidden">
         <Image
           src={dish.image}
@@ -794,9 +934,24 @@ function DishCard({ dish }: { dish: Dish }) {
   );
 }
 
-function RecommendedCard({ dish }: { dish: Dish }) {
+type RecommendedCardDish = {
+  id: string;
+  name: string;
+  image: string;
+  rating: number;
+  reviewCount: number;
+  restaurant: string;
+  category: string;
+  detail: DishDetailType;
+};
+
+function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSelect: () => void }) {
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-3xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+    <button
+      type="button"
+      onClick={onSelect}
+      className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
+    >
       <div className="relative h-48 w-full overflow-hidden bg-black">
         <Image
           src={dish.image}
@@ -806,6 +961,9 @@ function RecommendedCard({ dish }: { dish: Dish }) {
           className="object-cover transition duration-300 group-hover:scale-105"
         />
         <div className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-xs font-bold uppercase text-white">{dish.category}</div>
+        <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase text-white">
+          🌿 Plant-based
+        </div>
       </div>
       <div className="flex flex-1 flex-col justify-between px-4 py-4 text-slate-900">
         <div className="space-y-2">
@@ -817,7 +975,49 @@ function RecommendedCard({ dish }: { dish: Dish }) {
           <span className="text-slate-500">{dish.reviewCount.toLocaleString()} reviews</span>
         </div>
       </div>
-    </div>
+    </button>
+  );
+}
+
+// Swap result card for search results
+function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
+    >
+      <div className="relative h-48 w-full overflow-hidden bg-black">
+        <Image
+          src={dish.image}
+          alt={dish.name}
+          fill
+          sizes="320px"
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+        <div className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
+          🌿 Plant-based swap
+        </div>
+        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
+          💧 Water saved · 🌍 CO₂ reduced
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col justify-between px-4 py-4 text-slate-900">
+        <div className="space-y-2">
+          <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
+          <p className="text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
+          <p className="text-xs text-slate-500">
+            Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
+          </p>
+        </div>
+        <div className="mt-3 flex items-center justify-between text-sm font-bold text-slate-700">
+          <span className="flex items-center gap-1 rounded-full bg-highlight px-3 py-1">⭐ {(dish.rating ?? 4.8).toFixed(1)}</span>
+          <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+            View Recipe →
+          </span>
+        </div>
+      </div>
+    </button>
   );
 }
 

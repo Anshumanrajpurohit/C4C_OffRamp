@@ -1,4 +1,4 @@
-import type { DishDetail } from "../../lib/dishes";
+import type { DishDetail } from "../../../lib/dishes";
 
 export type ResultGroup = {
   id: string;

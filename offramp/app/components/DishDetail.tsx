@@ -110,14 +110,23 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
 
         <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-8 flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-[#136c56]">
-                <span className="text-sm">★</span>
-                <span className="text-sm font-bold">{rating.toFixed(1)}</span>
-                <button className="text-sm text-[#65867e] underline decoration-dotted">({reviews.toLocaleString()} reviews)</button>
+            <div className="flex flex-col gap-3">
+              {/* Metadata row */}
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="rounded-full bg-[#f0f4f3] px-3 py-1 font-semibold text-[#325042]">
+                  {dish.course} · {dish.region}
+                </span>
+                <div className="flex items-center gap-1 text-[#136c56]">
+                  <span className="text-sm">★</span>
+                  <span className="font-bold">{rating.toFixed(1)}</span>
+                  <button className="text-[#65867e] underline decoration-dotted">({reviews.toLocaleString()} reviews)</button>
+                </div>
+                <span className="flex items-center gap-1 rounded-full bg-[#136c56] px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  🔥 Trending in {trendingCity}
+                </span>
               </div>
               <h1 className="text-3xl font-black tracking-tight text-[#1f2c22] md:text-4xl">
-                The Ultimate <span className="text-[#136c56]">{firstWord}</span>{restName ? ` ${restName}` : ""}.
+                🥘 The Ultimate <span className="text-[#136c56]">{firstWord}</span>{restName ? ` ${restName}` : ""}.
               </h1>
             </div>
 
@@ -245,10 +254,17 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.28 }}
             >
+              <div className="mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-[#136c56]">🌿 Impact at a Glance</h3>
+              </div>
               <div className="grid gap-4 md:grid-cols-3">
-                {[{ label: "Animal Saved", value: "1" }, { label: "Water Saved", value: "900L" }, { label: "CO2 Reduced", value: "2.5kg" }].map((card) => (
-                  <div key={card.label} className="flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 shadow-sm">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-[#136c56]/15 via-[#f6e6d8]/40 to-[#136c56]/10 text-[#136c56]">🌿</div>
+                {[
+                  { label: "Animal Saved", value: "1", icon: "🐄" },
+                  { label: "Water Saved", value: "900L", icon: "💧" },
+                  { label: "CO₂ Reduced", value: "2.5kg", icon: "🌍" },
+                ].map((card) => (
+                  <div key={card.label} className="flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 shadow-sm transition hover:scale-[1.02]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-[#136c56]/15 via-[#f6e6d8]/40 to-[#136c56]/10 text-lg">{card.icon}</div>
                     <div>
                       <p className="text-xl font-black leading-tight text-[#0f3d23]">{card.value}</p>
                       <p className="text-xs font-semibold text-[#136c56] uppercase">{card.label}</p>
@@ -256,6 +272,93 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
                   </div>
                 ))}
               </div>
+              <p className="mt-3 text-xs font-medium text-[#136c56]/80 italic">Because food choices quietly run the planet.</p>
+            </motion.div>
+
+            {/* User Reviews Section */}
+            <motion.div
+              className="rounded-2xl border border-[#e5e8e6] bg-white px-5 py-5 shadow-sm"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32 }}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-[#1f2c22]">💬 What People Say</h3>
+                <span className="text-xs font-semibold text-[#65867e]">{reviews.toLocaleString()} reviews</span>
+              </div>
+              <p className="mb-4 text-sm font-medium text-[#65867e] italic">From people who expected compromise and got flavor instead.</p>
+              <div className="space-y-3">
+                {[
+                  { name: "Priya M.", rating: 5, text: "Never thought I'd enjoy a plant-based version this much. The texture is spot on!", time: "2 days ago" },
+                  { name: "Arjun K.", rating: 5, text: "My family couldn't tell the difference. Will definitely make this again.", time: "1 week ago" },
+                  { name: "Sneha R.", rating: 4, text: "Great swap for weeknight dinners. Quick and satisfying.", time: "2 weeks ago" },
+                ].map((review, idx) => (
+                  <div key={idx} className="rounded-xl border border-dashed border-[#e5e8e6] px-4 py-3 transition hover:border-[#136c56]/30">
+                    <div className="mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f4f3] text-xs font-bold text-[#136c56]">{review.name.charAt(0)}</div>
+                        <span className="text-sm font-semibold text-[#1f2c22]">{review.name}</span>
+                        <span className="text-xs text-[#136c56]">{"★".repeat(review.rating)}</span>
+                      </div>
+                      <span className="text-xs text-[#65867e]">{review.time}</span>
+                    </div>
+                    <p className="text-sm text-[#325042]">{review.text}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Why Small Swaps Matter - Ethical Transparency Section */}
+            <motion.div
+              className="rounded-2xl border border-[#136c56]/20 bg-gradient-to-br from-[#e8f5ef] to-[#f6f9f7] px-5 py-5 shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.36 }}
+            >
+              <details className="group">
+                <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-[#136c56]">
+                  <span className="flex items-center gap-2">
+                    <span>🧠</span>
+                    Why Small Swaps Matter
+                  </span>
+                  <span className="text-xs font-semibold text-[#2f6b4a] transition group-open:rotate-180">▼</span>
+                </summary>
+                <div className="mt-4 space-y-4">
+                  <p className="text-sm leading-relaxed text-[#325042]">
+                    Food systems contribute heavily to climate change, water depletion, and animal suffering. 
+                    OffRamp enables ethical food choices without forcing lifestyle changes—by helping you make familiar swaps with measurable impact.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl bg-white/80 px-3 py-3 text-center shadow-sm">
+                      <p className="text-2xl font-black text-[#136c56]">2,847</p>
+                      <p className="text-xs font-semibold uppercase text-[#65867e]">Meals swapped this week</p>
+                    </div>
+                    <div className="rounded-xl bg-white/80 px-3 py-3 text-center shadow-sm">
+                      <p className="text-2xl font-black text-[#136c56]">1.2M L</p>
+                      <p className="text-xs font-semibold uppercase text-[#65867e]">Total water saved</p>
+                    </div>
+                    <div className="rounded-xl bg-white/80 px-3 py-3 text-center shadow-sm">
+                      <p className="text-2xl font-black text-[#136c56]">4.8T</p>
+                      <p className="text-xs font-semibold uppercase text-[#65867e]">CO₂ avoided</p>
+                    </div>
+                  </div>
+                  <p className="text-xs font-medium text-[#65867e] italic">
+                    Every swap counts. No guilt, no pressure—just data-driven choices.
+                  </p>
+                </div>
+              </details>
+            </motion.div>
+
+            {/* Ethical Micro-Feedback */}
+            <motion.div
+              className="rounded-xl bg-[#fef9f4] px-4 py-3 text-center shadow-sm ring-1 ring-[#f6e6d8]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <p className="text-sm font-medium text-[#8b7355]">
+                🌱 Small swaps like these reduce environmental impact without changing what you love to eat.
+              </p>
             </motion.div>
           </div>
 
@@ -297,13 +400,17 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.24 }}
             >
-              <div className="rounded-2xl border border-[#e5e8e6] bg-white px-4 py-4 text-center shadow-sm">
+              <div className="rounded-2xl border border-[#e5e8e6] bg-white px-4 py-4 text-center shadow-sm transition hover:shadow-md">
                 <span className="text-3xl font-black text-[#1f2c22]">{calories}</span>
                 <div className="text-xs font-bold uppercase tracking-wide text-[#65867e]">Calories</div>
               </div>
-              <div className="rounded-2xl border border-[#e5e8e6] bg-white px-4 py-4 text-center shadow-sm">
+              <div className="rounded-2xl border border-[#e5e8e6] bg-white px-4 py-4 text-center shadow-sm transition hover:shadow-md">
                 <span className="text-3xl font-black text-[#1f2c22]">{protein}</span>
                 <div className="text-xs font-bold uppercase tracking-wide text-[#65867e]">Protein</div>
+              </div>
+              <div className="col-span-2 rounded-2xl border border-[#e5e8e6] bg-white px-4 py-4 text-center shadow-sm transition hover:shadow-md">
+                <span className="text-3xl font-black text-[#1f2c22]">{fiber}</span>
+                <div className="text-xs font-bold uppercase tracking-wide text-[#65867e]">Fiber</div>
               </div>
             </motion.div>
 
@@ -351,7 +458,9 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
                       </a>
                     </div>
                   ))}
-                  <div className="text-[#c76a2b] text-sm">You save with every vegan swap.</div>
+                  <div className="text-[#c76a2b] text-sm font-semibold">
+                    💸 You save every time you choose plant-based.
+                  </div>
                 </div>
               </details>
             </motion.div>
@@ -362,16 +471,67 @@ export function DishDetail({ dish, onCook, onBack }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.32 }}
             >
-              <h3 className="text-sm font-bold text-gray-700">Need to go back?</h3>
+              <h3 className="text-sm font-bold text-gray-700">← Return to Results</h3>
               <button
-                className="mt-3 w-full rounded-full border border-[#2f6b4a] px-4 py-2 text-sm font-semibold text-[#2f6b4a]"
+                className="mt-3 w-full rounded-full border border-[#2f6b4a] px-4 py-2 text-sm font-semibold text-[#2f6b4a] transition hover:bg-[#2f6b4a] hover:text-white"
                 onClick={onBack}
               >
-                Return to results
+                Back to search
               </button>
             </motion.div>
           </div>
         </div>
+
+        {/* More Plant-Based Picks - Horizontal Scrollable */}
+        <motion.div
+          className="mt-6"
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-[#1f2c22]">🌱 More Plant-Based Picks</h3>
+            <span className="text-xs font-semibold text-[#65867e]">Scroll to explore</span>
+          </div>
+          <div className="relative -mx-2 overflow-x-auto pb-4" style={{ scrollBehavior: "smooth" }}>
+            <div className="flex gap-4 px-2">
+              {smartSwapItems.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`group flex w-56 shrink-0 flex-col rounded-2xl border shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                    item.highlight
+                      ? "border-[#136c56] bg-gradient-to-br from-[#e8f5ef] to-white"
+                      : "border-[#e5e8e6] bg-white"
+                  }`}
+                >
+                  <div className="relative h-32 w-full overflow-hidden rounded-t-2xl bg-[#f0f4f3]">
+                    <div
+                      className="h-full w-full bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                      style={{ backgroundImage: `url(${dish.image})` }}
+                    />
+                    {item.highlight && (
+                      <span className="absolute left-2 top-2 rounded-full bg-[#136c56] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                        Current pick
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between px-3 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-[#1f2c22]">{item.name}</p>
+                      <p className="text-xs text-[#65867e]">{item.price}</p>
+                    </div>
+                    <span className="mt-2 inline-flex items-center justify-center rounded-full border border-[#136c56] px-3 py-1.5 text-xs font-bold text-[#136c56] transition group-hover:bg-[#136c56] group-hover:text-white">
+                      Buy on Swiggy →
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       <div className="pointer-events-none fixed bottom-6 right-6 z-40">
