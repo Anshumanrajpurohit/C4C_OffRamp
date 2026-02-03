@@ -12,31 +12,65 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const demoAccounts = [
-      { email: "demo@offramp.app", password: "offramptest123", flag: "1" },
-      { email: "demo2@offramp.app", password: "offramptest456", flag: "2" },
-      { email: "demoform@offramp.app", password: "offramptest789", flag: "3" },
-    ];
+    setStatus(null);
+    setStatusType(null);
+    setIsSubmitting(true);
 
-    const match = demoAccounts.find(
-      (acct) => email.trim().toLowerCase() === acct.email && password === acct.password
-    );
+    const payload: Record<string, string> = {
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+    };
 
-    if (match) {
-      setStatusType("success");
-      setStatus("Logged in successfully. Redirecting to swaps...");
-      router.push(`/swap?demo=${match.flag}#preferences`);
-      return;
+    if (isSignup) {
+      payload.fullName = name.trim();
+      if (phone.trim()) payload.phone = phone.trim();
+      if (city.trim()) payload.city = city.trim();
+      if (region.trim()) payload.region = region.trim();
     }
 
-    setStatusType("error");
-    setStatus("Incorrect email or password.");
+    try {
+      const response = await fetch(isSignup ? "/api/auth/register" : "/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let result: any = null;
+
+      try {
+        result = await response.json();
+      } catch {
+        // Ignore JSON parse errors here; we handle below.
+      }
+
+      if (!response.ok) {
+        const message = result?.error || "Authentication failed";
+        throw new Error(message);
+      }
+
+      setStatusType("success");
+      setStatus(result?.message || (isSignup ? "Account created successfully" : "Logged in"));
+
+      setTimeout(() => {
+        router.push("/swap");
+      }, 300);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Authentication failed";
+      setStatusType("error");
+      setStatus(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,10 +111,10 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSignIn} className="mt-6 flex flex-col gap-4">
+          <form onSubmit={handleAuth} className="mt-6 flex flex-col gap-4">
             {isSignup && (
               <label className="text-sm font-bold text-black">
-                Name
+                Full name
                 <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
                   <span className="material-symbols-outlined text-lg text-slate-500">person</span>
                   <input
@@ -136,12 +170,11 @@ export default function AuthPage() {
             {isSignup && (
               <>
                 <label className="text-sm font-bold text-black">
-                  Phone
+                  Phone (optional)
                   <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
                     <span className="material-symbols-outlined text-lg text-slate-500">call</span>
                     <input
                       type="tel"
-                      required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+1 555 123 4567"
@@ -150,15 +183,27 @@ export default function AuthPage() {
                   </div>
                 </label>
                 <label className="text-sm font-bold text-black">
-                  City
+                  City (optional)
                   <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
                     <span className="material-symbols-outlined text-lg text-slate-500">location_city</span>
                     <input
                       type="text"
-                      required
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Your city"
+                      className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </label>
+                <label className="text-sm font-bold text-black">
+                  Region (optional)
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
+                    <span className="material-symbols-outlined text-lg text-slate-500">public</span>
+                    <input
+                      type="text"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      placeholder="e.g. South India"
                       className="w-full bg-transparent text-sm text-black placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
@@ -175,9 +220,14 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              className="mt-2 inline-flex items-center justify-center rounded-xl border-2 border-black bg-black px-5 py-3 text-sm font-bold uppercase text-white transition hover:-translate-y-[2px] hover:bg-accent hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              disabled={isSubmitting}
+              className="mt-2 inline-flex items-center justify-center rounded-xl border-2 border-black bg-black px-5 py-3 text-sm font-bold uppercase text-white transition hover:-translate-y-[2px] hover:bg-accent hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-black disabled:hover:shadow-none"
             >
-              {isSignup ? "Create account" : "Get Started"}
+              {isSubmitting
+                ? "Please wait..."
+                : isSignup
+                  ? "Create account"
+                  : "Get Started"}
             </button>
           </form>
 

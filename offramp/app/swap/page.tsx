@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { useSearchParams } from "next/navigation";
 import { findReplacementGroups, DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
+import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -135,7 +136,7 @@ const dishes: Dish[] = [
   },
 ];
 
-export default function SwapPage() {
+function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
@@ -306,13 +307,7 @@ export default function SwapPage() {
                 Demo
               </div>
             ) : (
-              <Link
-                href="/auth"
-                className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
-              >
-                <span className="material-symbols-outlined text-base">login</span>
-                Log In
-              </Link>
+              <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" />
             )}
           </div>
         </div>
@@ -1029,5 +1024,13 @@ function ChecklistRow({ label, value, note, status }: { label: string; value: st
       <span className="hidden text-slate-600 sm:block">{note}</span>
       <span className="hidden rounded-full bg-highlight px-3 py-1 text-xs font-black uppercase text-primary sm:inline-block">{status}</span>
     </div>
+  );
+}
+
+export default function SwapPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-highlight" aria-live="polite" />}>
+      <SwapPageInner />
+    </Suspense>
   );
 }

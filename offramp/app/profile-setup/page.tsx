@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
+import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -187,13 +188,7 @@ export default function ProfileSetupPage() {
             </a>
           </div>
           <div className="flex items-center gap-4">
-            <a
-              href="/auth"
-              className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex"
-            >
-              <span className="material-symbols-outlined text-base">login</span>
-              Log In
-            </a>
+            <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" userHref="/profile-setup" userLabelPrefix="Hi" />
           </div>
         </div>
       </nav>

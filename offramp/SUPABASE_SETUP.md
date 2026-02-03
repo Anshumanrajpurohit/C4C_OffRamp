@@ -47,7 +47,45 @@ create policy "Users can update their own profile"
 create policy "Users can insert their own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
+
+-- Store password hashes for custom verification (matches current API expectations)
+create table if not exists public.users (
+  id uuid not null default gen_random_uuid(),
+  full_name text not null,
+  email text not null unique,
+  password_hash text not null,
+  phone text,
+  region text,
+  budget_level text check (budget_level in ('low', 'medium', 'high')),
+  city text default 'Bangalore',
+  created_at timestamptz default timezone('utc'::text, now()),
+  primary key (id)
+);
+
+alter table public.users enable row level security;
+
+create policy "Only service role can read"
+  on public.users for select
+  using (auth.role() = 'service_role');
+
+create policy "Only service role can insert"
+  on public.users for insert
+  with check (auth.role() = 'service_role');
+
 ```
+
+## 🔐 Required Environment Variables
+
+Add the following to your `.env.local` (values from your Supabase dashboard):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+If you prefer private names, the app will also accept `SUPABASE_URL` and `SUPABASE_ANON_KEY` as fallbacks. The publishable key takes precedence when present so browser + RSC clients always use a scoped credential. The service role key is only accessed inside API routes to hash and verify passwords in the `users` table—never expose it to the browser.
 
 ## 📧 Email Configuration
 
@@ -61,30 +99,27 @@ To test magic link authentication:
 ## 🚀 Test Your Auth Flow
 
 1. Start your dev server:
-   ```bash
-   npm run dev
-   ```
+  ```bash
+  npm run dev
+  ```
 
-2. Navigate to: `http://localhost:3000/auth`
+2. Visit `http://localhost:3000/auth`
 
-3. Enter your email and click "Send magic link"
+3. Create an account with Name, Email, Password, and optional details
 
-4. Check your email for the magic link
+4. After registering, sign in using the same credentials
 
-5. Click the link to complete authentication
-
-6. Once signed in, you can update your profile (name and avatar)
+5. Update your profile or preferences to confirm the authenticated APIs work end-to-end
 
 ## 🎯 Features
 
 Your auth system now includes:
 
-- ✅ Magic link (passwordless) authentication
-- ✅ Session management with automatic refresh
-- ✅ Profile creation and updates
-- ✅ Row Level Security (RLS) for data protection
-- ✅ Proper error handling
-- ✅ Client and server-side authentication helpers
+- ✅ Email + password sign-up and login powered by Supabase Auth
+- ✅ Automatic session cookies managed by Supabase SSR helpers
+- ✅ Profile creation and updates backed by Row Level Security
+- ✅ Robust validation and error handling in API routes
+- ✅ Client and server-side authentication helpers ready for reuse
 
 ## 📝 Files Modified
 
@@ -98,4 +133,4 @@ Your auth system now includes:
 - Never commit your `.env` file (already in `.gitignore`)
 - The anon key is safe to use in client-side code
 - RLS policies ensure users can only access their own data
-- Service role key (if you add one later) should NEVER be exposed client-side
+- If you later add a service role key for admin tasks, keep it on the server only

@@ -1,10 +1,10 @@
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getSupabaseUrl, getSupabaseAnonKey } from "./supabaseConfig";
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabaseConfig";
 
-export async function createSupabaseServerClient(): Promise<SupabaseClient> {
-  const cookieStore = await cookies();
+type CookieStore = Awaited<ReturnType<typeof import("next/headers").cookies>>;
+
+export const createClient = (cookieStore: CookieStore): SupabaseClient => {
   return createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
@@ -14,16 +14,11 @@ export async function createSupabaseServerClient(): Promise<SupabaseClient> {
         cookiesToSet.forEach(({ name, value, options }) => {
           try {
             cookieStore.set(name, value, options);
-          } catch (error) {
-            console.error("Failed to set cookie", error);
+          } catch {
+            // Ignore set errors when invoked inside server components where cookies are read-only
           }
         });
       },
     },
   });
-}
-
-// Alias for convenience
-export async function getSupabaseServerClient(): Promise<SupabaseClient> {
-  return createSupabaseServerClient();
-}
+};

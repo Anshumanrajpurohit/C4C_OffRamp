@@ -26,6 +26,7 @@ export type DishDetail = {
   fiber?: string;
   priceOriginal?: string;
   priceSwap?: string;
+  estimatedCost?: string;
 };
 
 export type ReplacementCategory = {
