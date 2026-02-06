@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const sans = Inter({
@@ -31,6 +32,54 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0"
         />
+        <Script id="strip-fdprocessedid" strategy="beforeInteractive">
+          {`
+            (function(){
+              var ATTR = "fdprocessedid";
+              var disconnectTimer;
+              function scrub(node){
+                if (!node || typeof node.querySelectorAll !== "function") return;
+                node.querySelectorAll("[" + ATTR + "]").forEach(function(el){
+                  el.removeAttribute(ATTR);
+                });
+              }
+              function removeAttribute(target){
+                if (target && typeof target.removeAttribute === "function" && target.hasAttribute(ATTR)) {
+                  target.removeAttribute(ATTR);
+                }
+              }
+              function startObserver(){
+                if (typeof document === "undefined") return;
+                var root = document.documentElement;
+                removeAttribute(root);
+                scrub(root);
+                var observer = new MutationObserver(function(mutations){
+                  mutations.forEach(function(mutation){
+                    if (mutation.type === "attributes" && mutation.attributeName === ATTR) {
+                      removeAttribute(mutation.target);
+                    }
+                    if (mutation.type === "childList") {
+                      mutation.addedNodes.forEach(function(node){
+                        if (node.nodeType === 1) {
+                          removeAttribute(node);
+                          scrub(node);
+                        }
+                      });
+                    }
+                  });
+                });
+                observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: [ATTR] });
+                var stop = function(){
+                  observer.disconnect();
+                  if (disconnectTimer) clearTimeout(disconnectTimer);
+                };
+                window.addEventListener("load", stop, { once: true });
+                disconnectTimer = window.setTimeout(stop, 7000);
+              }
+              startObserver();
+            })();
+          `}
+        </Script>
       </head>
       <body
         suppressHydrationWarning

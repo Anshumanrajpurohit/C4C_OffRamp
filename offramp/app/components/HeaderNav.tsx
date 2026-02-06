@@ -55,7 +55,7 @@ export function HeaderNav({ onLogin, onSearch }: Props) {
           />
         </div>
         <Link
-          href="/preferences"
+          href="/profile"
           className="rounded-full bg-[#2f6b4a] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-95"
         >
           Profile

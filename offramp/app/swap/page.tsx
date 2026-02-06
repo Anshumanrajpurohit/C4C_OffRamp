@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
@@ -23,6 +23,25 @@ type Dish = {
   reviewCount: number;
   restaurant: string;
   category: string;
+};
+
+type SortOption = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+type FilterOption = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+type DishMeta = {
+  freshnessIndex: number;
+  rating: number;
+  reviews: number;
+  swapCost: number | null;
 };
 
 const dishes: Dish[] = [
@@ -136,6 +155,40 @@ const dishes: Dish[] = [
   },
 ];
 
+const jainKeywords = ["jain", "satvik", "no onion", "no garlic"];
+
+const parsePriceToNumber = (value?: string | null): number | null => {
+  if (!value) return null;
+  const numeric = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isNaN(numeric) ? null : numeric;
+};
+
+const formatMinutesLabel = (value?: string | null) => {
+  if (!value) return "— min";
+  const match = value.match(/\d+/);
+  return match ? `${match[0]} min` : value;
+};
+
+const formatCaloriesLabel = (value?: string | null) => {
+  if (!value) return "— kcal";
+  const numeric = value.replace(/[^0-9]/g, "");
+  return numeric ? `${numeric} kcal` : `${value}`;
+};
+
+const formatItemsLabel = (count?: number | null) => {
+  if (!count) return "0 items";
+  return `${count} ${count === 1 ? "item" : "items"}`;
+};
+
+const formatViewsLabel = (value?: number | null) => {
+  const safe = value ?? 0;
+  const abbreviated = new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(safe);
+  return `${abbreviated} views`;
+};
+
 function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -153,10 +206,133 @@ function SwapPageInner() {
   const [selectedTastes, setSelectedTastes] = useState<string[]>([]);
   const [prefSaved, setPrefSaved] = useState<string>("");
   const [showCode, setShowCode] = useState(false);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [selectedSort, setSelectedSort] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
 
   const cuisineOptions = ["Tamil", "Telugu", "Kerala", "Hyderabadi", "Punjabi", "Gujarati"];
   const allergyOptions = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
   const tasteOptions = ["Spicy", "Savory", "Umami", "Sweet", "Tangy"];
+
+  const dishMeta = useMemo<Record<string, DishMeta>>(() => {
+    const total = DISH_CATALOG.length;
+    return DISH_CATALOG.reduce((acc, dish, index) => {
+      acc[dish.slug] = {
+        freshnessIndex: total - index,
+        rating: dish.rating ?? 0,
+        reviews: dish.reviews ?? 0,
+        swapCost: parsePriceToNumber(dish.priceSwap ?? dish.estimatedCost ?? null),
+      };
+      return acc;
+    }, {} as Record<string, DishMeta>);
+  }, []);
+
+  const plantForwardCategories = useMemo(() => {
+    const tags = new Set<string>();
+    DISH_CATALOG.forEach((dish) => {
+      (dish.categories || []).forEach((category) => {
+        if (/veg|plant|green/.test(category.toLowerCase())) {
+          tags.add(category);
+        }
+      });
+    });
+    return Array.from(tags);
+  }, []);
+
+  const sortOptions = useMemo<SortOption[]>(() => {
+    const base: SortOption[] = [
+      { id: "veg", label: "Veg", description: "Prioritize vegetarian transitions" },
+      { id: "vegan", label: "Vegan", description: "Show vegan dishes first" },
+      { id: "jain", label: "Jain", description: "Highlight Jain-friendly swaps" },
+    ];
+    plantForwardCategories.forEach((tag) => {
+      base.push({ id: `tag-${tag}`, label: tag.replace(/-/g, " "), description: "Match detected veg-first category" });
+    });
+    return base;
+  }, [plantForwardCategories]);
+
+  const filterOptions = useMemo<FilterOption[]>(
+    () => [
+      { id: "new", label: "Newly Updated", description: "Latest recipe refresh" },
+      { id: "old", label: "Oldest Updated", description: "Legacy staples" },
+      { id: "recommended", label: "Most Recommended", description: "Best-rated swaps" },
+      { id: "budget", label: "Budget Friendly", description: "Lower swap cost" },
+    ],
+    []
+  );
+
+  const filterPredicates = useMemo<Record<string, (dish: DishDetailType) => boolean>>(() => {
+    const total = DISH_CATALOG.length;
+    const newestThreshold = total - Math.max(1, Math.floor(total * 0.3));
+    const oldestThreshold = Math.max(1, Math.floor(total * 0.3));
+    return {
+      new: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) >= newestThreshold,
+      old: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) <= oldestThreshold,
+      recommended: (dish) => (dish.rating ?? 0) >= 4.85 || (dish.reviews ?? 0) >= 900,
+      budget: (dish) => {
+        const price = dishMeta[dish.slug]?.swapCost;
+        return typeof price === "number" ? price <= 180 : false;
+      },
+    };
+  }, [dishMeta]);
+
+  const toggleSortMenu = () => {
+    setSortMenuOpen((prev) => {
+      const next = !prev;
+      if (next) setFilterMenuOpen(false);
+      return next;
+    });
+  };
+
+  const toggleFilterMenu = () => {
+    setFilterMenuOpen((prev) => {
+      const next = !prev;
+      if (next) setSortMenuOpen(false);
+      return next;
+    });
+  };
+
+  const handleSortSelect = (optionId: string | null) => {
+    setSelectedSort((prev) => {
+      if (optionId === null) return null;
+      return prev === optionId ? null : optionId;
+    });
+    setSortMenuOpen(false);
+  };
+
+  const handleFilterToggle = (optionId: string) => {
+    setActiveFilters((prev) => (prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]));
+  };
+
+  const clearFilters = () => setActiveFilters([]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setSortMenuOpen(false);
+      }
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSortMenuOpen(false);
+        setFilterMenuOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
 
   // Search suggestions from static dishes for autocomplete
   const suggestions = useMemo(() => {
@@ -174,8 +350,60 @@ function SwapPageInner() {
     if (!searchTerm.trim()) return [];
     return findReplacementGroups(searchTerm);
   }, [searchTerm]);
+  const processedSwapResults = useMemo(() => {
+    if (!swapResults.length) return [];
 
-  const hasSwapResults = swapResults.length > 0;
+    const evaluateSortScore = (dish: DishDetailType) => {
+      if (!selectedSort) return (dish.rating ?? 0) + (dishMeta[dish.slug]?.freshnessIndex ?? 0) / 100;
+      if (selectedSort === "veg") {
+        return (dish.diet === "vegetarian" ? 5 : 0) + (dish.rating ?? 0);
+      }
+      if (selectedSort === "vegan") {
+        return (dish.diet === "vegan" ? 5 : 0) + (dish.rating ?? 0);
+      }
+      if (selectedSort === "jain") {
+        const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
+        const qualifies = jainKeywords.some((kw) => haystack.includes(kw)) || dish.region.toLowerCase().includes("gujarat");
+        return (qualifies ? 5 : 0) + (dish.rating ?? 0);
+      }
+      if (selectedSort.startsWith("tag-")) {
+        const tag = selectedSort.replace("tag-", "");
+        return ((dish.categories || []).includes(tag) ? 5 : 0) + (dish.rating ?? 0);
+      }
+      return dish.rating ?? 0;
+    };
+
+    const matchesFilters = (dish: DishDetailType) => {
+      if (!activeFilters.length) return true;
+      return activeFilters.every((filterId) => {
+        const predicate = filterPredicates[filterId];
+        return predicate ? predicate(dish) : true;
+      });
+    };
+
+    return swapResults
+      .map((group) => {
+        let dishes = [...group.dishes];
+        if (selectedSort) {
+          dishes = [...dishes].sort((a, b) => evaluateSortScore(b) - evaluateSortScore(a));
+        }
+        if (activeFilters.length) {
+          dishes = dishes.filter(matchesFilters);
+        }
+        return { ...group, dishes };
+      })
+      .filter((group) => group.dishes.length > 0);
+  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta]);
+
+  const rawHasSwapResults = swapResults.length > 0;
+  const hasSwapResults = processedSwapResults.length > 0;
+  const activeFilterCount = activeFilters.length;
+  const currentSortLabel = selectedSort
+    ? sortOptions.find((option) => option.id === selectedSort)?.label ?? "Custom"
+    : "Sort";
+  const sortButtonLabel = selectedSort ? `Sort: ${currentSortLabel}` : "Sort";
+  const filterButtonLabel = activeFilterCount ? `Filter (${activeFilterCount})` : "Filter";
+  const noResultsWithFilters = searchTerm && rawHasSwapResults && !hasSwapResults;
 
   // Handle search submission
   const handleSearch = (term: string) => {
@@ -391,34 +619,162 @@ function SwapPageInner() {
                 e.preventDefault();
                 handleSearch(query);
               }}
-              className="flex items-center gap-3 rounded-2xl border-3 border-black bg-white px-5 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+              className="flex flex-wrap items-center gap-3 rounded-2xl border-3 border-black bg-white px-5 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
             >
-              <span className="material-symbols-outlined text-xl text-slate-500">search</span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search your favorite dish (e.g., Chicken Biryani, Mutton Curry)"
-                className="w-full bg-transparent text-base font-semibold text-black placeholder:text-slate-400 focus:outline-none"
-              />
-              {query && (
+              <div className="flex min-w-[220px] flex-1 items-center gap-3">
+                <span className="material-symbols-outlined text-xl text-slate-500">search</span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search your favorite dish (e.g., Chicken Biryani, Mutton Curry)"
+                  className="flex-1 bg-transparent text-base font-semibold text-black placeholder:text-slate-400 focus:outline-none"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      setSearchTerm("");
+                    }}
+                    className="text-slate-500 transition hover:text-black"
+                    aria-label="Clear search"
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                <div className="relative" ref={sortMenuRef}>
+                  <button
+                    type="button"
+                    onClick={toggleSortMenu}
+                    aria-haspopup="menu"
+                    aria-expanded={sortMenuOpen}
+                    className={`flex items-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-bold uppercase transition transform ${
+                      selectedSort ? "bg-black text-white" : "bg-white text-black"
+                    } hover:-translate-y-[1px] hover:bg-black hover:text-white`}
+                  >
+                    {sortButtonLabel}
+                    <span
+                      className={`material-symbols-outlined text-base transition ${sortMenuOpen ? "rotate-180" : ""}`}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+                  {sortMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    >
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={!selectedSort}
+                        onClick={() => handleSortSelect(null)}
+                        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
+                          !selectedSort ? "text-primary" : "text-slate-700"
+                        }`}
+                      >
+                        Default order
+                        {!selectedSort && <span className="material-symbols-outlined text-base">check</span>}
+                      </button>
+                      {sortOptions.map((option) => {
+                        const isActive = selectedSort === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={isActive}
+                            onClick={() => handleSortSelect(option.id)}
+                            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
+                              isActive ? "text-primary" : "text-slate-700"
+                            }`}
+                          >
+                            <span>
+                              {option.label}
+                              {option.description && (
+                                <span className="block text-[11px] font-normal uppercase tracking-wide text-slate-400">
+                                  {option.description}
+                                </span>
+                              )}
+                            </span>
+                            {isActive && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="relative" ref={filterMenuRef}>
+                  <button
+                    type="button"
+                    onClick={toggleFilterMenu}
+                    aria-haspopup="menu"
+                    aria-expanded={filterMenuOpen}
+                    className={`flex items-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-bold uppercase transition transform ${
+                      activeFilterCount ? "bg-primary text-white" : "bg-white text-black"
+                    } hover:-translate-y-[1px] hover:bg-primary hover:text-white`}
+                  >
+                    {filterButtonLabel}
+                    <span
+                      className={`material-symbols-outlined text-base transition ${filterMenuOpen ? "rotate-180" : ""}`}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+                  {filterMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    >
+                      {filterOptions.map((option) => {
+                        const isActive = activeFilters.includes(option.id);
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="menuitemcheckbox"
+                            aria-checked={isActive}
+                            onClick={() => handleFilterToggle(option.id)}
+                            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
+                              isActive ? "text-primary" : "text-slate-700"
+                            }`}
+                          >
+                            <span>
+                              {option.label}
+                              {option.description && (
+                                <span className="block text-[11px] font-normal uppercase tracking-wide text-slate-400">
+                                  {option.description}
+                                </span>
+                              )}
+                            </span>
+                            {isActive && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                        );
+                      })}
+                      {activeFilters.length > 0 && (
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-center border-t border-black/10 px-4 py-2 text-xs font-bold uppercase text-slate-500 transition hover:text-black"
+                          onClick={() => {
+                            clearFilters();
+                            setFilterMenuOpen(false);
+                          }}
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
-                  type="button"
-                  onClick={() => {
-                    setQuery("");
-                    setSearchTerm("");
-                  }}
-                  className="text-slate-500 transition hover:text-black"
-                  aria-label="Clear search"
+                  type="submit"
+                  className="rounded-xl border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white transition hover:bg-accent"
                 >
-                  <span className="material-symbols-outlined">close</span>
+                  Find Swaps
                 </button>
-              )}
-              <button
-                type="submit"
-                className="rounded-xl border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white transition hover:bg-accent"
-              >
-                Find Swaps
-              </button>
+              </div>
             </form>
             {suggestions.length > 0 && !searchTerm && (
               <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -443,13 +799,39 @@ function SwapPageInner() {
             )}
           </div>
         </div>
+        {activeFilters.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            {activeFilters.map((filterId) => {
+              const option = filterOptions.find((opt) => opt.id === filterId);
+              if (!option) return null;
+              return (
+                <button
+                  type="button"
+                  key={filterId}
+                  className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-primary/10 px-3 py-1 text-primary transition hover:bg-primary hover:text-white"
+                  onClick={() => handleFilterToggle(filterId)}
+                >
+                  {option.label}
+                  <span className="material-symbols-outlined text-base">close</span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1 text-slate-500 transition hover:text-black"
+              onClick={clearFilters}
+            >
+              Reset all
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Swap Results Section */}
       {hasSwapResults && (
         <section id="swap-results" className="px-6 pb-12">
           <div className="mx-auto max-w-6xl space-y-6">
-            {swapResults.map((group) => (
+            {processedSwapResults.map((group) => (
               <div key={group.id} className="space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -483,8 +865,31 @@ function SwapPageInner() {
         </section>
       )}
 
+      {noResultsWithFilters && (
+        <section className="px-6 pb-12">
+          <div className="mx-auto max-w-2xl rounded-2xl border-3 border-black bg-white px-6 py-6 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <p className="font-impact text-2xl uppercase text-black">No matches with current filters</p>
+            <p className="mt-2 text-sm font-semibold text-slate-600">
+              Try removing one of the filters or resetting to the default ordering to see every available swap for "{searchTerm}".
+            </p>
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFilters([]);
+                  setSelectedSort(null);
+                }}
+                className="rounded-full border-2 border-black bg-black px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-accent"
+              >
+                Reset filters & sort
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* No Results Message */}
-      {searchTerm && !hasSwapResults && (
+      {searchTerm && !rawHasSwapResults && (
         <section className="px-6 pb-12">
           <div className="mx-auto max-w-2xl rounded-2xl border-3 border-black bg-white px-6 py-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
             <p className="font-impact text-2xl uppercase text-black">No swaps found for "{searchTerm}"</p>
@@ -901,28 +1306,80 @@ function SwapPageInner() {
 }
 
 function DishCard({ dish }: { dish: Dish }) {
+  const detail = useMemo(
+    () => DISH_CATALOG.find((entry) => entry.slug === dish.id || entry.name === dish.name),
+    [dish]
+  );
+  const viewedByLabel = formatViewsLabel(dish.reviewCount);
+  const totalTimeLabel = formatMinutesLabel(detail?.totalTime ?? detail?.cookTime ?? detail?.prepTime);
+  const caloriesLabel = formatCaloriesLabel(detail?.calories);
+  const itemsLabel = formatItemsLabel(detail?.ingredients?.length);
+  const ratingLabel = `${dish.rating.toFixed(1)} rating`;
+  const statPills = [
+    { icon: "schedule", label: totalTimeLabel },
+    { icon: "local_fire_department", label: caloriesLabel },
+    { icon: "visibility", label: viewedByLabel },
+  ];
+  const backStatPills = [
+    { icon: "star", label: ratingLabel },
+    { icon: "inventory_2", label: itemsLabel },
+  ];
+  const detailLines = [`${dish.restaurant}`, `${dish.category} spices`];
+
   return (
-    <div className="group relative w-72 shrink-0 cursor-pointer snap-start overflow-hidden rounded-3xl border-3 border-black bg-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
-      <div className="relative h-56 w-full overflow-hidden">
-        <Image
-          src={dish.image}
-          alt={dish.name}
-          fill
-          sizes="288px"
-          className="object-cover transition duration-300 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition duration-300" />
-        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-black shadow">⭐ {dish.rating.toFixed(2)}</div>
-      </div>
-      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 py-4 text-white transition duration-300">
-        <p className="font-impact text-2xl tracking-wide">{dish.name}</p>
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-white/80">
-          <span>{dish.restaurant}</span>
-          <span>{dish.category}</span>
-        </div>
-        <div className="mt-2 flex items-center gap-2 text-[11px] font-bold text-white/90">
-          <span className="rounded-full bg-white/15 px-2 py-1">⭐ {dish.rating.toFixed(1)}</span>
-          <span className="text-white/70">{dish.reviewCount.toLocaleString()} reviews</span>
+    <div className="group relative w-72 shrink-0 cursor-pointer snap-start overflow-hidden rounded-3xl border-3 border-black bg-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)] min-h-[22rem]">
+      <div className="card-flip-wrapper">
+        <div className="card-flip">
+          <div className="card-face card-face--front">
+            <div className="relative h-full w-full overflow-hidden">
+              <Image
+                src={dish.image}
+                alt={dish.name}
+                fill
+                sizes="288px"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent transition duration-300" />
+              <div className="absolute inset-0 flex flex-col justify-end px-4 py-3 text-white">
+                <p className="font-impact text-2xl tracking-wide">{dish.name}</p>
+                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-white/80">
+                  <span>{dish.restaurant}</span>
+                  <span>{dish.category}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-white/90">
+                  {statPills.map((stat) => (
+                    <span
+                      key={`${dish.id}-${stat.icon}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur"
+                    >
+                      <span className="material-symbols-outlined text-sm">{stat.icon}</span>
+                      {stat.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="card-face card-face--back bg-white p-4 text-left text-slate-800">
+            <p className="font-impact text-xl uppercase text-black">Ingredients & details</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Chef says</p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
+              {detailLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                <span className="material-symbols-outlined text-base text-primary">star</span>
+                {ratingLabel}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                <span className="material-symbols-outlined text-base text-primary">inventory_2</span>
+                {itemsLabel}
+              </span>
+            </div>
+            <p className="mt-3 text-xs font-bold uppercase text-slate-400">Hover to return</p>
+          </div>
         </div>
       </div>
     </div>
@@ -941,33 +1398,91 @@ type RecommendedCardDish = {
 };
 
 function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSelect: () => void }) {
+  const viewedByLabel = formatViewsLabel(dish.reviewCount || dish.detail.reviews);
+  const ingredients = dish.detail.ingredients?.slice(0, 5) || [];
+  const totalTimeLabel = formatMinutesLabel(dish.detail.totalTime ?? dish.detail.cookTime ?? dish.detail.prepTime);
+  const caloriesLabel = formatCaloriesLabel(dish.detail.calories);
+  const itemsLabel = formatItemsLabel(dish.detail.ingredients?.length);
+  const ratingLabel = `${dish.rating.toFixed(1)} rating`;
+  const statPills = [
+    { icon: "schedule", label: totalTimeLabel },
+    { icon: "local_fire_department", label: caloriesLabel },
+    { icon: "visibility", label: viewedByLabel },
+  ];
+  const backStatPills = [
+    { icon: "star", label: ratingLabel },
+    { icon: "inventory_2", label: itemsLabel },
+  ];
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
+      className="group relative flex h-full min-h-[24rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-black">
-        <Image
-          src={dish.image}
-          alt={dish.name}
-          fill
-          sizes="320px"
-          className="object-cover transition duration-300 group-hover:scale-105"
-        />
-        <div className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-xs font-bold uppercase text-white">{dish.category}</div>
-        <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase text-white">
-          🌿 Plant-based
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col justify-between px-4 py-4 text-slate-900">
-        <div className="space-y-2">
-          <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
-          <p className="text-sm font-semibold text-slate-600">{dish.restaurant}</p>
-        </div>
-        <div className="mt-3 flex items-center justify-between text-sm font-bold text-slate-700">
-          <span className="flex items-center gap-1 rounded-full bg-highlight px-3 py-1">⭐ {dish.rating.toFixed(1)}</span>
-          <span className="text-slate-500">{dish.reviewCount.toLocaleString()} reviews</span>
+      <div className="card-flip-wrapper">
+        <div className="card-flip">
+          <div className="card-face card-face--front bg-white">
+            <div className="relative h-48 w-full overflow-hidden bg-black">
+              <Image
+                src={dish.image}
+                alt={dish.name}
+                fill
+                sizes="320px"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
+              <div className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-xs font-bold uppercase text-white">{dish.category}</div>
+              <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase text-white">
+                🌿 Plant-based
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col justify-between px-4 py-3 text-slate-900">
+              <div className="space-y-2">
+                <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
+                <p className="text-sm font-semibold text-slate-600">{dish.restaurant}</p>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
+                {statPills.map((stat) => (
+                  <span
+                    key={`${dish.id}-${stat.icon}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1"
+                  >
+                    <span className="material-symbols-outlined text-base">{stat.icon}</span>
+                    {stat.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="card-face card-face--back bg-white p-4 text-left text-slate-800">
+            <p className="font-impact text-xl uppercase text-black">Pantry snapshot</p>
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
+              {backStatPills.map((stat) => (
+                <span
+                  key={`${dish.id}-${stat.icon}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1"
+                >
+                  <span className="material-symbols-outlined text-base text-primary">{stat.icon}</span>
+                  {stat.label}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Core ingredients</p>
+            {ingredients.length > 0 ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
+                {ingredients.map((ingredient) => (
+                  <li key={`${dish.id}-${ingredient.item}`}>{ingredient.item} · {ingredient.quantity}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">Ingredient details coming soon.</p>
+            )}
+            {dish.detail.heroSummary && (
+              <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                {dish.detail.heroSummary}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </button>
@@ -976,40 +1491,81 @@ function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSele
 
 // Swap result card for search results
 function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: () => void }) {
+  const viewedBy = (dish.reviews || 1450).toLocaleString();
+  const ingredients = dish.ingredients?.slice(0, 5) || [];
+  const chefTips = dish.chefTips?.slice(0, 2) || [];
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition duration-300 hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"
+      className="group relative flex h-full min-h-[26rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-black">
-        <Image
-          src={dish.image}
-          alt={dish.name}
-          fill
-          sizes="320px"
-          className="object-cover transition duration-300 group-hover:scale-105"
-        />
-        <div className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
-          🌿 Plant-based swap
-        </div>
-        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
-          💧 Water saved · 🌍 CO₂ reduced
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col justify-between px-4 py-4 text-slate-900">
-        <div className="space-y-2">
-          <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
-          <p className="text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
-          <p className="text-xs text-slate-500">
-            Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
-          </p>
-        </div>
-        <div className="mt-3 flex items-center justify-between text-sm font-bold text-slate-700">
-          <span className="flex items-center gap-1 rounded-full bg-highlight px-3 py-1">⭐ {(dish.rating ?? 4.8).toFixed(1)}</span>
-          <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-            View Recipe →
-          </span>
+      <div className="card-flip-wrapper">
+        <div className="card-flip">
+          <div className="card-face card-face--front bg-white">
+            <div className="relative h-48 w-full overflow-hidden bg-black">
+              <Image
+                src={dish.image}
+                alt={dish.name}
+                fill
+                sizes="320px"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
+              <div className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
+                🌿 Plant-based swap
+              </div>
+              <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
+                💧 Water saved · 🌍 CO₂ reduced
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col justify-between px-4 py-3 text-slate-900">
+              <div className="space-y-2">
+                <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
+                <p className="text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
+                <p className="text-xs text-slate-500">
+                  Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
+                </p>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-bold text-black">
+                  <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                  ⭐ {(dish.rating ?? 4.8).toFixed(1)} texture score
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-slate-700">
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="material-symbols-outlined text-base text-primary">visibility</span>
+                  Viewed by {viewedBy} people
+                </span>
+                <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                  View Recipe →
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="card-face card-face--back bg-white p-4 text-left text-slate-800">
+            <p className="font-impact text-xl uppercase text-black">Ingredient board</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Prep list</p>
+            {ingredients.length > 0 ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
+                {ingredients.map((ingredient) => (
+                  <li key={`${dish.slug}-${ingredient.item}`}>{ingredient.item} · {ingredient.quantity}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">Ingredient details coming soon.</p>
+            )}
+            {chefTips.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                <p className="mb-1 font-impact text-base uppercase text-black">Chef tips</p>
+                <ul className="list-disc space-y-1 pl-4">
+                  {chefTips.map((tip) => (
+                    <li key={`${dish.slug}-${tip}`}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="mt-auto text-xs font-bold uppercase text-slate-400">Hover to return</p>
+          </div>
         </div>
       </div>
     </button>

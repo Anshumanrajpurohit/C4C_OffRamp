@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -140,6 +142,13 @@ export default function Home() {
     };
   }, []);
 
+  const institutionsCTAStyle = {
+    "--color1": "#ffffff",
+    "--color2": "#c9f5dc",
+    color: "#14532d",
+    textShadow: "0 8px 12px rgba(0, 0, 0, 0.2)",
+  } as CSSProperties & Record<"--color1" | "--color2", string>;
+
   return (
     <main className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
       <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
@@ -215,12 +224,9 @@ export default function Home() {
               institutional scale and individual taste.
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-4 pt-4">
-              <Link
-                href="/swap"
-                className="rounded-2xl border-2 border-black bg-black px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:scale-105 hover:bg-accent hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-              >
+              <PrimaryCTAButton as={Link} href="/swap">
                 Start Your Swap
-              </Link>
+              </PrimaryCTAButton>
               <div className="flex items-center justify-center gap-3">
                 <div className="flex">
                   <img
@@ -587,12 +593,12 @@ export default function Home() {
               Join the movement of institutions and individuals redesigning the plate.
             </p>
             <div className="flex flex-col items-center justify-center gap-8 sm:flex-row">
-              <button className="w-full rounded-full border-4 border-black bg-accent px-12 py-6 text-2xl font-black uppercase text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:w-auto">
-                Try a Swap Now
-              </button>
-              <button className="w-full rounded-full border-4 border-black bg-white px-12 py-6 text-2xl font-black uppercase text-black transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:w-auto">
+              <PrimaryCTAButton as={Link} href="/swap">
+                Try A Swap Now !
+              </PrimaryCTAButton>
+              <PrimaryCTAButton as={Link} href="/swap" style={institutionsCTAStyle}>
                 For Institutions
-              </button>
+              </PrimaryCTAButton> <br />
             </div>
             <div className="counter-trigger mt-8 flex items-center justify-center gap-3 text-sm font-bold uppercase tracking-widest text-white/80">
               <span className="material-symbols-outlined text-white">bolt</span>
