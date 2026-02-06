@@ -121,7 +121,8 @@ body {
     .flip-card {
       position: relative;
       width: 100%;
-      min-height: 640px;
+      min-height: clamp(760px, 85vh, 940px);
+      padding-bottom: 1rem;
       transform-style: preserve-3d;
       transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
     }
@@ -139,6 +140,9 @@ body {
       justify-content: flex-start;
       gap: 1rem;
       background: transparent;
+      max-height: 100%;
+      padding-bottom: 1.5rem;
+      overflow-y: auto;
     }
 
     .flip-face--back {
@@ -226,6 +230,9 @@ body {
         transform: none !important;
         opacity: 1 !important;
         visibility: visible !important;
+        max-height: none;
+        overflow: visible;
+        padding-bottom: 0;
       }
 
       .flip-face--hidden {

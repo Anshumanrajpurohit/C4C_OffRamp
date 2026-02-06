@@ -245,29 +245,51 @@ export default function ProfileDashboardPage() {
 
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 lg:flex-row">
-          <aside className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:w-64 lg:shrink-0 lg:sticky lg:top-8">
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Dashboard</p>
-            <div className="space-y-1">
-              {SIDEBAR_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSidebarNavigation(item.id)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
-                    activeSidebar === item.id ? "bg-[#e3f1e8] text-[#1e4f35]" : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
+          <aside className="w-full rounded-[36px] border border-[#dfe7e1] bg-gradient-to-b from-white/95 via-[#f6faf7] to-[#eef5f0] p-6 text-slate-800 shadow-[0_28px_80px_rgba(19,41,29,0.08)] lg:w-72 lg:shrink-0 lg:sticky lg:top-8">
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Dashboard</p>
+              <p className="mt-2 text-lg font-black text-[#1e4f35]">{displayName.split(" ")[0] ?? "Member"}</p>
+              <p className="text-xs text-slate-500">Track swaps, impact, and controls</p>
             </div>
-            <div className="mt-6 border-t border-slate-100 pt-6">
+            <nav className="mt-6 space-y-2" aria-label="Dashboard sections">
+              {SIDEBAR_ITEMS.map((item) => {
+                const isActive = activeSidebar === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSidebarNavigation(item.id)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`group relative flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
+                      isActive
+                        ? "border-[#1e4f35] bg-white text-[#1e4f35] shadow-[0_15px_30px_rgba(31,81,54,0.12)]"
+                        : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white/80"
+                    }`}
+                  >
+                    {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-[#1e4f35]" aria-hidden="true" />}
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl border text-base ${
+                        isActive ? "border-[#1e4f35]/30 bg-[#e4f2ea] text-[#1e4f35]" : "border-slate-200 bg-white text-slate-500"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base leading-none">{item.icon}</span>
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="mt-8 rounded-2xl border border-white/70 bg-white/90 p-4 text-sm text-slate-600 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Weekly focus</p>
+              <p className="mt-1 text-base font-bold text-[#1e4f35]">{impactMetrics.swaps.toLocaleString()} swaps goal</p>
+              <p className="text-xs">You are {impactMetrics.growth}% ahead of target. Keep planting!</p>
+            </div>
+            <div className="mt-6 border-t border-white/70 pt-6">
               <button
                 type="button"
                 onClick={handleLogout}
                 disabled={isSigningOut}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white transition hover:-translate-y-[1px] hover:bg-accent disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#1e4f35] bg-[#1e4f35] px-4 py-2 text-sm font-bold uppercase text-white transition hover:-translate-y-[1px] hover:bg-[#173b29] disabled:opacity-60"
               >
                 <span className="material-symbols-outlined text-base">logout</span>
                 {isSigningOut ? "Signing out" : "Logout"}

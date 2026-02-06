@@ -20,6 +20,37 @@ type Crumb = {
   onClick?: () => void;
 };
 
+type SmartSwapItem = {
+  name: string;
+  price: string;
+  url: string;
+  highlight?: boolean;
+};
+
+const smartSwapItems: SmartSwapItem[] = [
+  {
+    name: "Tempeh Tikka Bowl",
+    price: "₹165",
+    url: "https://www.swiggy.com/",
+    highlight: true,
+  },
+  {
+    name: "Jackfruit Seekh Wrap",
+    price: "₹150",
+    url: "https://www.swiggy.com/",
+  },
+  {
+    name: "Tofu Butter Meal",
+    price: "₹175",
+    url: "https://www.swiggy.com/",
+  },
+  {
+    name: "Mushroom Biryani Kit",
+    price: "₹160",
+    url: "https://www.swiggy.com/",
+  },
+];
+
 export function DishDetail({ dish, onCook, onBack }: Props) {
   const crumbs: Crumb[] = [
     { label: "Recipes", onClick: onBack },
