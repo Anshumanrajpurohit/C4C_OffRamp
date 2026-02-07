@@ -125,7 +125,7 @@ export default function AuthPage() {
             </section>
 
             <section className="flex flex-1">
-              <div className="relative w-full rounded-[32px] border border-black/10 bg-white/95 p-6 shadow-2xl sm:p-8">
+              <div className="relative w-full rounded-[32px] border border-black/10 bg-white/95 p-4 shadow-2xl sm:p-6">
                 <div className="mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <img
@@ -176,10 +176,10 @@ export default function AuthPage() {
                   </div>
                 )}
 
-                <div className="flip-stage mt-8">
+                <div className="flip-stage mt-4">
                   <div className={`flip-card ${isSignup ? "flip-card--signup" : ""}`}>
                 <section className={`flip-face flip-face--front ${isSignup ? "flip-face--hidden" : ""}`}>
-                  <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="flex flex-col items-center gap-2 text-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-black bg-highlight">
                       <span className="material-symbols-outlined text-xl">login</span>
                     </div>
@@ -187,7 +187,7 @@ export default function AuthPage() {
                     <p className="text-sm font-semibold text-slate-600">Access your swaps, favorites, and impact.</p>
                   </div>
 
-                  <form onSubmit={handleAuth} className="mt-6 flex flex-col gap-4">
+                  <form onSubmit={handleAuth} className="mt-4 flex flex-col gap-3">
                     <label className="text-sm font-bold text-black">
                       Email
                       <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
@@ -240,7 +240,7 @@ export default function AuthPage() {
                     </button>
                   </form>
 
-                  <div className="my-6 flex items-center gap-3 text-xs font-bold uppercase text-slate-400">
+                  <div className="my-4 flex items-center gap-3 text-xs font-bold uppercase text-slate-400">
                     <span className="h-px flex-1 bg-slate-200" />
                     Or sign in with
                     <span className="h-px flex-1 bg-slate-200" />
@@ -267,7 +267,7 @@ export default function AuthPage() {
                     </button>
                   </div>
 
-                  <div className="mt-6 text-center text-xs font-semibold text-slate-600">
+                  <div className="mt-4 text-center text-xs font-semibold text-slate-600">
                     New here?
                     <button
                       type="button"
