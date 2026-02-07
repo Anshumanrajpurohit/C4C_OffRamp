@@ -121,7 +121,7 @@ body {
     .flip-card {
       position: relative;
       width: 100%;
-      min-height: clamp(760px, 85vh, 940px);
+      min-height: clamp(450px, 78vh, 660px);
       padding-bottom: 1rem;
       transform-style: preserve-3d;
       transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);

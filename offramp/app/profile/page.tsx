@@ -232,12 +232,6 @@ export default function ProfileDashboardPage() {
             >
               Impact
             </Link>
-            <Link
-              href="/preferences"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Preferences
-            </Link>
           </div>
           <NavAuthButton userHref="/profile" />
         </div>
@@ -450,12 +444,9 @@ export default function ProfileDashboardPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">User preferences</p>
                     <h3 className="text-xl font-black text-[#1e3426]">Dietary type</h3>
                   </div>
-                  <Link
-                    href="/preferences"
-                    className="text-sm font-semibold text-[#2f6b4a] hover:underline"
-                  >
-                    Manage
-                  </Link>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Synced via profile setup
+                  </span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[#2f6b4a]">
                   {preferences.dietList.map((diet) => (
