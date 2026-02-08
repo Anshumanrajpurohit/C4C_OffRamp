@@ -1343,15 +1343,6 @@ function SwapPageInner() {
             © 2026 OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={() => setShowCode(true)}
-            className="rounded-full border-2 border-black bg-highlight px-5 py-2 text-xs font-black uppercase text-black transition hover:-translate-y-1 hover:bg-accent hover:text-white"
-          >
-            View QR Code
-          </button>
-        </div>
       </footer>
 
       {showCode && (
