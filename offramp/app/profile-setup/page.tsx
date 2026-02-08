@@ -154,11 +154,11 @@ export default function ProfileSetupPage() {
         >
       <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300 border-b-3 border-black">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-          <div className="group flex items-center gap-2">
+          <div className="group flex items-center gap-1">
             <img
-              src="/offramp-logo.svg"
+              src="/logo-removebg-preview.png"
               alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+              className="h-24 w-24 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />
             <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
@@ -382,11 +382,11 @@ export default function ProfileSetupPage() {
 
       <footer className="border-t-3 border-black bg-white px-6 py-16">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
-          <div className="group flex items-center gap-2">
+          <div className="group flex items-center gap-1">
             <img
-              src="/offramp-logo.svg"
+              src="/logo-removebg-preview.png"
               alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+              className="h-[120px] w-[120px] rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />
             <span className="font-impact text-4xl uppercase">OffRamp</span>
           </div>

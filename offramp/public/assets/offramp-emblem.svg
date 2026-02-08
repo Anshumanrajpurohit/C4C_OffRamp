@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OffRamp green emblem">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4df9b" />
+      <stop offset="50%" stop-color="#99c28a" />
+      <stop offset="100%" stop-color="#6b9f7a" />
+    </linearGradient>
+    <linearGradient id="leaf" x1="30%" y1="20%" x2="80%" y2="90%">
+      <stop offset="0%" stop-color="#e2f1b9" />
+      <stop offset="100%" stop-color="#88c068" />
+    </linearGradient>
+    <linearGradient id="hand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c7dba7" />
+      <stop offset="100%" stop-color="#7aa378" />
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="220" fill="url(#bg)" />
+  <path d="M125 212c7-74 73-133 149-141" fill="none" stroke="url(#hand)" stroke-width="26" stroke-linecap="round" />
+  <path d="M387 112c39 38 61 91 61 148 0 17-2 34-6 50" fill="none" stroke="url(#hand)" stroke-width="26" stroke-linecap="round" />
+  <path d="M124 309c16 70 72 127 148 142" fill="none" stroke="url(#hand)" stroke-width="26" stroke-linecap="round" />
+  <path d="M220 394c38 14 82 12 119-7 38-19 68-54 79-103" fill="none" stroke="url(#hand)" stroke-width="26" stroke-linecap="round" />
+  <path d="M330 150c-70 48-122 120-143 201 61-20 120-72 163-137 14-22 15-48-20-64z" fill="url(#leaf)" />
+  <path d="M248 152c-22 8-39 31-41 58-55 20-93 69-93 126 0 83 66 150 150 150s146-65 146-142c0-61-28-104-79-129 9-15 23-26 40-32-30-30-79-48-123-31z" fill="#0b1c21" />
+  <path d="M333 220c-13 38-59 87-142 115 0-51 32-108 90-140 20 0 40 11 52 25z" fill="url(#leaf)" />
+  <circle cx="294" cy="214" r="14" fill="#fefefe" />
+  <path d="M318 207c8-6 16-9 24-9 8 0 17 3 26 8-9 11-28 20-50 22z" fill="#f2c17f" />
+</svg>

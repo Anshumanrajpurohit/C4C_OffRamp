@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OffRamp bird glyph">
+  <defs>
+    <radialGradient id="orb" cx="30%" cy="25%" r="75%">
+      <stop offset="0%" stop-color="#f4f6e8" />
+      <stop offset="55%" stop-color="#c7dcb0" />
+      <stop offset="100%" stop-color="#95b687" />
+    </radialGradient>
+    <linearGradient id="swoop" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b8d6a0" stop-opacity="0" />
+      <stop offset="40%" stop-color="#b8d6a0" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#6fa077" stop-opacity="0.9" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#orb)" />
+  <path d="M6 34c2.5 11 9.6 20.3 19.2 25.5" fill="none" stroke="url(#swoop)" stroke-width="3" stroke-linecap="round" />
+  <path d="M58 28c-1.7 11.9-9 22.7-20 29" fill="none" stroke="url(#swoop)" stroke-width="3" stroke-linecap="round" />
+  <circle cx="30" cy="36" r="15.5" fill="#0b1c21" />
+  <path d="M42 34c-4.5 0-7.5-4.5-7.5-4.5s3-4.5 7.5-4.5c4 0 7.5 4.5 7.5 4.5S46 34 42 34z" fill="#0b1c21" />
+  <path d="M20 42c5 2 11.5 1.5 16.5-1.8" fill="none" stroke="#597a5d" stroke-width="2" stroke-linecap="round" />
+  <path d="M36 26c-5.5 2-9 7.4-8.4 13.3 5.4-0.7 10-4.1 12.2-8.9" fill="#a5d18d" />
+  <path d="M41.5 21.5l6.8 1.6-5.4 4.2z" fill="#f2d5a1" />
+  <circle cx="38.2" cy="25.5" r="1.8" fill="#fff" />
+</svg>

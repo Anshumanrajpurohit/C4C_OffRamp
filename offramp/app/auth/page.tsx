@@ -127,11 +127,11 @@ export default function AuthPage() {
             <section className="flex flex-1">
               <div className="relative w-full rounded-[32px] border border-black/10 bg-white/95 p-4 shadow-2xl sm:p-6">
                 <div className="mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-0">
                     <img
-                      src="/offramp-logo.png"
+                      src="/logo-removebg-preview.png"
                       alt="OffRamp logo"
-                      className="h-10 w-10 rounded border-2 border-black bg-white object-cover"
+                      className="h-24 w-24 rounded-full object-contain"
                     />
                     <div className="leading-tight">
                       <p className="text-xs font-bold uppercase tracking-widest text-slate-500">OffRamp</p>
