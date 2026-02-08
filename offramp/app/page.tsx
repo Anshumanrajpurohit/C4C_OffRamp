@@ -4,12 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
-<<<<<<< HEAD
-import SiteNav from "@/app/components/SiteNav";
 import SiteFooter from "@/app/components/SiteFooter";
-=======
 import { GlobalNav } from "@/app/components/GlobalNav";
->>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -148,11 +144,7 @@ export default function Home() {
 
   return (
     <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
-<<<<<<< HEAD
-      <SiteNav />
-=======
       <GlobalNav enableHashNavigation />
->>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
 
       <section className="relative overflow-hidden px-6 pt-20 pb-32">
         <div className="absolute left-10 top-20 hidden h-24 w-24 opacity-20 lg:block animate-float">

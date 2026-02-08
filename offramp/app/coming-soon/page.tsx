@@ -12,7 +12,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const tapeTiles = Array.from({ length: 8 });
-const TAPE_SEAL_SRC = "/assets/coming-soon-seal.svg";
+const TAPE_SEAL_SRC = "/seal.png";
 
 export const metadata: Metadata = {
   title: "OffRamp | Coming Soon",
@@ -37,8 +37,13 @@ function TapeStrip({ variant, direction, duration, sealSrc }: TapeStripProps) {
           <div className="tape-strip__row" key={`${variant}-${repetition}`}>
             {tapeTiles.map((_, index) => (
               <div className="tape-strip__tile" key={`${variant}-${repetition}-${index}`}>
-                <span className="tape-strip__text">COMING SOON</span>
-                <img src={sealSrc} alt="" role="presentation" loading="lazy" />
+                <img
+                  src={sealSrc}
+                  alt=""
+                  role="presentation"
+                  loading="lazy"
+                  className="tape-strip__image"
+                />
               </div>
             ))}
           </div>
