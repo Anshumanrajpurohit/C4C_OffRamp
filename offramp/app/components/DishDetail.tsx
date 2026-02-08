@@ -352,9 +352,15 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
           alt={dish.name}
           className="h-full w-full object-cover object-center opacity-95"
         />
+<<<<<<< HEAD
         <div className="absolute inset-0 bg-gradient-to-br from-white/65 via-[#f7f3ee]/55 to-[#f0e8dc]/45" />
         <div className="absolute inset-0 bg-white/30 mix-blend-screen" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#f7f3ee]/70 via-transparent to-transparent" />
+=======
+        <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-[#f7f3ee]/55 to-[#f0e8dc]/55" />
+        <div className="absolute inset-0 bg-white/40 mix-blend-screen" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#f7f3ee] via-transparent to-transparent" />
+>>>>>>> d111759bc538efea7e4b669916d78ab8c3889cac
       </div>
 
       <div className="relative z-10 flex min-h-dvh w-full flex-col px-3 pb-8 pt-6 sm:px-6 lg:px-12">
