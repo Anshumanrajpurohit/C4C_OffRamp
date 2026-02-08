@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import SiteNav from "@/app/components/SiteNav";
 import SiteFooter from "@/app/components/SiteFooter";
@@ -27,11 +28,13 @@ type TapeStripProps = {
 };
 
 function TapeStrip({ variant, direction, duration, sealSrc }: TapeStripProps) {
+  const speedStyle: CSSProperties = { ["--tape-speed" as string]: duration };
+
   return (
     <div className={`tape-strip tape-strip--${variant}`} aria-hidden="true">
       <div
         className={`tape-strip__inner tape-strip__inner--${direction}`}
-        style={{ animationDuration: duration }}
+        style={speedStyle}
       >
         {[0, 1].map((repetition) => (
           <div className="tape-strip__row" key={`${variant}-${repetition}`}>

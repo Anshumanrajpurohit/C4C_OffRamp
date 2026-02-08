@@ -638,6 +638,7 @@ body {
   background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0 18px, transparent 18px 36px);
   border: 3px solid #131614;
   box-shadow: 0 30px 75px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
 }
 
 .tape-strip--a {
@@ -656,14 +657,16 @@ body {
   display: flex;
   width: 200%;
   height: 100%;
+  will-change: transform;
+  animation-play-state: running;
 }
 
 .tape-strip__inner--forward {
-  animation: tape-scroll-forward 16s linear infinite;
+  animation: tape-scroll-forward var(--tape-speed, 16s) linear infinite;
 }
 
 .tape-strip__inner--reverse {
-  animation: tape-scroll-reverse 18s linear infinite;
+  animation: tape-scroll-reverse var(--tape-speed, 18s) linear infinite;
 }
 
 .tape-strip__row {
