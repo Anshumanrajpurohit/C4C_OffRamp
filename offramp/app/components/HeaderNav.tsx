@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { LogoMark } from "@/app/components/LogoMark";
 
 export type ViewKey = "pref" | "search" | "alts" | "detail";
 
@@ -21,21 +21,13 @@ export function HeaderNav({ onLogin, onSearch }: Props) {
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <div className="flex items-center gap-3">
-        <Link
+        <LogoMark
           href="/"
-          className="flex h-12 items-center gap-2 overflow-hidden rounded-full bg-white px-3 py-2 hover:shadow-sm"
-          aria-label="Go to preferences home"
-        >
-          <Image
-            src="/offramp-logo.svg"
-            alt="OffRamp logo"
-            width={40}
-            height={40}
-            priority
-            className="rounded-lg"
-          />
-          <h5 className="font-mono text-2xl font-bold text-green-600 hover:text-green-700">OffRamp</h5>
-        </Link>
+          className="h-12 overflow-hidden rounded-full bg-white px-3 py-2 hover:shadow-sm"
+          textClassName="text-2xl"
+          ariaLabel="Go to preferences home"
+          priority
+        />
         <div>
           <Link href="/whatsapp" className="text-md text-pink-400 hover:text-pink-500 hover:underline">
             WhatsApp Assistant

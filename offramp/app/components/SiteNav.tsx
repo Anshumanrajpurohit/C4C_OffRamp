@@ -1,20 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { LogoMark } from "@/app/components/LogoMark";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 export default function SiteNav() {
   return (
     <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <Link href="/#home" className="group flex items-center gap-2">
-          <img
-            src="/offramp-logo.png"
-            alt="OffRamp logo"
-            className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-          />
-          <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
-        </Link>
+        <LogoMark href="/#home" textClassName="text-3xl" ariaLabel="Go to OffRamp home" priority />
         <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
           <div className="relative group">
             <Link

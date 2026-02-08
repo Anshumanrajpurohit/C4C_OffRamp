@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { LogoMark } from "@/app/components/LogoMark";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 type GlobalNavProps = {
@@ -10,20 +10,28 @@ type GlobalNavProps = {
 
 export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
   const anchorHref = (hash: string) => `${enableHashNavigation ? "#" : "/#"}${hash}`;
+  const navLinkClass =
+    "relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full";
+  const comingSoonLink = enableHashNavigation ? (
+    <a href={anchorHref("coming-soon")} className={navLinkClass}>
+      Coming Soon
+    </a>
+  ) : (
+    <Link href="/coming-soon" className={navLinkClass}>
+      Coming Soon
+    </Link>
+  );
 
   return (
     <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <div className="group flex items-center gap-2">
-          <Image
-            src="/c4c.webp"
-            alt="OffRamp logo"
-            width={40}
-            height={40}
-            className="rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-          />
-          <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
-        </div>
+        <LogoMark
+          as={enableHashNavigation ? "anchor" : "link"}
+          href={anchorHref("home")}
+          textClassName="text-3xl"
+          ariaLabel="Go to OffRamp home"
+          priority
+        />
         <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
           <div className="relative group">
             <a
@@ -69,22 +77,11 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
               </div>
             </div>
           </div>
-          <Link
-            href="/swap"
-            className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-          >
+          <Link href="/swap" className={navLinkClass}>
             Food Swap
           </Link>
-          <a
-            href={anchorHref("coming-soon")}
-            className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-          >
-            Coming Soon
-          </a>
-          <a
-            href={anchorHref("about")}
-            className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-          >
+          {comingSoonLink}
+          <a href={anchorHref("about")} className={navLinkClass}>
             About
           </a>
         </div>
