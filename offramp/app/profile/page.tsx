@@ -391,7 +391,11 @@ export default function ProfilePage() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        {["Saved 320 liters vs avg cafeteria line", "2.4kg CO2 spared per serving swap", "12 sq m land restored via jackfruit trays"].map((highlight) => (
+        {[
+          "Saved 320 liters vs avg cafeteria line",
+          "2.4kg CO2 spared per serving swap",
+          "12 sq m land restored via jackfruit trays",
+        ].map((highlight) => (
           <div key={highlight} className="rounded-3xl border border-slate-100 bg-white px-5 py-4 text-sm text-slate-600 shadow">
             <p className="font-semibold text-slate-900">{highlight}</p>
           </div>
@@ -441,9 +445,9 @@ export default function ProfilePage() {
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">Campus feed</span>
           </div>
           <div className="mt-4 space-y-4">
-            {chefHighlights.map((highlight) => {
+            {chefHighlights.map((highlight, index) => {
               return (
-                <div key={highlight.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div key={`${highlight.id}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{highlight.name}</p>
@@ -561,8 +565,16 @@ export default function ProfilePage() {
           Get live help optimizing prep plans, evaluating suppliers, or rolling out new menu swaps. Our AI chefs sync with your campus data.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {["WhatsApp Concierge", "Book tasting lab", "Supplier audits", "Custom dashboards"].map((cta) => (
-            <button key={cta} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900">
+          {[
+            "WhatsApp Concierge",
+            "Book tasting lab",
+            "Supplier audits",
+            "Custom dashboards",
+          ].map((cta) => (
+            <button
+              key={cta}
+              className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900"
+            >
               {cta}
               <span className="material-symbols-outlined text-base text-slate-400">north_east</span>
             </button>
@@ -589,16 +601,6 @@ export default function ProfilePage() {
   };
 
   return (
-<<<<<<< HEAD
-    <main className="min-h-screen bg-[#eef2ef] text-slate-900">
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <aside className="w-full rounded-[36px] border border-[#dfe7e1] bg-gradient-to-b from-white/95 via-[#f6faf7] to-[#eef5f0] p-6 text-slate-800 shadow-[0_28px_80px_rgba(19,41,29,0.08)] lg:w-72 lg:shrink-0 lg:sticky lg:top-8">
-            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Dashboard</p>
-              <p className="mt-2 text-lg font-black text-[#1e4f35]">{displayName.split(" ")[0] ?? "Member"}</p>
-              <p className="text-xs text-slate-500">Track swaps, impact, and controls</p>
-=======
     <div className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
       <GlobalNav />
 
@@ -609,7 +611,6 @@ export default function ProfilePage() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.5em] text-slate-400">Dashboard</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">{firstName}</h2>
               <p className="text-sm text-slate-500">Track swaps, impact, and controls</p>
->>>>>>> be569217179943d763f602592556d584a3f069c1
             </div>
             <nav className="space-y-2" aria-label="Dashboard sections">
               {SIDEBAR_ITEMS.map((item) => {
