@@ -150,7 +150,7 @@ export default function Home() {
   } as CSSProperties & Record<"--color1" | "--color2", string>;
 
   return (
-    <main className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
+    <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
       <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
@@ -162,29 +162,67 @@ export default function Home() {
             <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
-            <a
-              href="#how-it-works"
+            <div className="relative group">
+              <a
+                href="#home"
+                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Home
+                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
+                  expand_more
+                </span>
+              </a>
+              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
+                <div className="absolute -top-3 left-0 right-0 h-3" />
+                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
+                  <a
+                    href="#how-it-works"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
+                    <span>How it Works</span>
+                  </a>
+                  <a
+                    href="#features"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
+                    <span>Features</span>
+                  </a>
+                  <a
+                    href="#impact"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
+                    <span>Impact</span>
+                  </a>
+                  <a
+                    href="#institutions"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
+                    <span>Institutions</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/swap"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
-              How it Works
+              Food Swap
+            </Link>
+            <a
+              href="#coming-soon"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Coming Soon
             </a>
             <a
-              href="#features"
+              href="#about"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
-              Features
-            </a>
-            <a
-              href="#impact"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Impact
-            </a>
-            <a
-              href="#institutions"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Institutions
+              About
             </a>
           </div>
           <div className="flex items-center gap-4">
@@ -282,6 +320,7 @@ export default function Home() {
         </div>
       </section>
 
+      <span id="about" className="block h-0 w-0" />
       <section id="how-it-works" className="scroll-reveal relative border-y-3 border-black bg-primary py-24 text-white">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-20 text-center">
@@ -314,6 +353,7 @@ export default function Home() {
         </div>
       </section>
 
+      <span id="coming-soon" className="block h-0 w-0" />
       <section id="features" className="grid-pattern border-b-3 border-black py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-16 flex flex-col justify-between gap-6 md:flex-row md:items-end scroll-reveal">
@@ -544,10 +584,10 @@ export default function Home() {
           <div className="grid gap-10 md:grid-cols-3">
             <div className="bold-shadow hover-lift scroll-reveal delay-100 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
               <div className="icon-badge mb-8 flex items-center justify-center border-3 border-black bg-grid transition-transform duration-300 hover:rotate-180">
-                <span className="material-symbols-outlined">branding_watermark</span>
+                <span className="material-symbols-outlined">restaurant_menu</span>
               </div>
-              <h4 className="mb-4 font-impact text-3xl uppercase">White-Label</h4>
-              <p className="font-semibold text-slate-600">Seamless integration into your cafeteria apps and dining ecosystem.</p>
+              <h4 className="mb-4 font-impact text-3xl uppercase">Menu Optimization</h4>
+              <p className="font-semibold text-slate-600">Swap-ready menus tailored to weekly rotations and student demand.</p>
             </div>
             <div className="bold-shadow hover-lift scroll-reveal delay-200 flex flex-col items-center rounded-[2.5rem] border-3 border-black bg-white p-10 text-center">
               <div className="icon-badge mb-8 flex items-center justify-center border-3 border-black bg-accent transition-transform duration-300 hover:rotate-180">
@@ -640,7 +680,7 @@ export default function Home() {
             </a>
           </div>
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
+            © 2026 OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
@@ -192,6 +192,7 @@ const formatViewsLabel = (value?: number | null) => {
 function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
   const searchParams = useSearchParams();
   const demoParam = searchParams.get("demo");
@@ -345,6 +346,10 @@ function SwapPageInner() {
     return [...new Set([...matchingNonVeg, ...dishNames])].slice(0, 6);
   }, [query]);
 
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [suggestions]);
+
   // Use the swap engine to find plant-based alternatives
   const swapResults = useMemo(() => {
     if (!searchTerm.trim()) return [];
@@ -408,6 +413,33 @@ function SwapPageInner() {
   // Handle search submission
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+  };
+
+  const handleSuggestionSelect = (value: string) => {
+    setQuery(value);
+    handleSearch(value);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleSearchInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!suggestions.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestionIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+      return;
+    }
+    if (event.key === "Enter" && activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      handleSuggestionSelect(suggestions[activeSuggestionIndex]);
+    }
+    if (event.key === "Escape") {
+      setActiveSuggestionIndex(-1);
+    }
   };
 
   // Handle dish selection
@@ -477,7 +509,7 @@ function SwapPageInner() {
               <img
                 src="/c4c.webp"
                 alt="OffRamp logo"
-                className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+                className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6 delay-400"
               />
               <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
             </div>
@@ -510,23 +542,59 @@ function SwapPageInner() {
             <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
-            <Link href="/#how-it-works" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
-              How it Works
-            </Link>
-            <Link href="/#features" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
-              Features
-            </Link>
-            <Link href="/#impact" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
-              Impact
-            </Link>
-            <Link href="/#institutions" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
-              Institutions
-            </Link>
-            {isDemo && (
-              <Link href="#preferences" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
-                Preferences
+            <div className="relative group">
+              <Link
+                href="/#home"
+                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Home
+                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
+                  expand_more
+                </span>
               </Link>
-            )}
+              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
+                <div className="absolute -top-3 left-0 right-0 h-3" />
+                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
+                  <Link
+                    href="/#how-it-works"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
+                    <span>How it Works</span>
+                  </Link>
+                  <Link
+                    href="/#features"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
+                    <span>Features</span>
+                  </Link>
+                  <Link
+                    href="/#impact"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
+                    <span>Impact</span>
+                  </Link>
+                  <Link
+                    href="/#institutions"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
+                    <span>Institutions</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <Link href="/swap" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+              Food Swap
+            </Link>
+            <Link href="/#coming-soon" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+              Coming Soon
+            </Link>
+            <Link href="/#about" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+              About
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             {isDemo ? (
@@ -626,6 +694,7 @@ function SwapPageInner() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleSearchInputKeyDown}
                   placeholder="Search your favorite dish (e.g., Chicken Biryani, Mutton Curry)"
                   className="flex-1 bg-transparent text-base font-semibold text-black placeholder:text-slate-400 focus:outline-none"
                 />
@@ -779,21 +848,25 @@ function SwapPageInner() {
             {suggestions.length > 0 && !searchTerm && (
               <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <ul className="divide-y divide-black/10">
-                  {suggestions.map((sugg) => (
-                    <li key={sugg}>
+                  {suggestions.map((sugg, index) => {
+                    const isActive = index === activeSuggestionIndex;
+                    return (
+                      <li key={sugg}>
                       <button
                         type="button"
                         onClick={() => {
-                          setQuery(sugg);
-                          handleSearch(sugg);
+                          handleSuggestionSelect(sugg);
                         }}
-                        className="flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-highlight"
+                        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-highlight ${
+                          isActive ? "bg-highlight" : ""
+                        }`}
                       >
                         {sugg}
                         <span className="material-symbols-outlined text-base text-slate-500">north_east</span>
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -1267,7 +1340,7 @@ function SwapPageInner() {
             </a>
           </div>
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
+            © 2026 OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
         <div className="mt-6 flex justify-center">
@@ -1418,7 +1491,7 @@ function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSele
     <button
       type="button"
       onClick={onSelect}
-      className="group relative flex h-full min-h-[24rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
+      className="group relative flex h-full min-h-[24rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)] "
     >
       <div className="card-flip-wrapper">
         <div className="card-flip">

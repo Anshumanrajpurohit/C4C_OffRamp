@@ -64,7 +64,7 @@ export default function AuthPage() {
       setStatus(result?.message || (isSignup ? "Account created successfully" : "Logged in"));
 
       setTimeout(() => {
-        router.push("/swap");
+        router.push(isSignup ? "/profile-setup" : "/swap");
       }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
@@ -81,7 +81,7 @@ export default function AuthPage() {
   const fallbackCircleImage = dishRoll.src;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden text-slate-900">
+    <div className="relative h-screen overflow-hidden text-slate-900">
       <div className="pointer-events-none absolute inset-0">
         <picture className="block h-full w-full">
           <source srcSet={backgroundImage} />
@@ -94,7 +94,7 @@ export default function AuthPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-emerald-900/40 to-black/65 backdrop-blur-sm" />
       </div>
 
-      <div className="relative z-10 flex min-h-screen items-start justify-center px-4 py-8 sm:px-6 lg:items-center lg:px-12">
+      <div className="relative z-10 flex h-screen items-center justify-center px-4 sm:px-6 lg:px-12">
         <div className="relative w-full max-w-6xl overflow-hidden rounded-[48px] border border-white/15 bg-white/10 p-6 shadow-[0_50px_150px_rgba(0,0,0,0.55)] backdrop-blur-[50px]">
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_55%)] opacity-40"

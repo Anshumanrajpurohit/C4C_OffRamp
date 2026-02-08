@@ -2,7 +2,7 @@
 
 **C4C OffRamp** is a modern web platform designed to help non-vegetarian and flexitarian users **transition toward plant-based eating through practical food substitutions**, not restriction. Instead of generic vegan recipes, OffRamp acts as a behavioral “off-ramp” by mapping familiar non-vegetarian dishes to culturally appropriate plant-based alternatives that preserve taste, texture, and cooking style.
 
-The platform is built to be **white-label and partner-ready**, enabling NGOs, universities, sustainability groups, and community organizations to deploy it as part of awareness, outreach, or behavior-change campaigns.
+The platform is built to be partner-ready, enabling NGOs, universities, sustainability groups, and community organizations to deploy it as part of awareness, outreach, or behavior-change campaigns.
 
 ---
 
@@ -27,7 +27,7 @@ The platform is built to be **white-label and partner-ready**, enabling NGOs, un
   Optimized for mobile and desktop to support outreach campaigns and community usage.
 
 * **Partner-Ready Architecture**
-  Designed for white-label deployment and NGO-led distribution rather than ad-driven growth.
+  Designed for NGO-led distribution rather than ad-driven growth.
 
 ---
 

@@ -5,12 +5,10 @@ const PRIMARY_ANON_KEY = "NEXT_PUBLIC_SUPABASE_ANON_KEY";
 const FALLBACK_ANON_KEY = "SUPABASE_ANON_KEY";
 const SERVICE_ROLE_KEY = "SUPABASE_SERVICE_ROLE_KEY";
 
-function readEnv(key: string) {
-  return process.env[key]?.trim() || "";
-}
-
 export function getSupabaseUrl() {
-  const url = readEnv(PRIMARY_URL_KEY) || readEnv(FALLBACK_URL_KEY);
+  const url =
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim() ||
+    (process.env.SUPABASE_URL || "").trim();
 
   if (!url) {
     throw new Error(
@@ -23,9 +21,9 @@ export function getSupabaseUrl() {
 
 export function getSupabaseAnonKey() {
   const anonKey =
-    readEnv(PRIMARY_PUBLISHABLE_KEY) ||
-    readEnv(PRIMARY_ANON_KEY) ||
-    readEnv(FALLBACK_ANON_KEY);
+    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || "").trim() ||
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim() ||
+    (process.env.SUPABASE_ANON_KEY || "").trim();
 
   if (!anonKey) {
     throw new Error(
@@ -37,7 +35,7 @@ export function getSupabaseAnonKey() {
 }
 
 export function getSupabaseServiceRoleKey() {
-  const serviceRoleKey = readEnv(SERVICE_ROLE_KEY);
+  const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
   if (!serviceRoleKey) {
     throw new Error(`Missing Supabase service role key. Define ${SERVICE_ROLE_KEY} in your environment.`);

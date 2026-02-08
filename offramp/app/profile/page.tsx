@@ -220,17 +220,67 @@ export default function ProfileDashboardPage() {
             <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
+            <div className="relative group">
+              <Link
+                href="/#home"
+                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Home
+                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
+                  expand_more
+                </span>
+              </Link>
+              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
+                <div className="absolute -top-3 left-0 right-0 h-3" />
+                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
+                  <Link
+                    href="/#how-it-works"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
+                    <span>How it Works</span>
+                  </Link>
+                  <Link
+                    href="/#features"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
+                    <span>Features</span>
+                  </Link>
+                  <Link
+                    href="/#impact"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
+                    <span>Impact</span>
+                  </Link>
+                  <Link
+                    href="/#institutions"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
+                    <span>Institutions</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
             <Link
               href="/swap"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
-              Swap
+              Food Swap
             </Link>
             <Link
-              href="/#impact"
+              href="/#coming-soon"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
-              Impact
+              Coming Soon
+            </Link>
+            <Link
+              href="/#about"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              About
             </Link>
           </div>
           <NavAuthButton userHref="/profile" />
@@ -332,6 +382,14 @@ export default function ProfileDashboardPage() {
                   >
                     <span className="material-symbols-outlined text-base">edit</span>
                     Edit Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/profile-setup")}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-black/20 bg-white px-4 py-2 text-sm font-bold uppercase text-slate-700 transition hover:-translate-y-[1px] hover:border-black hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined text-base">tune</span>
+                    Edit Preferences
                   </button>
                 </div>
               </div>
@@ -664,7 +722,7 @@ export default function ProfileDashboardPage() {
             </a>
           </div>
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            © 2024 C4C OFFRAMP. BE BOLD. EAT WELL.
+            © 2026 OFFRAMP. BE BOLD. EAT WELL.
           </div>
         </div>
       </footer>
