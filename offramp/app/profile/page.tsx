@@ -71,12 +71,12 @@ function toList(value?: string[] | null, fallback: string[] = []) {
 }
 
 function getAvatarUrl(profile?: ProfileRecord | null) {
-<<<<<<< HEAD
+ 
   if (profile?.avatar_url) return profile.avatar_url;
   return "/offramp-logo.png";
-=======
+ 
   return profile?.avatar_url || "/c4c.webp";
->>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
+
 }
 
 export default function ProfilePage() {
@@ -606,9 +606,9 @@ export default function ProfilePage() {
   };
 
   return (
-<<<<<<< HEAD
+ 
     <main className="min-h-screen bg-[#eef2ef] text-slate-900">
-<<<<<<< HEAD
+ 
       <nav className="border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
@@ -687,8 +687,8 @@ export default function ProfilePage() {
         </div>
       </nav>
 
-=======
->>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
+ 
+
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="w-full rounded-[36px] border border-[#dfe7e1] bg-gradient-to-b from-white/95 via-[#f6faf7] to-[#eef5f0] p-6 text-slate-800 shadow-[0_28px_80px_rgba(19,41,29,0.08)] lg:w-72 lg:shrink-0 lg:sticky lg:top-8">
@@ -696,7 +696,7 @@ export default function ProfilePage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Dashboard</p>
               <p className="mt-2 text-lg font-black text-[#1e4f35]">{displayName.split(" ")[0] ?? "Member"}</p>
               <p className="text-xs text-slate-500">Track swaps, impact, and controls</p>
-=======
+ 
     <div className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
       <GlobalNav />
 
@@ -777,7 +777,7 @@ export default function ProfilePage() {
           <div className="flex-1 overflow-y-auto bg-[#f4f6fb]">
             <div className="w-full px-4 pb-16 pt-8 sm:px-8 xl:px-14 2xl:px-20">{renderSection()}</div>
           </div>
-<<<<<<< HEAD
+ 
         </div>
       </section>
 
@@ -811,10 +811,10 @@ export default function ProfilePage() {
         </div>
       </footer>
     </main>
-=======
+ 
         </section>
       </div>
     </div>
->>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
+
   );
 }
