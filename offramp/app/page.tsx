@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
-import { NavAuthButton } from "@/app/components/NavAuthButton";
 import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
+import { GlobalNav } from "@/app/components/GlobalNav";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -151,85 +151,7 @@ export default function Home() {
 
   return (
     <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
-      <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-          <div className="group flex items-center gap-2">
-            <img
-              src="/c4c.webp"
-              alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-            />
-            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
-          </div>
-          <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
-            <div className="relative group">
-              <a
-                href="#home"
-                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-              >
-                Home
-                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
-                  expand_more
-                </span>
-              </a>
-              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
-                <div className="absolute -top-3 left-0 right-0 h-3" />
-                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
-                  <a
-                    href="#how-it-works"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
-                    <span>How it Works</span>
-                  </a>
-                  <a
-                    href="#features"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
-                    <span>Features</span>
-                  </a>
-                  <a
-                    href="#impact"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
-                    <span>Impact</span>
-                  </a>
-                  <a
-                    href="#institutions"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
-                    <span>Institutions</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/swap"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Food Swap
-            </Link>
-            <a
-              href="#coming-soon"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Coming Soon
-            </a>
-            <a
-              href="#about"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              About
-            </a>
-          </div>
-          <div className="flex items-center gap-4">
-            <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" />
-          </div>
-        </div>
-      </nav>
+      <GlobalNav enableHashNavigation />
 
       <section className="relative overflow-hidden px-6 pt-20 pb-32">
         <div className="absolute left-10 top-20 hidden h-24 w-24 opacity-20 lg:block animate-float">
