@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modern Rounded Dashboard Layout</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#166534", 
+                        "primary-light": "#dcfce7", 
+                        "primary-hover": "#14532d", 
+                        "background-light": "#f3f4f6", 
+                        "background-dark": "#111827", 
+                        "card-light": "#ffffff",
+                        "card-dark": "#1f2937",
+                        "text-main-light": "#111827",
+                        "text-main-dark": "#f9fafb",
+                        "text-muted-light": "#6b7280",
+                        "text-muted-dark": "#9ca3af",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                        '3xl': '2rem',
+                    },
+                    spacing: {
+                        '4.5': '1.125rem',
+                    }
+                },
+            },
+        };
+    </script>
+<style>
+        .content-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            transform: translateY(10px);
+        }
+        .content-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark min-h-screen transition-colors duration-200 text-sm overflow-hidden">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-72 flex-shrink-0 bg-card-light dark:bg-card-dark border-r border-gray-200 dark:border-gray-700 flex flex-col justify-between h-full p-6 transition-colors duration-200 z-20">
+<div>
+<div class="mb-8 pl-2">
+<p class="text-xs uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark font-bold mb-2">Dashboard</p>
+<h2 class="text-2xl font-extrabold text-primary dark:text-green-400 tracking-tight">Sandesh</h2>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">Track swaps, impact, and controls</p>
+</div>
+<nav class="space-y-3">
+<button class="nav-btn w-full flex items-center px-5 py-4 rounded-2xl transition-all duration-200 bg-primary-light dark:bg-green-900/30 text-primary dark:text-green-400 border border-primary dark:border-green-600 font-semibold text-base shadow-sm" onclick="switchTab('profile', this)">
+<span class="material-symbols-outlined mr-4 text-2xl">account_circle</span>
+                    Profile
+                </button>
+<button class="nav-btn w-full flex items-center px-5 py-4 rounded-2xl transition-all duration-200 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 font-medium text-base group" onclick="switchTab('impact', this)">
+<span class="material-symbols-outlined mr-4 text-2xl group-hover:text-primary dark:group-hover:text-green-400">equalizer</span>
+                    Impact
+                </button>
+<button class="nav-btn w-full flex items-center px-5 py-4 rounded-2xl transition-all duration-200 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 font-medium text-base group" onclick="switchTab('preferences', this)">
+<span class="material-symbols-outlined mr-4 text-2xl group-hover:text-primary dark:group-hover:text-green-400">tune</span>
+                    Preferences
+                </button>
+<button class="nav-btn w-full flex items-center px-5 py-4 rounded-2xl transition-all duration-200 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 font-medium text-base group" onclick="switchTab('activity', this)">
+<span class="material-symbols-outlined mr-4 text-2xl group-hover:text-primary dark:group-hover:text-green-400">history</span>
+                    Activity
+                </button>
+<button class="nav-btn w-full flex items-center px-5 py-4 rounded-2xl transition-all duration-200 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 font-medium text-base group" onclick="switchTab('settings', this)">
+<span class="material-symbols-outlined mr-4 text-2xl group-hover:text-primary dark:group-hover:text-green-400">security</span>
+                    Settings
+                </button>
+</nav>
+</div>
+<div class="space-y-4">
+<div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+<p class="text-xs uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark font-bold mb-2">Weekly Focus</p>
+<div class="text-xl font-black text-gray-800 dark:text-gray-100 mb-1">324 swaps goal</div>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
+<div class="bg-primary h-2.5 rounded-full" style="width: 115%"></div>
+</div>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark font-medium leading-relaxed">You are <span class="text-green-600 font-bold">15% ahead</span> of target.</p>
+</div>
+<button class="w-full bg-primary hover:bg-primary-hover text-white py-3.5 rounded-2xl flex items-center justify-center font-bold text-sm transition-all shadow-lg shadow-green-900/20 hover:shadow-green-900/30 transform hover:-translate-y-0.5">
+<span class="material-symbols-outlined mr-2 text-xl">logout</span>
+                LOGOUT
+            </button>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto p-6 lg:p-10 relative bg-gray-100/50 dark:bg-black/40">
+<div class="content-section active max-w-full mx-auto space-y-6 h-full flex flex-col" id="profile">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div class="flex items-center gap-6">
+<div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl shadow-md shrink-0 ring-4 ring-white dark:ring-gray-800">
+                        4S
+                    </div>
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h1 class="text-3xl font-black text-gray-900 dark:text-white leading-tight">Sandesh Prakash Dawkhar</h1>
+<span class="inline-flex px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-xs font-bold rounded-full uppercase tracking-wide border border-green-200 dark:border-green-800">Vegan</span>
+</div>
+<p class="text-base text-text-muted-light dark:text-text-muted-dark mb-3 font-medium">sandeshdawkhar13@gmail.com</p>
+<div class="flex items-center text-xs font-bold text-primary dark:text-green-400 tracking-wider uppercase bg-green-50 dark:bg-green-900/20 py-1.5 px-3 rounded-lg w-fit">
+<span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span> Zero Waste Pro
+                        </div>
+</div>
+</div>
+<div class="flex flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
+<div class="text-right hidden md:block mr-4">
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark uppercase font-bold tracking-wider mb-1">Location</p>
+<p class="text-sm font-bold dark:text-gray-200">MUMBAI, Maharashtra</p>
+</div>
+<div class="flex gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-6 py-3 border-2 border-primary text-primary dark:border-green-500 dark:text-green-400 rounded-2xl text-sm font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition-all flex items-center justify-center whitespace-nowrap shadow-sm hover:shadow">
+<span class="material-symbols-outlined text-lg mr-2">edit</span> Edit
+                        </button>
+<button class="flex-1 md:flex-none px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center whitespace-nowrap shadow-sm hover:shadow">
+<span class="material-symbols-outlined text-lg mr-2">tune</span> Prefs
+                        </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl px-8 py-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-primary/30 transition-colors cursor-default group">
+<div>
+<p class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Diet Type</p>
+<p class="text-2xl font-black text-gray-900 dark:text-white">Vegan</p>
+</div>
+<div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-primary group-hover:text-white transition-all">
+<span class="material-symbols-outlined text-3xl">restaurant</span>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl px-8 py-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-primary/30 transition-colors cursor-default group">
+<div>
+<p class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Budget Focus</p>
+<p class="text-2xl font-black text-gray-900 dark:text-white">Standard</p>
+</div>
+<div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-primary group-hover:text-white transition-all">
+<span class="material-symbols-outlined text-3xl">savings</span>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl px-8 py-6 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-primary/30 transition-colors cursor-default group">
+<div>
+<p class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Cuisine</p>
+<p class="text-2xl font-black text-gray-900 dark:text-white">Italian</p>
+</div>
+<div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-primary group-hover:text-white transition-all">
+<span class="material-symbols-outlined text-3xl">local_pizza</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-center">
+<div class="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+<span class="material-symbols-outlined text-[10rem] text-blue-500">water_drop</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Water Saved</p>
+<span class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">+12%</span>
+</div>
+<div class="flex items-baseline gap-2 relative z-10">
+<p class="text-5xl font-black text-gray-900 dark:text-white">1,250</p>
+<p class="text-lg text-text-muted-light dark:text-text-muted-dark font-medium">Liters</p>
+</div>
+<div class="mt-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 relative z-10 overflow-hidden">
+<div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-center">
+<div class="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+<span class="material-symbols-outlined text-[10rem] text-gray-500">cloud</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">CO2 Reduced</p>
+<span class="text-xs font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">+8%</span>
+</div>
+<div class="flex items-baseline gap-2 relative z-10">
+<p class="text-5xl font-black text-gray-900 dark:text-white">45</p>
+<p class="text-lg text-text-muted-light dark:text-text-muted-dark font-medium">kg</p>
+</div>
+<div class="mt-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 relative z-10 overflow-hidden">
+<div class="bg-gray-500 h-2 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-center">
+<div class="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+<span class="material-symbols-outlined text-[10rem] text-green-500">landscape</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Land Saved</p>
+<span class="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">+5%</span>
+</div>
+<div class="flex items-baseline gap-2 relative z-10">
+<p class="text-5xl font-black text-gray-900 dark:text-white">12</p>
+<p class="text-lg text-text-muted-light dark:text-text-muted-dark font-medium">Sq M</p>
+</div>
+<div class="mt-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 relative z-10 overflow-hidden">
+<div class="bg-green-500 h-2 rounded-full" style="width: 25%"></div>
+</div>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 flex-grow">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-xl font-bold text-gray-900 dark:text-white">Recent Swaps</h3>
+<button class="px-4 py-2 bg-primary/10 text-primary dark:text-green-400 font-bold rounded-xl hover:bg-primary/20 transition-colors text-sm" onclick="switchTab('activity', document.querySelector('button[onclick*=\'activity\']'))">View All</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="flex items-center justify-between p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm group">
+<div class="flex items-center gap-5">
+<div class="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-primary dark:text-green-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">restaurant_menu</span>
+</div>
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white mb-1">Tempeh Coastal Curry</p>
+<p class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">Swapped for <span class="text-red-400 line-through">Fish Curry</span></p>
+</div>
+</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">3h ago</span>
+</div>
+<div class="flex items-center justify-between p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm group">
+<div class="flex items-center gap-5">
+<div class="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-primary dark:text-green-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">eco</span>
+</div>
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white mb-1">Chickpea &amp; Spinach Curry</p>
+<p class="text-xs font-medium text-text-muted-light dark:text-text-muted-dark uppercase tracking-wide">Swapped for <span class="text-red-400 line-through">Chicken Saag</span></p>
+</div>
+</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">Yesterday</span>
+</div>
+</div>
+</div>
+</div>
+<div class="content-section max-w-full mx-auto space-y-6" id="impact">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 relative flex flex-col justify-between min-h-[400px]">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-2">Swaps Over Time</p>
+<div class="flex items-baseline gap-4">
+<h3 class="text-6xl font-black text-gray-900 dark:text-white tracking-tighter">324</h3>
+<div class="flex flex-col">
+<p class="text-sm text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-lg inline-block w-fit mb-1">
+<span class="material-symbols-outlined text-sm align-middle mr-1">trending_up</span>+18%
+                                    </p>
+<span class="text-xs text-gray-400">vs last 6mo</span>
+</div>
+</div>
+</div>
+<span class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-xs font-bold uppercase tracking-wider rounded-lg text-gray-500 dark:text-gray-400 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live Data
+                        </span>
+</div>
+<div class="flex-grow w-full bg-gradient-to-b from-green-50/50 to-transparent dark:from-green-900/10 rounded-2xl relative overflow-hidden flex items-end border-b border-gray-100 dark:border-gray-800">
+<svg class="w-full h-full absolute bottom-0 left-0" preserveAspectRatio="none" viewBox="0 0 100 40">
+<defs>
+<linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:rgb(22, 163, 74);stop-opacity:0.2"></stop>
+<stop offset="100%" style="stop-color:rgb(22, 163, 74);stop-opacity:0"></stop>
+</linearGradient>
+</defs>
+<path d="M0 35 Q 15 38 30 25 T 60 15 T 90 20 L 100 5 L 100 40 L 0 40 Z" fill="url(#grad1)" stroke="none"></path>
+<path d="M0 35 Q 15 38 30 25 T 60 15 T 90 20 L 100 5" fill="none" stroke="#16a34a" stroke-linecap="round" stroke-width="0.8"></path>
+</svg>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-8">
+<div>
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1">Impact Highlights</p>
+<h3 class="text-3xl font-black text-gray-900 dark:text-white">This week</h3>
+</div>
+<span class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-bold bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-lg">Updated Now</span>
+</div>
+<div class="space-y-4 flex-grow flex flex-col justify-center">
+<div class="flex items-center p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm">
+<div class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mr-5 flex-shrink-0">
+<span class="material-symbols-outlined text-3xl">water_drop</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white">Saved 220 liters</p>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark font-medium">vs avg cafeteria line</p>
+</div>
+</div>
+<div class="flex items-center p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm">
+<div class="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 mr-5 flex-shrink-0">
+<span class="material-symbols-outlined text-3xl">park</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white">12 sq m land restored</p>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark font-medium">Thanks to jackfruit swaps</p>
+</div>
+</div>
+<div class="flex items-center p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm">
+<div class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mr-5 flex-shrink-0">
+<span class="material-symbols-outlined text-3xl">trending_up</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white">15% conversion lift</p>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark font-medium">Students picking veg trays</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="content-section max-w-full mx-auto space-y-6" id="preferences">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1">Dietary type</p>
+<h3 class="text-3xl font-black text-gray-900 dark:text-white">Vegan</h3>
+</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark tracking-widest uppercase opacity-80 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">Synced</span>
+</div>
+<div class="mb-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark mb-3 uppercase tracking-wide">Current Setting</p>
+<span class="px-5 py-3 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-base font-bold rounded-xl border border-green-200 dark:border-green-800 inline-flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">check_circle</span> Strict Vegan
+                        </span>
+</div>
+<div class="border-t border-gray-100 dark:border-gray-700 pt-6 mt-auto">
+<p class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-4">Spice Tolerance</p>
+<div class="grid grid-cols-3 gap-4">
+<button class="px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">Mild</button>
+<button class="px-4 py-3 rounded-xl bg-primary text-white text-sm font-bold border-2 border-primary shadow-lg shadow-primary/20 transform scale-105">Medium</button>
+<button class="px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">Hot</button>
+</div>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1">Favorite Cuisines</p>
+<h3 class="text-3xl font-black text-gray-900 dark:text-white">Saved sets</h3>
+</div>
+<button class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-primary dark:text-green-400 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Edit</button>
+</div>
+<div class="flex flex-wrap gap-3 mb-8">
+<span class="px-5 py-2.5 bg-white dark:bg-gray-800 shadow-sm text-gray-800 dark:text-gray-200 text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-red-400"></span> Italian
+                            </span>
+<span class="px-5 py-2.5 bg-white dark:bg-gray-800 shadow-sm text-gray-800 dark:text-gray-200 text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-orange-400"></span> Japanese
+                            </span>
+<span class="px-5 py-2.5 bg-white dark:bg-gray-800 shadow-sm text-gray-800 dark:text-gray-200 text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-700 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Thai
+                            </span>
+</div>
+</div>
+<div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-6 flex items-center gap-5 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-800 transition-all cursor-pointer group">
+<div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">refresh</span>
+</div>
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Refresh intake?</p>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 font-medium">Re-run the guided setup to update preferences.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="content-section max-w-full mx-auto space-y-6" id="activity">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[600px] flex flex-col">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<p class="text-sm font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest mb-1">Activity Hub</p>
+<h3 class="text-3xl font-black text-gray-900 dark:text-white">Latest moves</h3>
+</div>
+<div class="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+<button class="px-5 py-2 bg-white dark:bg-gray-700 shadow rounded-xl text-sm font-bold text-gray-900 dark:text-white transition-all">Swaps</button>
+<button class="px-5 py-2 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Saved</button>
+<button class="px-5 py-2 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">History</button>
+</div>
+</div>
+<div class="space-y-4 flex-grow">
+<div class="flex flex-col md:flex-row justify-between items-center p-5 bg-gray-50 dark:bg-gray-800/30 rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md group cursor-pointer">
+<div class="flex items-center w-full md:w-auto">
+<div class="w-16 h-16 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center justify-center mr-5 text-primary dark:text-green-400 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-2xl">restaurant</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Tempeh Coastal Curry</p>
+<p class="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Swapped for <span class="line-through decoration-red-400 decoration-2">Fish Curry</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+<span class="flex items-center text-xs font-bold text-primary dark:text-green-400 bg-primary-light dark:bg-green-900/20 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined text-sm mr-2">schedule</span> 3h ago
+                            </span>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-green-50 transition-colors">
+<span class="material-symbols-outlined text-xl">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-center p-5 bg-gray-50 dark:bg-gray-800/30 rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md group cursor-pointer">
+<div class="flex items-center w-full md:w-auto">
+<div class="w-16 h-16 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center justify-center mr-5 text-primary dark:text-green-400 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-2xl">restaurant</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Chickpea &amp; Spinach Curry</p>
+<p class="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Swapped for <span class="line-through decoration-red-400 decoration-2">Chicken Saag</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+<span class="flex items-center text-xs font-bold text-primary dark:text-green-400 bg-primary-light dark:bg-green-900/20 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined text-sm mr-2">history</span> Yesterday
+                            </span>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-green-50 transition-colors">
+<span class="material-symbols-outlined text-xl">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-center p-5 bg-gray-50 dark:bg-gray-800/30 rounded-2xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md group cursor-pointer">
+<div class="flex items-center w-full md:w-auto">
+<div class="w-16 h-16 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center justify-center mr-5 text-primary dark:text-green-400 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-2xl">restaurant</span>
+</div>
+<div>
+<p class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Vegetable Kofta Curry</p>
+<p class="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Swapped for <span class="line-through decoration-red-400 decoration-2">Meat Kofta</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+<span class="flex items-center text-xs font-bold text-primary dark:text-green-400 bg-primary-light dark:bg-green-900/20 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined text-sm mr-2">check_circle</span> Last week
+                            </span>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-green-50 transition-colors">
+<span class="material-symbols-outlined text-xl">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-8 text-center border-t border-gray-100 dark:border-gray-700 pt-6">
+<button class="text-sm font-bold uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-green-400 transition-colors flex items-center justify-center gap-2 mx-auto">
+                        View full history <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="content-section max-w-full mx-auto" id="settings">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700">
+<h3 class="text-2xl font-black text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+<span class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl"><span class="material-symbols-outlined">lock</span></span>
+                        Security &amp; Controls
+                    </h3>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-2 group cursor-pointer">
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Change password</p>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 font-medium">Updated 3 months ago</p>
+</div>
+<button class="px-5 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Manage</button>
+</div>
+<hr class="border-gray-100 dark:border-gray-700"/>
+<div class="flex items-center justify-between py-2">
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white">Notifications</p>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 font-medium">In-app and push alerts</p>
+</div>
+<div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 right-6 checked:border-primary" id="toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary cursor-pointer opacity-20 checked:opacity-100" for="toggle"></label>
+</div>
+</div>
+<hr class="border-gray-100 dark:border-gray-700"/>
+<div class="flex items-center justify-between py-2 group cursor-pointer">
+<div>
+<p class="text-base font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Data &amp; Privacy</p>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1 font-medium">Manage your footprint visibility</p>
+</div>
+<button class="px-5 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Review</button>
+</div>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-3xl p-8 shadow-sm border border-gray-200 dark:border-gray-700">
+<h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+<span class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl"><span class="material-symbols-outlined">support_agent</span></span>
+                        Support
+                    </h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark mb-8 font-medium">Need a concierge for institutional rollouts? Reach out directly.</p>
+<div class="space-y-4">
+<button class="w-full flex items-center p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md transition-all group">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 group-hover:text-primary dark:group-hover:text-green-400 mr-4 text-2xl">email</span>
+<span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary dark:group-hover:text-white">hello@offramp.ai</span>
+</button>
+<button class="w-full flex items-center p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md transition-all group">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 group-hover:text-blue-600 mr-4 text-2xl">campaign</span>
+<span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">Connect on LinkedIn</span>
+</button>
+<button class="w-full flex items-center p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 shadow-sm hover:shadow-md transition-all group">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 group-hover:text-green-600 mr-4 text-2xl">chat</span>
+<span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400">WhatsApp assistant</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        function switchTab(sectionId, btn) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.classList.remove('active');
+                setTimeout(() => {
+                    if(!el.classList.contains('active')) el.style.display = 'none';
+                }, 300); // Match CSS transition duration
+            });
+            // Show selected section
+            const target = document.getElementById(sectionId);
+            target.style.display = 'block';
+            // Slight delay to allow display:block to render before opacity transition
+            setTimeout(() => {
+                target.classList.add('active');
+            }, 10);
+            // Update sidebar button styles
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                // Reset to default styling
+                el.classList.remove('bg-primary-light', 'dark:bg-green-900/30', 'text-primary', 'dark:text-green-400', 'border-primary', 'dark:border-green-600', 'shadow-sm');
+                el.classList.add('text-text-muted-light', 'dark:text-text-muted-dark', 'hover:bg-gray-100', 'dark:hover:bg-gray-800', 'border-transparent');
+                // Reset icon color inside button
+                const icon = el.querySelector('.material-symbols-outlined');
+                if(icon) {
+                    icon.classList.remove('text-primary'); // remove active color
+                }
+            });
+            // Apply active styling to clicked button
+            btn.classList.remove('text-text-muted-light', 'dark:text-text-muted-dark', 'hover:bg-gray-100', 'dark:hover:bg-gray-800', 'border-transparent');
+            btn.classList.add('bg-primary-light', 'dark:bg-green-900/30', 'text-primary', 'dark:text-green-400', 'border', 'border-primary', 'dark:border-green-600', 'shadow-sm');
+        }
+    </script>
+
+</body></html>
