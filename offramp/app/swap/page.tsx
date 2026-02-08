@@ -502,29 +502,8 @@ function SwapPageInner() {
   // If a dish is selected, show the detail view
   if (selectedDish) {
     return (
-      <main className={`${jakarta.className} ${impact.variable} min-h-screen bg-highlight text-slate-900`}>
-        <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
-          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-            <div className="group flex items-center gap-2">
-              <img
-                src="/c4c.webp"
-                alt="OffRamp logo"
-                className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6 delay-400"
-              />
-              <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
-            </div>
-            <button
-              onClick={handleBackFromDetail}
-              className="flex items-center gap-2 rounded-full border-2 border-black bg-white px-6 py-2 text-sm font-bold uppercase transition hover:bg-black hover:text-white"
-            >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              Back to Search
-            </button>
-          </div>
-        </nav>
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <DishDetail dish={selectedDish} onBack={handleBackFromDetail} />
-        </div>
+      <main className={`${jakarta.className} ${impact.variable} min-h-screen w-full bg-black text-white`}>
+        <DishDetail dish={selectedDish} onBack={handleBackFromDetail} />
       </main>
     );
   }
