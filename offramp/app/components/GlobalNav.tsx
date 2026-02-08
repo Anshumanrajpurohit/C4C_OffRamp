@@ -12,12 +12,8 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
   const anchorHref = (hash: string) => `${enableHashNavigation ? "#" : "/#"}${hash}`;
   const navLinkClass =
     "relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full";
-  const comingSoonLink = enableHashNavigation ? (
-    <a href={anchorHref("coming-soon")} className={navLinkClass}>
-      Coming Soon
-    </a>
-  ) : (
-    <Link href="/coming-soon" className={navLinkClass}>
+  const comingSoonLink = (
+    <Link href="/coming-soon" className={navLinkClass} prefetch={false}>
       Coming Soon
     </Link>
   );
