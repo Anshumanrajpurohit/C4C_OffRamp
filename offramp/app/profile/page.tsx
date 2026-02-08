@@ -40,351 +40,6 @@ type SidebarItem = {
   icon: string;
 };
 
-type SwapEntry = {
-  from: string;
-  to: string;
-  time: string;
-  savings: string;
-};
-
-type ChefHighlight = {
-  id: string;
-  name: string;
-  description: string;
-  tags: string[];
-  trend: string;
-};
-
-const SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: "profile-overview", label: "Profile", icon: "account_circle" },
-  { id: "impact", label: "Impact", icon: "monitoring" },
-  { id: "preferences", label: "Preferences", icon: "tune" },
-  { id: "activity", label: "Activity", icon: "history" },
-  { id: "account", label: "Settings", icon: "shield_lock" },
-];
-
-const FALLBACK_SERIES = [180, 210, 200, 260, 320, 340];
-
-function toList(value?: string[] | null, fallback: string[] = []) {
-  if (!value) return fallback;
-  return Array.isArray(value) ? value : fallback;
-}
-
-function getAvatarUrl(profile?: ProfileRecord | null) {
- 
-  if (profile?.avatar_url) return profile.avatar_url;
-  return "/offramp-logo.png";
- 
-  return profile?.avatar_url || "/c4c.webp";
-
-}
-
-export default function ProfilePage() {
-  const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [profile, setProfile] = useState<ProfileRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeSidebar, setActiveSidebar] = useState<string>(SIDEBAR_ITEMS[0].id);
-  const [isSigningOut, setIsSigningOut] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadDashboard() {
-      try {
-        const sessionResponse = await fetch("/api/auth/session", {
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        const sessionPayload = await sessionResponse.json();
-
-        if (!sessionPayload?.user) {
-          router.replace("/auth");
-          return;
-        }
-
-        if (!isMounted) return;
-        setUser(sessionPayload.user);
-
-        const profileResponse = await fetch("/api/profile", {
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        if (profileResponse.status === 401) {
-          router.replace("/auth");
-          return;
-        }
-
-        if (!isMounted) return;
-
-        if (profileResponse.ok) {
-          const profilePayload = await profileResponse.json();
-          if (isMounted) {
-            setProfile(profilePayload.profile ?? null);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load profile dashboard", error);
-        router.replace("/auth");
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    loadDashboard();
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
-
-  const preferences = useMemo(() => {
-    const dietList = toList(profile?.dietary_preferences, profile?.dietary_type ? [profile.dietary_type] : ["Vegan"]);
-    const cuisines = toList(profile?.favorite_cuisines, ["Italian", "Japanese", "Thai"]);
-    const ingredients = toList(profile?.favorite_ingredients, ["Jackfruit protein", "Millet dosa", "Kombucha glaze", "Cashew crema"]);
-    const spice = profile?.spice_tolerance ?? "Medium";
-    return { dietList, cuisines, ingredients, spice };
-  }, [profile]);
-
-  const impactMetrics = useMemo(() => {
-    return {
-      water: profile?.water_saved_liters ?? 1250,
-      co2: profile?.co2_reduced_kg ?? 45,
-      land: profile?.land_saved_sqm ?? 12,
-      swaps: profile?.swaps_completed ?? 324,
-      growth: profile?.swaps_growth_pct ?? 15,
-      series: (profile?.swap_series && profile.swap_series.length > 1 ? profile.swap_series : FALLBACK_SERIES).slice(0, 6),
-    };
-  }, [profile]);
-
-  const chartPath = useMemo(() => {
-    const { series } = impactMetrics;
-    if (!series.length) return "";
-
-    const max = Math.max(...series);
-    const min = Math.min(...series);
-    const span = max - min || 1;
-
-    return series
-      .map((value, index) => {
-        const x = (index / (series.length - 1 || 1)) * 100;
-        const normalized = (value - min) / span;
-        const y = 90 - normalized * 70;
-        return `${x},${y}`;
-      })
-      .join(" ");
-  }, [impactMetrics]);
-
-  const swaps = useMemo<SwapEntry[]>(() => {
-    const dishes = DISH_CATALOG.slice(0, 4);
-    const labels = ["3h ago", "Yesterday", "2 days ago", "Last week"];
-    return dishes.map((dish, index) => ({
-      from: dish.replaces?.[0] ?? "Standard meal",
-      to: dish.name,
-      time: labels[index] ?? "Recently",
-      savings: `-${5 + index * 3}% cost`,
-    }));
-  }, []);
-
-  const chefHighlights = useMemo<ChefHighlight[]>(() => {
-    return DISH_CATALOG.slice(0, 3).map((dish, index) => {
-      const baseline = ((dish.name.length + index * 7) % 10) + 5;
-      return {
-        id: dish.id,
-        name: dish.name,
-        description: dish.hotSwaps?.[0] ? `Swap from ${dish.hotSwaps[0]} to ${dish.name}` : "Chef special",
-        tags: dish.tags?.slice(0, 2) ?? [],
-        trend: `+${baseline}%`,
-      };
-    });
-  }, []);
-
-  const lastUpdated = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  const displayName = user?.full_name?.trim() && user.full_name.length > 0 ? user.full_name : "OffRamp Member";
-  const email = user?.email ?? "";
-  const primaryBadge = preferences.dietList[0] ?? "Vegan";
-  const firstName = (displayName.split(" ")[0] ?? "Member").trim() || "Member";
-
-  const quickFacts = [
-    { label: "Diet Type", value: primaryBadge, icon: "restaurant" },
-    { label: "Budget Focus", value: user?.budget_level || "Standard", icon: "account_balance_wallet" },
-    { label: "Cuisine", value: preferences.cuisines[0], icon: "room" },
-  ];
-
-  const activeSection = SIDEBAR_ITEMS.find((item) => item.id === activeSidebar);
-
-  const handleSidebarNavigation = (sectionId: string) => {
-    setActiveSidebar(sectionId);
-  };
-
-  const handleLogout = async () => {
-    try {
-      setIsSigningOut(true);
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/auth");
-    } catch (error) {
-      console.error("Failed to log out", error);
-      setIsSigningOut(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f4f6fb] text-[#0f1c21]">
-        <span className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Loading profile...</span>
-      </div>
-    );
-  }
-
-  const renderProfileOverview = () => (
-    <div className="space-y-6">
-      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/60 lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-6">
-            <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
-              <Image src={getAvatarUrl(profile)} alt={displayName} fill sizes="96px" className="object-cover" />
-              <span className="absolute -bottom-2 -right-2 rounded-2xl bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.4em] text-white">
-                {primaryBadge}
-              </span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-3xl font-bold text-slate-900">{displayName}</h2>
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Zero Waste Pro
-                </span>
-              </div>
-              <p className="text-sm text-slate-500">{email}</p>
-              <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
-                {preferences.dietList.slice(0, 3).map((diet) => (
-                  <span key={diet} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                    {diet}
-                   </span>
-                 ))}
-               </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 text-sm text-slate-500">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">Location</p>
-              <p className="text-base font-semibold text-slate-900">
-                {user?.city || "Remote"}, {user?.region || "Global"}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => router.push("/profile-setup")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-sm">edit</span>
-                Edit Profile
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/profile-setup")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
-              >
-                <span className="material-symbols-outlined text-sm">tune</span>
-                Preferences
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {quickFacts.map((card) => (
-          <div key={card.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400">{card.label}</p>
-              <span className="material-symbols-outlined text-base text-slate-300">{card.icon}</span>
-            </div>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
-          { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
-          { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
-        ].map((metric) => (
-          <div key={metric.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-              <span>{metric.label}</span>
-              <span className="text-emerald-600">{metric.trend}</span>
-            </div>
-            <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/70">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-500">Recent swaps</p>
-            <p className="text-lg font-bold text-slate-900">Latest activity from your campus</p>
-          </div>
-          <button className="rounded-full border-2 border-slate-900/20 px-6 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5">View all</button>
-        </div>
-        <ul className="mt-5 space-y-3">
-          {swaps.map((swap) => (
-            <li key={`${swap.from}-${swap.to}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{swap.to}</p>
-                <p className="text-xs text-slate-500">Swapped for {swap.from}</p>
-              </div>
-              <div className="text-right text-xs text-slate-400">
-                <p>{swap.time}</p>
-                <p className="text-emerald-600">{swap.savings}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-
-  const renderImpactSection = () => (
-    <div className="space-y-6">
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Impact Dashboard</p>
-            <h3 className="text-2xl font-black text-slate-900">Sustainable gains</h3>
-          </div>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold text-slate-500">Live sync</span>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
-            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
-            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
-            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
-          ].map((metric) => (
-            <div key={metric.label} className="rounded-3xl border border-slate-100 bg-slate-50 px-5 py-4">
-              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
-                <span>{metric.label}</span>
-                <span className="text-emerald-600">{metric.trend}</span>
-              </div>
-              <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 rounded-3xl border border-slate-100 bg-gradient-to-br from-emerald-50 to-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Swaps over time</p>
-              <p className="text-4xl font-black text-slate-900">{impactMetrics.swaps.toLocaleString()}</p>
-              <p className="text-xs font-semibold text-emerald-600">+{impactMetrics.growth}% vs last 6 months</p>
-            </div>
-            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-600">Updated {lastUpdated}</span>
-          </div>
-          <svg viewBox="0 0 100 100" className="mt-6 h-32 w-full text-emerald-500">
             <defs>
               <linearGradient id="impactSpark" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#059669" stopOpacity="0.8" />
@@ -435,6 +90,25 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Key Ingredients</p>
+            <p className="text-2xl font-black text-slate-900">Pantry signals</p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold text-slate-500">Chef insights</span>
+        </div>
+        <ul className="mt-5 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+          {preferences.ingredients.slice(0, 6).map((ingredient) => (
+            <li key={ingredient} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
+              {ingredient}
+            </li>
+          ))}
+          <li className="rounded-full border border-slate-200 bg-emerald-50 px-4 py-2 text-emerald-700">
+            {preferences.spice} Spice
+          </li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -450,26 +124,24 @@ export default function ProfilePage() {
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">Campus feed</span>
           </div>
           <div className="mt-4 space-y-4">
-            {chefHighlights.map((highlight, index) => {
-              return (
-                <div key={`${highlight.id}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{highlight.name}</p>
-                      <p className="text-xs text-slate-500">{highlight.description}</p>
-                    </div>
-                    <span className="text-xs text-emerald-600">{highlight.trend}</span>
+            {chefHighlights.map((highlight, index) => (
+              <div key={`${highlight.id}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{highlight.name}</p>
+                    <p className="text-xs text-slate-500">{highlight.description}</p>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">
-                    {highlight.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-slate-200 px-3 py-1">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <span className="text-xs text-emerald-600">{highlight.trend}</span>
                 </div>
-              );
-            })}
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">
+                  {highlight.tags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-slate-200 px-3 py-1">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
         <div className="space-y-6">
@@ -605,103 +277,6 @@ export default function ProfilePage() {
     }
   };
 
-  return (
- 
-    <main className="min-h-screen bg-[#eef2ef] text-slate-900">
- 
-      <nav className="border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-          <div className="group flex items-center gap-2">
-            <img
-              src="/offramp-logo.png"
-              alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-            />
-            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
-          </div>
-          <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
-            <div className="relative group">
-              <Link
-                href="/#home"
-                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-              >
-                Home
-                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
-                  expand_more
-                </span>
-              </Link>
-              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
-                <div className="absolute -top-3 left-0 right-0 h-3" />
-                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
-                  <Link
-                    href="/#how-it-works"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
-                    <span>How it Works</span>
-                  </Link>
-                  <Link
-                    href="/#features"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
-                    <span>Features</span>
-                  </Link>
-                  <Link
-                    href="/#impact"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
-                    <span>Impact</span>
-                  </Link>
-                  <Link
-                    href="/#institutions"
-                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
-                  >
-                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
-                    <span>Institutions</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/swap"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Food Swap
-            </Link>
-            <Link
-              href="/#coming-soon"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Coming Soon
-            </Link>
-            <Link
-              href="/#about"
-              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-            >
-              About
-            </Link>
-          </div>
-          <NavAuthButton userHref="/profile" />
-        </div>
-      </nav>
-
- 
-
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <aside className="w-full rounded-[36px] border border-[#dfe7e1] bg-gradient-to-b from-white/95 via-[#f6faf7] to-[#eef5f0] p-6 text-slate-800 shadow-[0_28px_80px_rgba(19,41,29,0.08)] lg:w-72 lg:shrink-0 lg:sticky lg:top-8">
-            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Dashboard</p>
-              <p className="mt-2 text-lg font-black text-[#1e4f35]">{displayName.split(" ")[0] ?? "Member"}</p>
-              <p className="text-xs text-slate-500">Track swaps, impact, and controls</p>
- 
-    <div className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
-      <GlobalNav />
-
-      <div className="flex flex-1 items-start gap-6 px-4 pb-10 pt-6 sm:px-8 xl:px-12">
-        <aside className="hidden w-72 flex-shrink-0 flex-col justify-between rounded-[32px] border border-slate-100 bg-white/90 p-6 text-slate-900 shadow-[12px_12px_45px_rgba(15,28,33,0.08)] backdrop-blur lg:flex lg:sticky lg:top-6 lg:min-h-[calc(100vh-3rem)] lg:self-start">
           <div>
             <div className="mb-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.5em] text-slate-400">Dashboard</p>
@@ -724,9 +299,11 @@ export default function ProfilePage() {
                     }`}
                   >
                     <span className="flex items-center gap-3">
-                      <span className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-lg ${
-                        isActive ? "border-emerald-200 bg-white text-emerald-600" : "border-slate-200 bg-white text-slate-400"
-                      }`}>
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-lg ${
+                          isActive ? "border-emerald-200 bg-white text-emerald-600" : "border-slate-200 bg-white text-slate-400"
+                        }`}
+                      >
                         <span className="material-symbols-outlined text-base">{item.icon}</span>
                       </span>
                       {item.label}
@@ -777,44 +354,8 @@ export default function ProfilePage() {
           <div className="flex-1 overflow-y-auto bg-[#f4f6fb]">
             <div className="w-full px-4 pb-16 pt-8 sm:px-8 xl:px-14 2xl:px-20">{renderSection()}</div>
           </div>
- 
-        </div>
-      </section>
-
-      <footer className="border-t-3 border-black bg-white px-6 py-16">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
-          <div className="group flex items-center gap-2">
-            <img
-              src="/offramp-logo.png"
-              alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-            />
-            <span className="font-impact text-4xl uppercase">OffRamp</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Privacy
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Terms
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              LinkedIn
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Contact
-            </a>
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            © 2026 OFFRAMP. BE BOLD. EAT WELL.
-          </div>
-        </div>
-      </footer>
-    </main>
- 
         </section>
       </div>
-    </div>
-
+    </main>
   );
 }

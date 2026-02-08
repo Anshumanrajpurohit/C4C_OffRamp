@@ -11,7 +11,7 @@ type GlobalNavProps = {
 export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
   const anchorHref = (hash: string) => `${enableHashNavigation ? "#" : "/#"}${hash}`;
   const navLinkClass =
-    "relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full";
+    "relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full";
   const comingSoonLink = enableHashNavigation ? (
     <a href={anchorHref("coming-soon")} className={navLinkClass}>
       Coming Soon
@@ -23,12 +23,12 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
   );
 
   return (
-    <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300">
+    <nav className="sticky top-0 z-50 bg-highlight/90 text-[#0b1c21] backdrop-blur-sm transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <LogoMark
           as={enableHashNavigation ? "anchor" : "link"}
           href={anchorHref("home")}
-          textClassName="text-3xl"
+          textClassName="text-3xl text-[#0b1c21]"
           ariaLabel="Go to OffRamp home"
           priority
         />
@@ -36,7 +36,7 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
           <div className="relative group">
             <a
               href={anchorHref("home")}
-              className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+              className="relative flex items-center gap-1 text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               Home
               <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
