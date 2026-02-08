@@ -1,0 +1,19 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="sealGradient" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#fff8d6" />
+      <stop offset="100%" stop-color="#ffd93d" />
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#sealGradient)" stroke="#131614" stroke-width="6" />
+  <circle cx="100" cy="100" r="70" fill="none" stroke="#131614" stroke-width="2" stroke-dasharray="6 8" />
+  <text x="100" y="70" text-anchor="middle" font-size="20" font-weight="700" font-family="'Bebas Neue', 'Plus Jakarta Sans', sans-serif" letter-spacing="4" fill="#131614">
+    OFFRAMP
+  </text>
+  <text x="100" y="120" text-anchor="middle" font-size="44" font-weight="800" font-family="'Bebas Neue', 'Plus Jakarta Sans', sans-serif" fill="#131614">
+    BETA
+  </text>
+  <text x="100" y="150" text-anchor="middle" font-size="16" font-weight="600" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="4" fill="#131614">
+    COMING SOON
+  </text>
+</svg>

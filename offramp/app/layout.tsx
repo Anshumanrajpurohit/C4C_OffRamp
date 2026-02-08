@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const sans = Inter({
@@ -73,8 +73,12 @@ export default function RootLayout({
                   observer.disconnect();
                   if (disconnectTimer) clearTimeout(disconnectTimer);
                 };
-                window.addEventListener("load", stop, { once: true });
-                disconnectTimer = window.setTimeout(stop, 7000);
+                addEventListener("load", stop, { once: true });
+                document.addEventListener("DOMContentLoaded", function(){
+                  removeAttribute(root);
+                  scrub(root);
+                }, { once: true });
+                disconnectTimer = setTimeout(stop, 7000);
               }
               startObserver();
             })();
