@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { findReplacementGroups, DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -514,7 +515,7 @@ function SwapPageInner() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
             <img
-              src="/c4c.webp"
+              src="/offramp-logo.svg"
               alt="OffRamp logo"
               className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
             />
@@ -596,18 +597,12 @@ function SwapPageInner() {
               Search any dish and see our best plant-powered swaps without leaving this page. No login required.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="#search"
-                className="rounded-2xl border-2 border-black bg-black px-10 py-4 text-lg font-black uppercase text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-accent hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-              >
+              <PrimaryCTAButton as={Link} href="#search">
                 Start Your Swap
-              </Link>
-              <Link
-                href="/#how-it-works"
-                className="rounded-2xl border-2 border-black bg-white px-8 py-4 text-lg font-black uppercase text-black transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-              >
+              </PrimaryCTAButton>
+              <PrimaryCTAButton as={Link} href="/#how-it-works" variant="ghost">
                 How it Works
-              </Link>
+              </PrimaryCTAButton>
             </div>
           </div>
 
@@ -1298,7 +1293,7 @@ function SwapPageInner() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
           <div className="group flex items-center gap-2">
             <img
-              src="/c4c.webp"
+              src="/offramp-logo.svg"
               alt="OffRamp logo"
               className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
             />
@@ -1461,6 +1456,7 @@ function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSele
     <button
       type="button"
       onClick={onSelect}
+      suppressHydrationWarning
       className="group relative flex h-full min-h-[24rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)] "
     >
       <div className="card-flip-wrapper">
@@ -1542,6 +1538,7 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
     <button
       type="button"
       onClick={onSelect}
+      suppressHydrationWarning
       className="group relative flex h-full min-h-[26rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
     >
       <div className="card-flip-wrapper">

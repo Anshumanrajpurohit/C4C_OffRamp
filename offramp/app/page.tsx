@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import type { CSSProperties } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
+import SiteFooter from "@/app/components/SiteFooter";
 import { GlobalNav } from "@/app/components/GlobalNav";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
@@ -141,13 +141,6 @@ export default function Home() {
       document.documentElement.classList.remove("scroll-smooth");
     };
   }, []);
-
-  const institutionsCTAStyle = {
-    "--color1": "#ffffff",
-    "--color2": "#c9f5dc",
-    color: "#14532d",
-    textShadow: "0 8px 12px rgba(0, 0, 0, 0.2)",
-  } as CSSProperties & Record<"--color1" | "--color2", string>;
 
   return (
     <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
@@ -558,7 +551,7 @@ export default function Home() {
               <PrimaryCTAButton as={Link} href="/swap">
                 Try A Swap Now !
               </PrimaryCTAButton>
-              <PrimaryCTAButton as={Link} href="/swap" style={institutionsCTAStyle}>
+              <PrimaryCTAButton as={Link} href="/swap" variant="ghost">
                 For Institutions
               </PrimaryCTAButton> <br />
             </div>
@@ -577,35 +570,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t-3 border-black bg-white px-6 py-16">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
-          <div className="group flex items-center gap-2">
-            <img
-              src="/c4c.webp"
-              alt="OffRamp logo"
-              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
-            />
-            <span className="font-impact text-4xl uppercase">OffRamp</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Privacy
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Terms
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              LinkedIn
-            </a>
-            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
-              Contact
-            </a>
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            © 2026 OFFRAMP. BE BOLD. EAT WELL.
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

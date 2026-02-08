@@ -156,7 +156,7 @@ export default function ProfileSetupPage() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-2">
             <img
-              src="/c4c.webp"
+              src="/offramp-logo.svg"
               alt="OffRamp logo"
               className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
             />
@@ -384,7 +384,7 @@ export default function ProfileSetupPage() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
           <div className="group flex items-center gap-2">
             <img
-              src="/c4c.webp"
+              src="/offramp-logo.svg"
               alt="OffRamp logo"
               className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
             />

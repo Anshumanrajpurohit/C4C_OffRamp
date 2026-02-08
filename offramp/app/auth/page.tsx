@@ -129,7 +129,7 @@ export default function AuthPage() {
                 <div className="mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <img
-                      src="/c4c.webp"
+                      src="/offramp-logo.png"
                       alt="OffRamp logo"
                       className="h-10 w-10 rounded border-2 border-black bg-white object-cover"
                     />

@@ -71,7 +71,12 @@ function toList(value?: string[] | null, fallback: string[] = []) {
 }
 
 function getAvatarUrl(profile?: ProfileRecord | null) {
+<<<<<<< HEAD
+  if (profile?.avatar_url) return profile.avatar_url;
+  return "/offramp-logo.png";
+=======
   return profile?.avatar_url || "/c4c.webp";
+>>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
 }
 
 export default function ProfilePage() {
@@ -601,6 +606,97 @@ export default function ProfilePage() {
   };
 
   return (
+<<<<<<< HEAD
+    <main className="min-h-screen bg-[#eef2ef] text-slate-900">
+<<<<<<< HEAD
+      <nav className="border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/offramp-logo.png"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
+          </div>
+          <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
+            <div className="relative group">
+              <Link
+                href="/#home"
+                className="relative flex items-center gap-1 transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Home
+                <span className="material-symbols-outlined text-base transition-transform duration-300 group-hover:rotate-180">
+                  expand_more
+                </span>
+              </Link>
+              <div className="absolute left-0 top-full z-20 mt-3 hidden min-w-[360px] rounded-2xl border-2 border-black bg-white px-2 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group-hover:block">
+                <div className="absolute -top-3 left-0 right-0 h-3" />
+                <div className="grid grid-cols-4 gap-2 divide-x divide-black/10">
+                  <Link
+                    href="/#how-it-works"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">home</span>
+                    <span>How it Works</span>
+                  </Link>
+                  <Link
+                    href="/#features"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">auto_graph</span>
+                    <span>Features</span>
+                  </Link>
+                  <Link
+                    href="/#impact"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">insights</span>
+                    <span>Impact</span>
+                  </Link>
+                  <Link
+                    href="/#institutions"
+                    className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-xs font-bold uppercase text-slate-700 transition hover:bg-highlight"
+                  >
+                    <span className="material-symbols-outlined mb-2 text-xl text-slate-500">apartment</span>
+                    <span>Institutions</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/swap"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Food Swap
+            </Link>
+            <Link
+              href="/#coming-soon"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Coming Soon
+            </Link>
+            <Link
+              href="/#about"
+              className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+            >
+              About
+            </Link>
+          </div>
+          <NavAuthButton userHref="/profile" />
+        </div>
+      </nav>
+
+=======
+>>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
+      <section className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <aside className="w-full rounded-[36px] border border-[#dfe7e1] bg-gradient-to-b from-white/95 via-[#f6faf7] to-[#eef5f0] p-6 text-slate-800 shadow-[0_28px_80px_rgba(19,41,29,0.08)] lg:w-72 lg:shrink-0 lg:sticky lg:top-8">
+            <div className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-slate-400">Dashboard</p>
+              <p className="mt-2 text-lg font-black text-[#1e4f35]">{displayName.split(" ")[0] ?? "Member"}</p>
+              <p className="text-xs text-slate-500">Track swaps, impact, and controls</p>
+=======
     <div className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
       <GlobalNav />
 
@@ -681,8 +777,44 @@ export default function ProfilePage() {
           <div className="flex-1 overflow-y-auto bg-[#f4f6fb]">
             <div className="w-full px-4 pb-16 pt-8 sm:px-8 xl:px-14 2xl:px-20">{renderSection()}</div>
           </div>
+<<<<<<< HEAD
+        </div>
+      </section>
+
+      <footer className="border-t-3 border-black bg-white px-6 py-16">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
+          <div className="group flex items-center gap-2">
+            <img
+              src="/offramp-logo.png"
+              alt="OffRamp logo"
+              className="h-10 w-10 rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6"
+            />
+            <span className="font-impact text-4xl uppercase">OffRamp</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Privacy
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Terms
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              LinkedIn
+            </a>
+            <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
+              Contact
+            </a>
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            © 2026 OFFRAMP. BE BOLD. EAT WELL.
+          </div>
+        </div>
+      </footer>
+    </main>
+=======
         </section>
       </div>
     </div>
+>>>>>>> 7574bf1ba8f6a9bfbddbd6db1243830674893aae
   );
 }
