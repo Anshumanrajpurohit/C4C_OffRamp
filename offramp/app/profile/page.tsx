@@ -40,6 +40,343 @@ type SidebarItem = {
   icon: string;
 };
 
+type SwapEntry = {
+  from: string;
+  to: string;
+  time: string;
+  savings: string;
+};
+
+type ChefHighlight = {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  trend: string;
+};
+
+const SIDEBAR_ITEMS: SidebarItem[] = [
+  { id: "profile-overview", label: "Profile", icon: "account_circle" },
+  { id: "impact", label: "Impact", icon: "monitoring" },
+  { id: "preferences", label: "Preferences", icon: "tune" },
+  { id: "activity", label: "Activity", icon: "history" },
+  { id: "account", label: "Settings", icon: "shield_lock" },
+];
+
+const FALLBACK_SERIES = [180, 210, 200, 260, 320, 340];
+const DEFAULT_CUISINES = ["Italian", "Japanese", "Thai"];
+const DEFAULT_INGREDIENTS = ["Jackfruit protein", "Millet dosa", "Kombucha glaze", "Cashew crema"];
+const DEFAULT_SWAP_TIMESTAMPS = ["3h ago", "Yesterday", "2 days ago", "Last week"];
+
+const toList = (value?: string[] | null, fallback: string[] = []) => {
+  if (!value) return fallback;
+  return Array.isArray(value) ? value : fallback;
+};
+
+const getAvatarUrl = (profile?: ProfileRecord | null) => {
+  if (profile?.avatar_url) return profile.avatar_url;
+  return "/offramp-logo.png";
+};
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [profile, setProfile] = useState<ProfileRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeSidebar, setActiveSidebar] = useState<string>(SIDEBAR_ITEMS[0].id);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        const sessionResponse = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const sessionPayload = await sessionResponse.json();
+
+        if (!sessionPayload?.user) {
+          router.replace("/auth");
+          return;
+        }
+
+        if (!isMounted) return;
+        setUser(sessionPayload.user);
+
+        const profileResponse = await fetch("/api/profile", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (profileResponse.status === 401) {
+          router.replace("/auth");
+          return;
+        }
+
+        if (!isMounted) return;
+
+        if (profileResponse.ok) {
+          const payload = await profileResponse.json();
+          if (isMounted) setProfile(payload.profile ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to load profile dashboard", error);
+        router.replace("/auth");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const preferences = useMemo(() => {
+    const dietList = toList(
+      profile?.dietary_preferences,
+      profile?.dietary_type ? [profile.dietary_type] : ["Vegan"],
+    );
+    const cuisines = toList(profile?.favorite_cuisines, DEFAULT_CUISINES);
+    const ingredients = toList(profile?.favorite_ingredients, DEFAULT_INGREDIENTS);
+    const spice = profile?.spice_tolerance ?? "Medium";
+    return { dietList, cuisines, ingredients, spice };
+  }, [profile]);
+
+  const impactMetrics = useMemo(() => ({
+    water: profile?.water_saved_liters ?? 1250,
+    co2: profile?.co2_reduced_kg ?? 45,
+    land: profile?.land_saved_sqm ?? 12,
+    swaps: profile?.swaps_completed ?? 324,
+    growth: profile?.swaps_growth_pct ?? 15,
+    series: (profile?.swap_series?.length ? profile.swap_series : FALLBACK_SERIES).slice(0, 6),
+  }), [profile]);
+
+  const chartPath = useMemo(() => {
+    const series = impactMetrics.series;
+    if (!series.length) return "";
+    const max = Math.max(...series);
+    const min = Math.min(...series);
+    const span = max - min || 1;
+
+    return series
+      .map((value, index) => {
+        const x = (index / (series.length - 1 || 1)) * 100;
+        const normalized = (value - min) / span;
+        const y = 90 - normalized * 70;
+        return `${x},${y}`;
+      })
+      .join(" ");
+  }, [impactMetrics]);
+
+  const swapEntries = useMemo<SwapEntry[]>(() => {
+    const dishes = DISH_CATALOG.slice(0, 4);
+    return dishes.map((dish, index) => ({
+      from: dish.replaces?.[0] ?? "Standard meal",
+      to: dish.name,
+      time: DEFAULT_SWAP_TIMESTAMPS[index] ?? "Recently",
+      savings: `-${5 + index * 3}% cost`,
+    }));
+  }, []);
+
+  const chefHighlights = useMemo<ChefHighlight[]>(() => {
+    return DISH_CATALOG.slice(0, 3).map((dish, index) => ({
+      id: dish.slug,
+      name: dish.name,
+      description: dish.replaces?.[0] ? `Swap from ${dish.replaces[0]} to ${dish.name}` : "Chef special",
+      tags: dish.categories?.slice(0, 2) ?? [],
+      trend: `+${((dish.name.length + index * 7) % 10) + 5}%`,
+    }));
+  }, []);
+
+  const displayName = user?.full_name?.trim() ? user.full_name : "OffRamp Member";
+  const firstName = (displayName.split(" ")[0] ?? "Member").trim() || "Member";
+  const email = user?.email ?? "";
+  const lastUpdated = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const quickFacts = [
+    { label: "Diet Type", value: preferences.dietList[0] ?? "Vegan", icon: "restaurant" },
+    { label: "Budget Focus", value: user?.budget_level || "Standard", icon: "account_balance_wallet" },
+    { label: "Cuisine", value: preferences.cuisines[0], icon: "room" },
+  ];
+
+  const activeSection = SIDEBAR_ITEMS.find((item) => item.id === activeSidebar);
+
+  const handleSidebarNavigation = (sectionId: string) => {
+    setActiveSidebar(sectionId);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsSigningOut(true);
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.replace("/auth");
+    } catch (error) {
+      console.error("Failed to log out", error);
+      setIsSigningOut(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f6fb] text-[#0f1c21]">
+        <span className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Loading profile...</span>
+      </div>
+    );
+  }
+
+  const renderProfileOverview = () => (
+    <div className="space-y-6">
+      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/60 lg:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 items-center gap-6">
+            <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
+              <Image src={getAvatarUrl(profile)} alt={displayName} fill sizes="96px" className="object-cover" />
+              <span className="absolute -bottom-2 -right-2 rounded-2xl bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.4em] text-white">
+                {preferences.dietList[0] ?? "Vegan"}
+              </span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-3xl font-bold text-slate-900">{displayName}</h2>
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Zero Waste Pro
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">{email}</p>
+              <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+                {preferences.dietList.slice(0, 3).map((diet) => (
+                  <span key={diet} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                    {diet}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 text-sm text-slate-500">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">Location</p>
+              <p className="text-base font-semibold text-slate-900">
+                {user?.city || "Remote"}, {user?.region || "Global"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/profile-setup")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+              >
+                <span className="material-symbols-outlined text-sm">edit</span>
+                Edit Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/profile-setup")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
+              >
+                <span className="material-symbols-outlined text-sm">tune</span>
+                Preferences
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {quickFacts.map((card) => (
+          <div key={card.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400">{card.label}</p>
+              <span className="material-symbols-outlined text-base text-slate-300">{card.icon}</span>
+            </div>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
+          { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
+          { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
+        ].map((metric) => (
+          <div key={metric.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
+            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+              <span>{metric.label}</span>
+              <span className="text-emerald-600">{metric.trend}</span>
+            </div>
+            <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/70">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-500">Recent swaps</p>
+            <p className="text-lg font-bold text-slate-900">Latest activity from your campus</p>
+          </div>
+          <button className="rounded-full border-2 border-slate-900/20 px-6 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5">
+            View all
+          </button>
+        </div>
+        <ul className="mt-5 space-y-3">
+          {swapEntries.map((swap) => (
+            <li key={`${swap.from}-${swap.to}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{swap.to}</p>
+                <p className="text-xs text-slate-500">Swapped for {swap.from}</p>
+              </div>
+              <div className="text-right text-xs text-slate-400">
+                <p>{swap.time}</p>
+                <p className="text-emerald-600">{swap.savings}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderImpactSection = () => (
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Impact Dashboard</p>
+            <h3 className="text-2xl font-black text-slate-900">Sustainable gains</h3>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold text-slate-500">Live sync</span>
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
+            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
+            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
+          ].map((metric) => (
+            <div key={metric.label} className="rounded-3xl border border-slate-100 bg-slate-50 px-5 py-4">
+              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
+                <span>{metric.label}</span>
+                <span className="text-emerald-600">{metric.trend}</span>
+              </div>
+              <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 rounded-3xl border border-slate-100 bg-gradient-to-br from-emerald-50 to-white p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Swaps over time</p>
+              <p className="text-4xl font-black text-slate-900">{impactMetrics.swaps.toLocaleString()}</p>
+              <p className="text-xs font-semibold text-emerald-600">+{impactMetrics.growth}% vs last 6 months</p>
+            </div>
+            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-600">Updated {lastUpdated}</span>
+          </div>
+          <svg viewBox="0 0 100 100" className="mt-6 h-32 w-full text-emerald-500">
             <defs>
               <linearGradient id="impactSpark" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#059669" stopOpacity="0.8" />
@@ -104,9 +441,7 @@ type SidebarItem = {
               {ingredient}
             </li>
           ))}
-          <li className="rounded-full border border-slate-200 bg-emerald-50 px-4 py-2 text-emerald-700">
-            {preferences.spice} Spice
-          </li>
+          <li className="rounded-full border border-slate-200 bg-emerald-50 px-4 py-2 text-emerald-700">{preferences.spice} Spice</li>
         </ul>
       </div>
     </div>
@@ -160,7 +495,7 @@ type SidebarItem = {
               </button>
             </div>
             <ul className="mt-4 space-y-4">
-              {swaps.map((swap) => (
+              {swapEntries.map((swap) => (
                 <li key={`${swap.from}-${swap.to}`} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600">
                     <span className="material-symbols-outlined text-base">autorenew</span>
@@ -242,12 +577,7 @@ type SidebarItem = {
           Get live help optimizing prep plans, evaluating suppliers, or rolling out new menu swaps. Our AI chefs sync with your campus data.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {[
-            "WhatsApp Concierge",
-            "Book tasting lab",
-            "Supplier audits",
-            "Custom dashboards",
-          ].map((cta) => (
+          {["WhatsApp Concierge", "Book tasting lab", "Supplier audits", "Custom dashboards"].map((cta) => (
             <button
               key={cta}
               className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900"
@@ -277,6 +607,12 @@ type SidebarItem = {
     }
   };
 
+  return (
+    <main className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
+      <GlobalNav />
+
+      <div className="flex flex-1 items-start gap-6 px-4 pb-10 pt-6 sm:px-8 xl:px-12">
+        <aside className="hidden w-72 flex-shrink-0 flex-col justify-between rounded-[32px] border border-slate-100 bg-white/90 p-6 text-slate-900 shadow-[12px_12px_45px_rgba(15,28,33,0.08)] backdrop-blur lg:flex lg:sticky lg:top-6 lg:min-h-[calc(100vh-3rem)] lg:self-start">
           <div>
             <div className="mb-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.5em] text-slate-400">Dashboard</p>

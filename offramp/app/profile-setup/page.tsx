@@ -213,18 +213,18 @@ export default function ProfileSetupPage() {
             >
               Food Swap
             </Link>
-            <a
+            <Link
               href="/#coming-soon"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               Coming Soon
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#about"
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               About
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" userHref="/profile-setup" userLabelPrefix="Hi" />

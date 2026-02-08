@@ -6,6 +6,7 @@ import styled, { css } from "styled-components";
 export type PrimaryCTAButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   as?: React.ElementType;
   variant?: "default" | "ghost";
+  href?: string;
 };
 
 export const PrimaryCTAButton = forwardRef<HTMLButtonElement, PrimaryCTAButtonProps>(
