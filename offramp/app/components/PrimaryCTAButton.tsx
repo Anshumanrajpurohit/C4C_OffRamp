@@ -35,8 +35,8 @@ export function PrimaryCTAExamples() {
 }
 
 const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
-  --cta-bg: linear-gradient(135deg, #15ccbe, #0f988e);
-  --cta-border: #0f988e;
+  --cta-bg: #FF6B35;
+  --cta-border: #DE5C2D;
   --cta-color: #ffffff;
   overflow: hidden;
   display: inline-flex;
@@ -57,12 +57,7 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
   cursor: pointer;
   position: relative;
-  box-shadow:
-    inset 0 30px 30px -15px rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    0 3px 0 #0f988e,
-    0 5px 10px rgba(0, 0, 0, 0.18),
-    0 10px 22px rgba(0, 0, 0, 0.12);
+  box-shadow: rgba(255, 110, 0 , 0.4) 5px 5px, rgba(255, 110, 0 , 0.3) 10px 10px, rgba(255, 110, 0 , 0.2) 15px 15px,;
   transition: transform 150ms ease-in-out, box-shadow 150ms ease-in-out;
   font-family: var(--font-plus-jakarta, var(--font-geist-sans), "Istok Web", sans-serif);
 
@@ -125,12 +120,9 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
     $variant === "ghost" &&
     css`
       --cta-bg: #ffffff;
-      --cta-border: rgba(15, 152, 142, 0.4);
+      --cta-border: rgba(255, 110, 0, 0.4);
       --cta-color: #0f4d3a;
-      box-shadow:
-        inset 0 18px 24px -18px rgba(15, 152, 142, 0.25),
-        0 3px 0 rgba(15, 152, 142, 0.35),
-        0 8px 18px rgba(15, 152, 142, 0.18);
+      box-shadow: rgba(0, 0, 0, 0.15) 0px 15px 25px, rgba(0, 0, 0, 0.05) 0px 5px 10px;
 
       .cta-icon {
         background: rgba(15, 152, 142, 0.12);

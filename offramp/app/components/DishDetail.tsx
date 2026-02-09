@@ -35,7 +35,17 @@ const fallbackReviews: ReviewEntry[] = [
 ];
 
 const formatTimeLabel = (value?: string) => value ?? "40m";
-const formatCaloriesLabel = (value?: string) => (value ? `${value} kcal` : "350 kcal");
+const formatCaloriesLabel = (value?: string | number) => {
+  if (value === null || value === undefined) return "350 kcal";
+  if (typeof value === "number") return `${value} kcal`;
+  const numeric = value.replace(/[^0-9]/g, "");
+  return numeric ? `${numeric} kcal` : value;
+};
+const formatMacroLabel = (value?: string | number, unit = "g") => {
+  if (value === null || value === undefined) return `— ${unit}`;
+  if (typeof value === "number") return `${value} ${unit}`;
+  return value;
+};
 const nutritionIconMap: Record<string, string> = {
   Calories: "local_fire_department",
   Protein: "monitor_weight",
@@ -66,8 +76,8 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const servingsLabel = "Serves 4";
   const nutrition = [
     { label: "Calories", value: formatCaloriesLabel(dish.calories) },
-    { label: "Protein", value: dish.protein ?? "20g" },
-    { label: "Fiber", value: dish.fiber ?? "6g" },
+    { label: "Protein", value: formatMacroLabel(dish.protein, "g") },
+    { label: "Fiber", value: formatMacroLabel(dish.fiber, "g") },
   ];
   const heroChips: StatChip[] = [
     { icon: "schedule", title: "Minutes", value: totalTime },

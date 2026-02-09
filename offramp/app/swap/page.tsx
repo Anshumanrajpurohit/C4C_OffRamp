@@ -156,10 +156,22 @@ const dishes: Dish[] = [
   },
 ];
 
+const SEARCH_KEYWORDS = ["chicken", "mutton", "fish", "prawn", "egg", "beef", "lamb", "biryani", "kebab", "tikka"];
 const jainKeywords = ["jain", "satvik", "no onion", "no garlic"];
 
-const parsePriceToNumber = (value?: string | null): number | null => {
-  if (!value) return null;
+const keywordToCategoryMap: Record<string, string[]> = {
+  chicken: ["chicken"],
+  mutton: ["mutton"],
+  beef: ["mutton"],
+  lamb: ["mutton"],
+  fish: ["seafood"],
+  prawn: ["seafood"],
+  egg: ["egg"],
+};
+
+const parsePriceToNumber = (value?: string | number | null): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
   const numeric = Number(value.replace(/[^0-9.]/g, ""));
   return Number.isNaN(numeric) ? null : numeric;
 };
@@ -170,8 +182,9 @@ const formatMinutesLabel = (value?: string | null) => {
   return match ? `${match[0]} min` : value;
 };
 
-const formatCaloriesLabel = (value?: string | null) => {
-  if (!value) return "— kcal";
+const formatCaloriesLabel = (value?: string | number | null) => {
+  if (value === null || value === undefined) return "— kcal";
+  if (typeof value === "number") return `${value} kcal`;
   const numeric = value.replace(/[^0-9]/g, "");
   return numeric ? `${numeric} kcal` : `${value}`;
 };
@@ -282,6 +295,51 @@ function SwapPageInner() {
     };
   }, [dishMeta]);
 
+  const getSortPriority = (dish?: DishDetailType) => {
+    if (!dish || !selectedSort) return 0;
+    if (selectedSort === "veg") {
+      if (dish.diet === "vegetarian" || dish.diet === "jain") return 2;
+      if (dish.diet === "vegan") return 1;
+      return 0;
+    }
+    if (selectedSort === "vegan") {
+      return dish.diet === "vegan" ? 2 : 0;
+    }
+    if (selectedSort === "jain") {
+      const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
+      const qualifies =
+        dish.diet === "jain" ||
+        jainKeywords.some((kw) => haystack.includes(kw)) ||
+        dish.region.toLowerCase().includes("gujarat");
+      return qualifies ? 2 : 0;
+    }
+    if (selectedSort.startsWith("tag-")) {
+      const tag = selectedSort.replace("tag-", "");
+      return (dish.categories || []).includes(tag) ? 2 : 0;
+    }
+    return 0;
+  };
+
+  const compareDishesBySort = (a?: DishDetailType, b?: DishDetailType) => {
+    if (!a || !b) return 0;
+    const priorityDiff = getSortPriority(b) - getSortPriority(a);
+    if (priorityDiff !== 0) return priorityDiff;
+    const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+    if (ratingDiff !== 0) return ratingDiff;
+    const freshnessDiff = (dishMeta[b.slug]?.freshnessIndex ?? 0) - (dishMeta[a.slug]?.freshnessIndex ?? 0);
+    if (freshnessDiff !== 0) return freshnessDiff;
+    return a.name.localeCompare(b.name);
+  };
+
+  const matchesActiveFilters = (dish?: DishDetailType) => {
+    if (!activeFilters.length) return true;
+    if (!dish) return false;
+    return activeFilters.every((filterId) => {
+      const predicate = filterPredicates[filterId];
+      return predicate ? predicate(dish) : true;
+    });
+  };
+
   const toggleSortMenu = () => {
     setSortMenuOpen((prev) => {
       const next = !prev;
@@ -336,21 +394,6 @@ function SwapPageInner() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  // Search suggestions from static dishes for autocomplete
-  const suggestions = useMemo(() => {
-    if (!query.trim()) return [];
-    const lower = query.trim().toLowerCase();
-    // Also include common non-veg keywords for swap suggestions
-    const nonVegKeywords = ["chicken", "mutton", "fish", "prawn", "egg", "beef", "lamb", "biryani", "kebab", "tikka"];
-    const matchingNonVeg = nonVegKeywords.filter((kw) => kw.includes(lower) || lower.includes(kw));
-    const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
-    return [...new Set([...matchingNonVeg, ...dishNames])].slice(0, 6);
-  }, [query]);
-
-  useEffect(() => {
-    setActiveSuggestionIndex(-1);
-  }, [suggestions]);
-
   // Use the swap engine to find plant-based alternatives
   const swapResults = useMemo(() => {
     if (!searchTerm.trim()) return [];
@@ -359,47 +402,74 @@ function SwapPageInner() {
   const processedSwapResults = useMemo(() => {
     if (!swapResults.length) return [];
 
-    const evaluateSortScore = (dish: DishDetailType) => {
-      if (!selectedSort) return (dish.rating ?? 0) + (dishMeta[dish.slug]?.freshnessIndex ?? 0) / 100;
-      if (selectedSort === "veg") {
-        return (dish.diet === "vegetarian" ? 5 : 0) + (dish.rating ?? 0);
-      }
-      if (selectedSort === "vegan") {
-        return (dish.diet === "vegan" ? 5 : 0) + (dish.rating ?? 0);
-      }
-      if (selectedSort === "jain") {
-        const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
-        const qualifies = jainKeywords.some((kw) => haystack.includes(kw)) || dish.region.toLowerCase().includes("gujarat");
-        return (qualifies ? 5 : 0) + (dish.rating ?? 0);
-      }
-      if (selectedSort.startsWith("tag-")) {
-        const tag = selectedSort.replace("tag-", "");
-        return ((dish.categories || []).includes(tag) ? 5 : 0) + (dish.rating ?? 0);
-      }
-      return dish.rating ?? 0;
-    };
-
-    const matchesFilters = (dish: DishDetailType) => {
-      if (!activeFilters.length) return true;
-      return activeFilters.every((filterId) => {
-        const predicate = filterPredicates[filterId];
-        return predicate ? predicate(dish) : true;
-      });
-    };
-
     return swapResults
       .map((group) => {
         let dishes = [...group.dishes];
         if (selectedSort) {
-          dishes = [...dishes].sort((a, b) => evaluateSortScore(b) - evaluateSortScore(a));
+          dishes = [...dishes].sort((a, b) => compareDishesBySort(a, b));
         }
         if (activeFilters.length) {
-          dishes = dishes.filter(matchesFilters);
+          dishes = dishes.filter((dish) => matchesActiveFilters(dish));
         }
         return { ...group, dishes };
       })
       .filter((group) => group.dishes.length > 0);
   }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta]);
+
+  const keywordAlternatives = useMemo(() => {
+    const buildKey = (value: string) => value.trim().toLowerCase();
+    const matchesCatalogDish = (dish: DishDetailType, keyword: string) => {
+      const lower = keyword.toLowerCase();
+      const categoryKeys = keywordToCategoryMap[lower] ?? [];
+      const nameMatch = dish.name.toLowerCase().includes(lower);
+      const replaceMatch = dish.replaces.some((item) => item.toLowerCase().includes(lower));
+      const categoryMatch = dish.categories.some((category) => categoryKeys.includes(category));
+      return nameMatch || replaceMatch || categoryMatch;
+    };
+
+    const matchesLocalDish = (dish: Dish, keyword: string) => dish.name.toLowerCase().includes(keyword.toLowerCase());
+
+    return SEARCH_KEYWORDS.map((keyword) => {
+      const catalogMatches = DISH_CATALOG.filter((dish) => matchesCatalogDish(dish, keyword));
+      const localMatches = dishes.filter((dish) => matchesLocalDish(dish, keyword));
+      const deduped = new Map<string, { id: string; name: string; detail?: DishDetailType }>();
+
+      catalogMatches.forEach((dish) => {
+        const key = buildKey(dish.slug || dish.name);
+        if (!deduped.has(key)) {
+          deduped.set(key, { id: dish.slug, name: dish.name, detail: dish });
+        }
+      });
+
+      localMatches.forEach((dish) => {
+        const key = buildKey(dish.id || dish.name);
+        if (!deduped.has(key)) {
+          deduped.set(key, { id: dish.id, name: dish.name });
+        }
+      });
+
+      return {
+        keyword,
+        items: Array.from(deduped.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      };
+    });
+  }, []);
+
+  // Search suggestions from keywords + mapped alternatives for autocomplete
+  const suggestions = useMemo(() => {
+    if (!query.trim()) return [];
+    const lower = query.trim().toLowerCase();
+    const matchingNonVeg = SEARCH_KEYWORDS.filter((kw) => kw.includes(lower) || lower.includes(kw));
+    const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
+    const mappedAlternatives = keywordAlternatives
+      .flatMap((group) => group.items.map((item) => item.name))
+      .filter((name) => name.toLowerCase().includes(lower));
+    return [...new Set([...matchingNonVeg, ...dishNames, ...mappedAlternatives])].slice(0, 10);
+  }, [query, keywordAlternatives]);
+
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [suggestions]);
 
   const rawHasSwapResults = swapResults.length > 0;
   const hasSwapResults = processedSwapResults.length > 0;
@@ -466,10 +536,29 @@ function SwapPageInner() {
     detail: d,
   })), []);
 
+  const topPicksWithDetail = useMemo(
+    () =>
+      dishes.map((dish) => ({
+        dish,
+        detail: DISH_CATALOG.find((entry) => entry.slug === dish.id || entry.name === dish.name),
+      })),
+    []
+  );
+
   const filteredTopPicks = useMemo(() => {
-    if (!query.trim()) return dishes.slice(0, 8);
-    return dishes.filter((d) => d.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8);
-  }, [query]);
+    const term = query.trim().toLowerCase();
+    let picks = topPicksWithDetail;
+    if (term) {
+      picks = picks.filter(({ dish }) => dish.name.toLowerCase().includes(term));
+    }
+    if (activeFilters.length) {
+      picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
+    }
+    if (selectedSort) {
+      picks = [...picks].sort((a, b) => compareDishesBySort(a.detail, b.detail));
+    }
+    return picks.map(({ dish }) => dish).slice(0, 8);
+  }, [query, topPicksWithDetail, activeFilters, selectedSort]);
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>

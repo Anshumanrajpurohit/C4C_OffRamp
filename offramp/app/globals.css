@@ -465,7 +465,7 @@ body {
   position: relative;
   min-height: calc(100vh - 12rem);
   padding: clamp(4rem, 8vw, 7rem) 1.5rem 6rem;
-  background: radial-gradient(circle at 20% 20%, rgba(26, 77, 46, 0.12), transparent 55%),
+  background: radial-gradient(circle at 20% 20%, rgba(255, 110, 0 ,0.12), transparent 55%),
     radial-gradient(circle at 80% 0%, rgba(255, 107, 53, 0.08), transparent 60%),
     #f7f3ee;
   overflow: hidden;
