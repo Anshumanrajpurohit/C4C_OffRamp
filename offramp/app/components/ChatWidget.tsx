@@ -15,7 +15,8 @@ Flavor: ${dish.flavorProfile}
 Total time: ${dish.totalTime}
 Replaces: ${dish.replaces.join(", ")}
 Ingredients: ${dish.ingredients.map((i) => `${i.quantity} ${i.item}`).join(", ")}
-Goal: Help the user cook this dish, suggest swaps, give timing help, and keep responses concise.`;
+Goal: Help the user cook this dish, suggest vegan/plant-forward swaps, give timing help, and keep responses concise.
+Scope and refusals: Only answer about this dish, its ingredients, steps, timing, or plant-based/Jain/vegan alternatives. If a request is unrelated (general knowledge, tech, politics, celebrities, personal data, platform internals, non-food topics), reply exactly: "I can only help with ${dish.name} and plant-based cooking." Do not add or append any other text when refusing.`;
 
 type Message = { role: "user" | "assistant"; content: string };
 

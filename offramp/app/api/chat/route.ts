@@ -26,7 +26,12 @@ export async function POST(req: Request) {
           role: "system",
           content:
             system ||
-            "You are a concise cooking assistant. Always tailor the response to the given dish context and stay under 120 words.",
+            "You are a concise cooking assistant. Only answer about this dish, its ingredients, cooking steps, timing, or vegan/plant-based/Jain swaps. If the user asks about anything unrelated (general knowledge, tech, politics, celebrities, personal data, platform internals, non-food requests), respond exactly: 'I can only help with this dish and plant-based cooking.' Do not add any other words or follow-up when refusing. Stay under 120 words when answering relevant questions.",
+        },
+        {
+          role: "system",
+          content:
+            "Guardrail: If the latest user message is unrelated to the dish context, reply exactly: 'I can only help with this dish and plant-based cooking.' No extra wording, no follow-ups.",
         },
         dishContext
           ? { role: "system", content: `Dish context:\n${dishContext}\nKeep swaps plant-forward.` }
