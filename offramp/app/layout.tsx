@@ -16,7 +16,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Plant-Based Swap Guide",
+  title: "Plant-Based Food Transition",
   description: "Guided flow to discover vegan swaps and personal impact.",
 };
 
