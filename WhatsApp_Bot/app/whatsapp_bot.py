@@ -223,6 +223,16 @@ def create_app() -> Flask:
             if not responses:
                 responses = [_fallback_message(context)]
 
+            # Rewrite every outgoing message via LLM so replies stay AI-generated and follow the latest rules.
+            rewritten: List[OutgoingMessage] = []
+            for response in responses:
+                try:
+                    rewritten.append(_ai_rewrite_response(client, context, response))
+                except Exception:  # fall back silently on rewrite failure
+                    rewritten.append(response)
+
+            responses = rewritten
+
             for response in responses:
                 _deliver_response(whatsapp, incoming.sender, response)
 
@@ -1075,6 +1085,31 @@ def _classify_dish_hint(hint: str | None) -> Optional[tuple[str, bool, float]]:
             return dish_name, False, 0.6
 
     return None
+
+
+def _ai_rewrite_response(
+    client: OpenRouterClient,
+    context: UserContext,
+    message: OutgoingMessage,
+) -> OutgoingMessage:
+    """Pass the crafted reply through the LLM to keep all responses AI-generated and on-brand."""
+
+    context_summary = (
+        f"Flow: {context.flow}; step: {context.step}; last dish: {context.last_dish or 'unknown'}; "
+        f"preferences: diet={context.preferences.diet or '-'}, taste={context.preferences.taste or '-'}, "
+        f"budget={context.preferences.budget or '-'}; restrictions={', '.join(sorted(context.preferences.restrictions)) or '-'}; "
+        f"allergies={', '.join(sorted(context.preferences.allergies)) or '-'}"
+    )
+
+    rewrite_prompt = (
+        "You are OFFRAMP on WhatsApp. Rewrite the assistant reply below into a single, fully AI-generated WhatsApp message. "
+        "Keep it short, friendly, and complete; follow the OFFRAMP rules (no repeated intros, no menus unless asked, plant-based focus, step-by-step help). "
+        "Do not drop the core info. If buttons are present, keep the text compatible with them."
+        f"\nContext: {context_summary}\n\nOriginal reply:\n{message.text}"
+    )
+
+    ai_reply = client.complete([{"role": "user", "content": rewrite_prompt}])
+    return OutgoingMessage(text=ai_reply.strip(), buttons=message.buttons)
 
 
 def _start_find_food_flow(context: UserContext, carry_dish: Optional[str] = None) -> List[OutgoingMessage]:
