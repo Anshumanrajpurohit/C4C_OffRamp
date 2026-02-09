@@ -608,11 +608,11 @@ export default function ProfilePage() {
   };
 
   return (
-    <main className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21]">
+    <main className="flex min-h-screen w-full flex-col bg-[#eef2eb] text-[#0f1c21] lg:h-screen lg:overflow-hidden">
       <GlobalNav />
 
-      <div className="flex flex-1 items-start gap-6 px-4 pb-10 pt-6 sm:px-8 xl:px-12">
-        <aside className="hidden w-72 flex-shrink-0 flex-col justify-between rounded-[32px] border border-slate-100 bg-white/90 p-6 text-slate-900 shadow-[12px_12px_45px_rgba(15,28,33,0.08)] backdrop-blur lg:flex lg:sticky lg:top-6 lg:min-h-[calc(100vh-3rem)] lg:self-start">
+      <div className="flex flex-1 items-start gap-6 px-4 pb-10 pt-6 sm:px-8 xl:px-12 lg:min-h-0 lg:items-stretch lg:overflow-hidden">
+        <aside className="hidden w-72 flex-shrink-0 flex-col gap-8 rounded-[32px] border border-slate-100 bg-white/90 p-6 pb-8 text-slate-900 shadow-[12px_12px_45px_rgba(15,28,33,0.08)] backdrop-blur lg:flex lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
           <div>
             <div className="mb-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.5em] text-slate-400">Dashboard</p>
@@ -652,7 +652,7 @@ export default function ProfilePage() {
               })}
             </nav>
           </div>
-          <div className="space-y-5">
+          <div className="space-y-5 pt-2">
             <button
               type="button"
               onClick={handleLogout}
@@ -665,7 +665,7 @@ export default function ProfilePage() {
           </div>
         </aside>
 
-        <section className="flex w-full flex-1 flex-col rounded-[32px] border border-white/60 bg-white/80 shadow-[0_25px_65px_rgba(15,28,33,0.08)] backdrop-blur">
+        <section className="flex w-full flex-1 flex-col rounded-[32px] border border-white/60 bg-white/80 shadow-[0_25px_65px_rgba(15,28,33,0.08)] backdrop-blur lg:h-[calc(100vh-3rem)] lg:min-h-0">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-black/5 bg-white/90 px-6 py-6 text-slate-900 shadow-[0_8px_0_rgba(0,0,0,0.04)] backdrop-blur">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.45em] text-slate-400">Profile Control Center</p>
@@ -687,7 +687,7 @@ export default function ProfilePage() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto bg-[#f4f6fb]">
+          <div className="flex-1 overflow-y-auto bg-[#f4f6fb] lg:min-h-0">
             <div className="w-full px-4 pb-16 pt-8 sm:px-8 xl:px-14 2xl:px-20">{renderSection()}</div>
           </div>
         </section>
