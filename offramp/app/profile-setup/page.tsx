@@ -360,13 +360,15 @@ export default function ProfileSetupPage() {
               Food Swap
             </Link>
             <Link
-              href="/#coming-soon"
+              href="/coming-soon"
+              prefetch={false}
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               Coming Soon
             </Link>
             <Link
-              href="/#about"
+              href="/about"
+              prefetch={false}
               className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               About

@@ -2,6 +2,7 @@
 
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import styled, { css } from "styled-components";
+import icon from '@/public/assets/btn-icn.png'
 
 export type PrimaryCTAButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   as?: React.ElementType;
@@ -14,12 +15,7 @@ export const PrimaryCTAButton = forwardRef<HTMLButtonElement, PrimaryCTAButtonPr
     return (
       <StyledPrimaryCTAButton ref={ref} $variant={variant} {...rest}>
         <span className="cta-icon" aria-hidden="true">
-          <svg className="icon" viewBox="0 0 48 48" role="presentation" focusable="false">
-            <path
-              fill="currentColor"
-              d="M12 39c-.549 0-1.095-.15-1.578-.447A3.008 3.008 0 0 1 9 36V12c0-1.041.54-2.007 1.422-2.553a3.014 3.014 0 0 1 2.919-.132l24 12a3.003 3.003 0 0 1 0 5.37l-24 12c-.42.21-.885.315-1.341.315z"
-            />
-          </svg>
+          <img src={icon.src} alt="" className="icon" />
         </span>
         <span className="cta-text">{children}</span>
       </StyledPrimaryCTAButton>
@@ -74,8 +70,8 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.9rem;
-    height: 1.9rem;
+    width: 2.6rem;
+    height: 2.6rem;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -83,8 +79,8 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
   }
 
   .icon {
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 10rem;
+    height: 2.55rem;
     display: block;
   }
 
@@ -94,11 +90,11 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
   }
 
   &:hover .cta-text {
-    transform: translateX(72px);
+    transform: translateX(300px);
   }
 
   &:hover .cta-icon {
-    transform: translateX(26px);
+    transform: translateX(106px);
   }
 
   &:hover {
