@@ -58,6 +58,52 @@ const budgetLevels: Record<BudgetLevel, { label: string; description: string; ic
 const cn = (...classes: Array<string | null | undefined | false>) =>
   classes.filter(Boolean).join(" ");
 
+type SupabaseErrorPayload = {
+  message?: string;
+  code?: string;
+  details?: string;
+};
+
+const extractErrorInfo = (error: unknown): Required<Pick<SupabaseErrorPayload, "message">> & SupabaseErrorPayload => {
+  if (!error) {
+    return { message: "Unknown error" };
+  }
+
+  if (typeof error === "string") {
+    return { message: error };
+  }
+
+  if (error instanceof Error) {
+    const payload = error as SupabaseErrorPayload;
+    return {
+      message: payload.message ?? error.message ?? error.toString(),
+      code: payload.code,
+      details: payload.details,
+    };
+  }
+
+  const payload = error as SupabaseErrorPayload;
+  return {
+    message: payload?.message ?? JSON.stringify(error),
+    code: payload?.code,
+    details: payload?.details,
+  };
+};
+
+const logSupabaseErrorDetails = (context: string, error: unknown) => {
+  const { message, code, details } = extractErrorInfo(error);
+  const segments = [context, `message=${message}`];
+  if (code) segments.push(`code=${code}`);
+  if (details) segments.push(`details=${details}`);
+
+  if (error) {
+    console.error(segments.join(" | "), error);
+    return;
+  }
+
+  console.error(segments.join(" | "));
+};
+
 export default function ProfileSetupPage() {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -78,22 +124,41 @@ export default function ProfileSetupPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      const active = data.session ?? null;
-      setSession(active);
-      setCheckingSession(false);
-      if (!active) {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          logSupabaseErrorDetails("profile-setup:getSession", error);
+          throw error;
+        }
+        const active = data.session ?? null;
+        setSession(active);
+        if (!active) {
+          router.replace("/auth");
+        }
+      } catch (error) {
+        logSupabaseErrorDetails("profile-setup:init", error);
+        setSession(null);
         router.replace("/auth");
+      } finally {
+        setCheckingSession(false);
       }
     };
-    init();
+    void init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession) {
-        router.replace("/profile-setup");
+    const { data: listener, error: listenerError } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        if (newSession) {
+          router.replace("/profile-setup");
+        }
       }
-    });
+    );
+
+    if (listenerError) {
+      logSupabaseErrorDetails("profile-setup:onAuthStateChange", listenerError);
+      return () => {};
+    }
+
     return () => {
       listener.subscription.unsubscribe();
     };
@@ -106,6 +171,7 @@ export default function ProfileSetupPage() {
   const resolveUserId = useCallback(async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
+      logSupabaseErrorDetails("profile-setup:getUser", error);
       throw error;
     }
     return data.user?.id ?? null;
@@ -124,7 +190,7 @@ export default function ProfileSetupPage() {
       setSelectedAllergies(preferences.allergies ?? []);
       setBudgetLevel(preferences.budgetLevel ?? DEFAULT_BUDGET_LEVEL);
     } catch (error) {
-      console.error("Failed to load profile preferences", error);
+      logSupabaseErrorDetails("profile-setup:loadProfileData", error);
       alert("We couldn't load your saved preferences. Please try again.");
     } finally {
       setIsProfileLoading(false);
@@ -185,7 +251,7 @@ export default function ProfileSetupPage() {
 
       goToStep(currentStep + 1);
     } catch (error) {
-      console.error("Failed to save onboarding preferences", error);
+      logSupabaseErrorDetails("profile-setup:nextStep", error);
       alert("We couldn't save your preferences. Please try again.");
     } finally {
       setIsSavingStep(false);
@@ -208,6 +274,7 @@ export default function ProfileSetupPage() {
     setTimeout(() => {
       alert("Setup complete! Redirecting to your personalized swap recommendations...");
       setIsCompleting(false);
+      router.push("/swap");
     }, 1000);
   };
 
