@@ -6,11 +6,13 @@ type LogoMarkProps = {
   href?: string;
   label?: string;
   size?: "sm" | "md" | "lg";
+  sizePx?: number;
   className?: string;
   imageClassName?: string;
   textClassName?: string;
   priority?: boolean;
   ariaLabel?: string;
+  imageSrc?: string;
 };
 
 const SIZE_MAP: Record<NonNullable<LogoMarkProps["size"]>, number> = {
@@ -19,22 +21,26 @@ const SIZE_MAP: Record<NonNullable<LogoMarkProps["size"]>, number> = {
   lg: 48,
 };
 
-const baseWrapper = "group inline-flex items-center gap-2";
-const baseImage = "rounded border-2 border-black bg-white object-cover transition-transform duration-300 group-hover:rotate-6";
+const DEFAULT_LOGO_SRC = "/logo-removebg-preview.png";
+
+const baseWrapper = "group inline-flex items-center gap-0";
+const baseImage = "rounded-full object-contain transition-transform duration-300 group-hover:rotate-10";
 const baseText = "font-impact uppercase tracking-wide text-black";
 
 export function LogoMark({
   as = "link",
   href,
   size = "md",
+  sizePx,
   label = "OffRamp",
   className = "",
   imageClassName = "",
   textClassName = "",
   priority = false,
   ariaLabel,
+  imageSrc = DEFAULT_LOGO_SRC,
 }: LogoMarkProps) {
-  const dimension = SIZE_MAP[size];
+  const dimension = sizePx ?? SIZE_MAP[size];
   const wrapperClasses = `${baseWrapper} ${className}`.trim();
   const logoImageClasses = `${baseImage} ${imageClassName}`.trim();
   const logoTextClasses = `${baseText} ${textClassName}`.trim();
@@ -44,7 +50,7 @@ export function LogoMark({
   const content = (
     <>
       <Image
-        src="/offramp-logo.png"
+        src={imageSrc}
         alt={label}
         width={dimension}
         height={dimension}

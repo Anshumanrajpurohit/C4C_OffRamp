@@ -8,7 +8,13 @@ export default function SiteNav() {
   return (
     <nav className="sticky top-0 z-50 bg-highlight/90 text-[#0b1c21] backdrop-blur-sm transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <LogoMark href="/#home" textClassName="text-3xl text-[#0b1c21]" ariaLabel="Go to OffRamp home" priority />
+        <LogoMark
+          href="/#home"
+          textClassName="text-3xl text-[#0b1c21]"
+          sizePx={108}
+          ariaLabel="Go to OffRamp home"
+          priority
+        />
         <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider text-[#0b1c21] md:flex">
           <div className="relative group">
             <Link

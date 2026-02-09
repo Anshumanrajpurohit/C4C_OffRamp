@@ -6,7 +6,12 @@ export default function SiteFooter() {
   return (
     <footer className="border-t-3 border-black bg-white px-6 py-16">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
-        <LogoMark href="/#home" textClassName="text-4xl" ariaLabel="OffRamp home" />
+        <LogoMark
+          href="/#home"
+          textClassName="text-4xl"
+          sizePx={126}
+          ariaLabel="OffRamp home"
+        />
         <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
           <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
             Privacy

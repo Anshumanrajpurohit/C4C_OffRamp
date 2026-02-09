@@ -75,7 +75,7 @@ const toList = (value?: string[] | null, fallback: string[] = []) => {
 
 const getAvatarUrl = (profile?: ProfileRecord | null) => {
   if (profile?.avatar_url) return profile.avatar_url;
-  return "/offramp-logo.png";
+  return "/logo-removebg-preview.png";
 };
 
 export default function ProfilePage() {

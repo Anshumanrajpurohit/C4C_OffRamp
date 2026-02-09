@@ -25,6 +25,7 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
           as={enableHashNavigation ? "anchor" : "link"}
           href={anchorHref("home")}
           textClassName="text-3xl text-[#0b1c21]"
+          sizePx={108}
           ariaLabel="Go to OffRamp home"
           priority
         />
