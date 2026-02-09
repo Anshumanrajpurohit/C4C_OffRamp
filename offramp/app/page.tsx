@@ -147,24 +147,6 @@ export default function Home() {
       <GlobalNav enableHashNavigation />
 
       <section className="relative overflow-hidden px-6 pt-20 pb-32">
-        <div className="absolute left-10 top-20 hidden h-24 w-24 opacity-20 lg:block animate-float">
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8uaXEWp98VwagctoDVdQ0iWcDwy2OUz3VMhE0Ao3PFv_6_zta9UUPpwqMCFqea-AbFgEhGyTA2JGlkQ9UKFDDFdyjNeg_QxDnhpbfDA3F9ZoIyOwbeJ_sHO5HqbeHsZUJTNrxF4s0tYrDp2Lk9SSSdWnMIoEsUxZJG37qldfMz8C7HCtNfT3xQPRLKO6L8FAvK6sSU2AgJPXw2o6dzyPyU7rnLjNfuUtI_QyO-VY3UhxzzJlnAsB8LPs3c4rbc8QRDM7ZdzpVNEmA"
-            alt="Dish decoration"
-            className="h-full w-full rounded-full border-2 border-black object-cover"
-          />
-        </div>
-        <div
-          className="absolute bottom-20 right-10 hidden h-32 w-32 opacity-20 lg:block"
-          style={{ animation: "float 6s ease-in-out infinite", animationDelay: "1s", animationDirection: "reverse" }}
-        >
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyvMJxTIMMwc-wRM6Uoq6gZtK8VhvsEdu5kLCANQL6StiRziybbXqp5Chw1NlgSDIc2lHJdOLcX5EnJcKOYYqpri69sgrHm49vHF6nDpGNJt-wHMs-UOvIQJ5u1_lMbT2EcUKjo3TqCfc-GAc8csZh97LKggABoIGomSUEdFvwxC9aLYVZC5TMYk3VsBM_olIrA2-cXcDf2hy8Bz1ntnmnayRFrMZrdJcxjXsxfhhdXF0sNclSWAjV3xFhjsysn4dddY02Wb4QFBfM"
-            alt="Dish decoration"
-            className="h-full w-full rounded-full border-2 border-black object-cover"
-          />
-        </div>
-
         <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
           <div className="relative z-10 space-y-8 text-center">
             <h1 className="animate-slide-up delay-100 font-impact text-6xl uppercase leading-[0.9] text-black md:text-8xl">

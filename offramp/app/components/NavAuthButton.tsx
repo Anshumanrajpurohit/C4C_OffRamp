@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import wplogo from "@/public/assets/whatsapp-bot-logo.gif"
+import whatsappLogo from "@/public/WhatsApp_Logo_green.svg-removebg-preview.png";
 
 const DEFAULT_CLASSES =
   "hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex";
@@ -153,12 +153,12 @@ export function NavAuthButton({
           }}
         >
           <Image
-            src={wplogo}
-            alt="QR scanner shortcut"
+            src={whatsappLogo}
+            alt="WhatsApp assistant shortcut"
             width={24}
             height={24}
-            className="h-6 w-6 rounded-full object-cover"
-            unoptimized
+            className="h-6 w-6"
+            priority
           />
         </button>
 
@@ -171,7 +171,7 @@ export function NavAuthButton({
           >
 <div className="text-center mb-[12px]">
   <span></span>
-  <h1>WhatsApp-Bot</h1>
+  <h1>WhatsApp-Companion</h1>
 </div>
 
 

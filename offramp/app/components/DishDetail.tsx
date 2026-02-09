@@ -42,6 +42,13 @@ const nutritionIconMap: Record<string, string> = {
   Fiber: "spa",
 };
 
+const glassStyles = {
+  panel: "rounded-3xl border border-white/25 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(4,6,8,0.45)]",
+  card: "rounded-2xl border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_20px_60px_rgba(4,6,8,0.35)]",
+  pill: "rounded-full border border-white/30 bg-white/15 backdrop-blur-xl shadow-[0_10px_30px_rgba(4,6,8,0.4)]",
+  chip: "inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold",
+};
+
 export function DishDetail({ dish, onBack, onCook }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -84,6 +91,10 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
         { step: 2, instruction: "Simmer coconut base gently", time: "12 min" },
       ];
   const buyCatalog = dish.ingredients.length ? dish.ingredients : [{ item: dish.name, quantity: "To taste" }];
+  const swiggySearchUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dish.name)}`;
+  const openBlinkitSearch = (query: string) => {
+    window.open(`https://blinkit.com/s/?q=${encodeURIComponent(query)}`, "_blank", "noopener,noreferrer");
+  };
   const impactStats = [
     { icon: "water_drop", label: "Water Saved", value: "450L", helper: "vs seafood curry" },
     { icon: "cloud", label: "CO2 Reduced", value: "2.4kg", helper: "per serving" },
@@ -184,7 +195,10 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const renderBuyTab = () => (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <button className="flex flex-col items-center justify-center rounded-3xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] p-6 text-center shadow-lg transition hover:-translate-y-1">
+        <button
+          className="flex flex-col items-center justify-center rounded-3xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] p-6 text-center shadow-lg transition hover:-translate-y-1"
+          onClick={() => window.open(swiggySearchUrl, "_blank", "noopener,noreferrer")}
+        >
           <span className="material-symbols-outlined mb-2 text-4xl text-emerald-600">dinner_dining</span>
           <span className="text-xl font-bold text-[#102117]">Buy Full Dish</span>
           <span className="text-sm text-slate-500">Delivered hot in select cities</span>
@@ -207,8 +221,11 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
                 <p className="text-xs text-slate-500">{ingredient.quantity}</p>
               </div>
             </div>
-            <button className="rounded-full bg-gradient-to-r from-[#10b981] to-[#0b8a60] px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white">
-              Add
+            <button
+              className="rounded-full bg-gradient-to-r from-[#10b981] to-[#0b8a60] px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white"
+              onClick={() => openBlinkitSearch(ingredient.item)}
+            >
+              Buy Now
             </button>
           </div>
         ))}
@@ -345,23 +362,18 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const currentPanel = activeTab ? tabPanels[activeTab] : null;
 
   return (
-    <section className="relative isolate flex min-h-dvh w-full overflow-hidden bg-[#f7f3ee] text-[#142118]">
+    <section className="relative isolate flex min-h-dvh w-full overflow-hidden bg-[#040805] text-white">
       <div className="absolute inset-0">
-        <img
-          src={dish.image}
-          alt={dish.name}
-          className="h-full w-full object-cover object-center opacity-95"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-white/65 via-[#f7f3ee]/55 to-[#f0e8dc]/45" />
-        <div className="absolute inset-0 bg-white/30 mix-blend-screen" />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#f7f3ee]/70 via-transparent to-transparent" />
+        <img src={dish.image} alt={dish.name} className="h-full w-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#030804]/70 via-[#05140d]/35 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#030804]/85 via-transparent to-transparent" />
       </div>
 
-      <div className="relative z-10 flex min-h-dvh w-full flex-col px-3 pb-8 pt-6 sm:px-6 lg:px-12">
+      <div className="relative z-10 flex min-h-dvh w-full flex-col px-3 pb-8 pt-6 text-white sm:px-6 lg:px-12">
         <header className="flex w-full items-center justify-between">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 rounded-full border border-[#d9d0c4] bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-[#1a3528] transition hover:bg-white"
+            className={`${glassStyles.pill} flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-white/80 transition hover:bg-white/25`}
           >
             <span className="material-symbols-outlined text-base">arrow_back</span>
             Back
@@ -370,56 +382,54 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
             {onCook && (
               <button
                 onClick={onCook}
-                className="hidden items-center gap-2 rounded-full border border-[#d9d0c4] bg-gradient-to-r from-[#10b981] via-[#0d8e63] to-[#0a6847] px-5 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-white shadow-lg transition hover:-translate-y-0.5 sm:flex"
+                className={`${glassStyles.pill} hidden items-center gap-2 px-5 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-white transition hover:-translate-y-0.5 sm:flex`}
               >
                 <span className="material-symbols-outlined text-base">restaurant</span>
                 Cook Swap
               </button>
             )}
-            <button
-              onClick={() => setChatOpen(true)}
-              className="flex items-center gap-2 rounded-full border border-[#d9d0c4] bg-white/80 px-5 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-[#1a3528] transition hover:bg-white"
-            >
-              <span className="material-symbols-outlined text-base">chat</span>
-              Ask OffRamp
-            </button>
           </div>
         </header>
 
         <div className="flex flex-1 flex-col justify-between">
           <div className="flex flex-col gap-6">
             <div className="max-w-3xl drop-shadow">
-              <h1 className={`${playfair.className} text-4xl font-bold leading-tight text-[#0b1d16] sm:text-5xl lg:text-7xl`}>
+              <h1 className={`${playfair.className} text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-7xl`}>
                 {dish.name}
               </h1>
-              <p className="mt-2 text-base font-light italic text-slate-600 sm:text-xl">{heroSummary}</p>
+              <p className="mt-2 text-base font-light italic text-white/80 sm:text-xl">{heroSummary}</p>
             </div>
-            <div className="mt-4 grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 flex w-full flex-wrap gap-3">
               {heroChips.map((stat) => (
                 <div
                   key={`${stat.title}-${stat.value}`}
-                  className="flex items-center gap-4 rounded-2xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] px-4 py-4 shadow-[0_15px_40px_rgba(15,23,15,0.08)]"
+                  className={`${glassStyles.chip} min-w-[130px] justify-center text-white`}
                 >
                   <span
-                    className={`material-symbols-outlined text-2xl ${stat.accent ? "text-amber-500" : "text-emerald-700"}`}
+                    className={`material-symbols-outlined text-base ${stat.accent ? "text-amber-300" : "text-emerald-200"}`}
                   >
                     {stat.icon}
                   </span>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500">{stat.title}</p>
-                    <p className="text-lg font-semibold text-[#0f231a]">{stat.value}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{stat.title}</p>
+                    <p className="text-sm font-semibold">{stat.value}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-4 rounded-2xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] px-5 py-4 shadow-[0_15px_40px_rgba(15,23,15,0.08)]">
-              <div className="grid gap-4 sm:grid-cols-3">
+            <div className={`${glassStyles.pill} mt-4 w-full max-w-3xl self-start px-4 py-3`}>
+              <div className="flex w-full flex-col divide-y divide-white/15 sm:flex-row sm:divide-y-0 sm:divide-x">
                 {nutritionChips.map((metric) => (
-                  <div key={`${metric.title}-${metric.value}`} className="flex items-center gap-3 text-[#0f231a]">
-                    <span className="material-symbols-outlined text-xl text-emerald-600">{metric.icon}</span>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500">{metric.title}</p>
-                      <p className="text-lg font-bold">{metric.value}</p>
+                  <div
+                    key={`${metric.title}-${metric.value}`}
+                    className="flex flex-1 flex-col items-center gap-1 px-4 py-3 text-center"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{metric.title}</p>
+                    <div className="flex items-baseline gap-1 text-white">
+                      <span className="text-2xl font-semibold">{metric.value.replace(/[^0-9.]+$/, "")}</span>
+                      <span className="text-sm font-medium text-white/70">
+                        {metric.value.replace(/^[0-9.\s]+/, "").trim() || metric.value}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -428,12 +438,12 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            <div className="rounded-3xl border border-[#e1d8cd] bg-white/90 backdrop-blur-xl">
+            <div className={glassStyles.panel}>
               <div className="relative max-h-[65vh] overflow-hidden">
                 {currentPanel && (
                   <div
                     key={activeTab ?? "default"}
-                    className="animate-slide-up max-h-[65vh] overflow-y-auto px-5 py-6 pr-3 md:px-8 md:py-8"
+                    className="animate-slide-up max-h-[65vh] overflow-y-auto px-5 py-6 pr-3 text-white/90 md:px-8 md:py-8"
                   >
                     {currentPanel}
                   </div>
@@ -447,9 +457,11 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex w-full min-h-[5.5rem] flex-col items-center justify-center rounded-[24px] border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] text-[#102017] shadow-lg transition-all duration-300 sm:min-h-[6.5rem] ${
-                      isActive ? "ring-2 ring-emerald-400/70 scale-[1.02]" : "opacity-90 hover:opacity-100"
+                    onClick={() =>
+                      setActiveTab((prev) => (prev === tab.id ? null : tab.id))
+                    }
+                    className={`${glassStyles.card} flex w-full min-h-[5.5rem] flex-col items-center justify-center text-white transition-all duration-300 sm:min-h-[6.5rem] ${
+                      isActive ? "scale-[1.05] ring-2 ring-white/70" : "opacity-80 hover:opacity-100"
                     }`}
                   >
                     <span className="material-symbols-outlined text-2xl">{tab.icon}</span>
