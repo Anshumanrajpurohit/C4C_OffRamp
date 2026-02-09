@@ -204,17 +204,6 @@ export default function AboutPage() {
               Our team blends food scientists, behavioral economists, and chefs. Bengaluru keeps us honest—a city where tradition and
               technology constantly remix each other.
             </p>
-            <div className="mt-10 flex items-start gap-4 rounded-3xl border-2 border-black bg-white p-8 text-left shadow-[6px_6px_0px_0px_#000]">
-              <span className="material-symbols-outlined text-4xl text-[#FF6B35]" aria-hidden>
-                lightbulb
-              </span>
-              <div>
-                <h3 className={`${displayFont.className} text-xl font-semibold uppercase`}>Google Stitch Collaboration</h3>
-                <p className="mt-2 text-base text-[#3f3c36]">
-                  OffRamp is proud to be part of Google&apos;s Stitch accelerator, using AI to map flavor twins across thousands of global cuisines.
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 

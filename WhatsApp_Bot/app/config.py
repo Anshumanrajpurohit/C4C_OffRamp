@@ -58,7 +58,12 @@ def get_meta_phone_number_id() -> str:
 
 
 def get_meta_api_version() -> str:
-    return os.getenv("META_WHATSAPP_API_VERSION", DEFAULT_META_API_VERSION)
+    raw = os.getenv("META_WHATSAPP_API_VERSION", "").strip()
+    version = raw or DEFAULT_META_API_VERSION
+    # Meta Graph API expects versions like "v19.0"; normalize in case env omits the leading "v".
+    if not version.startswith("v"):
+        version = f"v{version}"
+    return version
 
 
 def get_meta_verify_token() -> Optional[str]:
