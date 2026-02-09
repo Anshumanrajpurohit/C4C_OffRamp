@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import {
+  BudgetLevel,
+  fetchUserPreferences,
+  saveBudgetPreference,
+  saveCuisinePreferences,
+  saveUserAllergies,
+} from "@/lib/profilePreferences";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -15,7 +22,7 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 });
 
-type BudgetLevel = 1 | 2 | 3;
+const DEFAULT_BUDGET_LEVEL: BudgetLevel = 1;
 
 const cuisines = [
   "Telugu",
@@ -56,13 +63,15 @@ export default function ProfileSetupPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [currentStep, setCurrentStep] = useState(1);
   const [prevStep, setPrevStep] = useState<number | null>(null);
-  const [region, setRegion] = useState("south-india");
+  const [region, setRegion] = useState("");
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
-  const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(1);
+  const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(DEFAULT_BUDGET_LEVEL);
   const [isCompleting, setIsCompleting] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [isSavingStep, setIsSavingStep] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const totalSteps = 4;
 
   const budget = useMemo(() => budgetLevels[budgetLevel], [budgetLevel]);
@@ -94,6 +103,39 @@ export default function ProfileSetupPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
+  const resolveUserId = useCallback(async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      throw error;
+    }
+    return data.user?.id ?? null;
+  }, [supabase]);
+
+  const loadProfileData = useCallback(async () => {
+    setIsProfileLoading(true);
+    try {
+      const userId = await resolveUserId();
+      if (!userId) {
+        return;
+      }
+      const preferences = await fetchUserPreferences(supabase, userId);
+      setRegion(preferences.region ?? "");
+      setSelectedCuisines(preferences.cuisines ?? []);
+      setSelectedAllergies(preferences.allergies ?? []);
+      setBudgetLevel(preferences.budgetLevel ?? DEFAULT_BUDGET_LEVEL);
+    } catch (error) {
+      console.error("Failed to load profile preferences", error);
+      alert("We couldn't load your saved preferences. Please try again.");
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, [resolveUserId, supabase]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadProfileData();
+  }, [loadProfileData, session]);
+
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
@@ -113,9 +155,41 @@ export default function ProfileSetupPage() {
     setTimeout(() => setPrevStep(null), 300);
   };
 
-  const nextStep = () => {
-    if (currentStep === totalSteps) return completeSetup();
-    goToStep(currentStep + 1);
+  const nextStep = async () => {
+    if (currentStep === totalSteps) {
+      completeSetup();
+      return;
+    }
+
+    if (isSavingStep || isProfileLoading) return;
+
+    setIsSavingStep(true);
+    try {
+      const userId = await resolveUserId();
+      if (!userId) {
+        alert("Please sign in to save your preferences.");
+        return;
+      }
+
+      if (currentStep === 1) {
+        await saveCuisinePreferences(supabase, userId, region, selectedCuisines);
+      } else if (currentStep === 2) {
+        await saveUserAllergies(supabase, userId, selectedAllergies);
+      } else if (currentStep === 3) {
+        await saveBudgetPreference(supabase, userId, budgetLevel);
+      }
+
+      if (currentStep + 1 === totalSteps) {
+        await loadProfileData();
+      }
+
+      goToStep(currentStep + 1);
+    } catch (error) {
+      console.error("Failed to save onboarding preferences", error);
+      alert("We couldn't save your preferences. Please try again.");
+    } finally {
+      setIsSavingStep(false);
+    }
   };
 
   const previousStep = () => {
@@ -123,9 +197,14 @@ export default function ProfileSetupPage() {
     goToStep(currentStep - 1);
   };
 
+  const handleEditStep = async (step: number) => {
+    if (isSavingStep || isProfileLoading) return;
+    await loadProfileData();
+    goToStep(step);
+  };
+
   const completeSetup = () => {
     setIsCompleting(true);
-    // TODO: Wire up persistence to backend profile endpoint here.
     setTimeout(() => {
       alert("Setup complete! Redirecting to your personalized swap recommendations...");
       setIsCompleting(false);
@@ -233,59 +312,58 @@ export default function ProfileSetupPage() {
       </nav>
 
       <section className="flex-1 py-12 px-6 grid-pattern-subtle">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="mb-12 fade-in">
-            <div className="relative">
-              <div className="flex gap-3 mb-6">
-                {Array.from({ length: totalSteps }).map((_, idx) => {
-                  const step = idx + 1;
-                  const isActive = step <= currentStep;
-                  return (
+            <div className="flex flex-col gap-6 rounded-3xl border-3 border-black bg-white/90 p-6 shadow-progress">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Step {currentStep} of {totalSteps}</p>
+                  <h1 className="font-impact text-4xl text-black">{[
+                    "Cuisines",
+                    "Constraints",
+                    "Budget",
+                    "Review",
+                  ][currentStep - 1]}</h1>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold text-slate-500">{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+                  <div className="h-2 w-40 rounded-full bg-slate-200">
                     <div
-                      key={step}
-                      className={cn(
-                        "progress-segment h-3 flex-1 rounded-full border-2 border-black transition-all duration-500",
-                        isActive ? "bg-accent active" : "bg-white"
-                      )}
+                      className="h-full rounded-full bg-accent transition-all duration-300"
+                      style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                     />
-                  );
-                })}
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between px-2 mb-4">
+              <div className="grid gap-3 md:grid-cols-4">
                 {[
                   { step: 1, label: "Cuisines" },
                   { step: 2, label: "Constraints" },
                   { step: 3, label: "Budget" },
                   { step: 4, label: "Review" },
                 ].map(({ step, label }) => {
-                  const { circle, text, faded } = stepLabelStyles(step);
+                  const isActive = step === currentStep;
+                  const isComplete = step < currentStep;
                   return (
                     <div
                       key={step}
-                      className={cn("flex flex-col items-center step-label", faded && "opacity-50")}
-                      data-step={step}
+                      className={cn(
+                        "rounded-2xl border-2 px-4 py-3 text-center uppercase transition-all",
+                        isActive && "border-accent bg-accent/10 text-accent shadow-step",
+                        isComplete && "border-black bg-slate-50 text-black",
+                        !isActive && !isComplete && "border-slate-200 text-slate-400"
+                      )}
                     >
-                      <div
-                        className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center font-impact text-xl border-2 border-black transition-all duration-300",
-                          circle
-                        )}
-                      >
-                        {step}
-                      </div>
-                      <span className={cn("text-xs font-bold mt-2 uppercase", text)}>{label}</span>
+                      <p className="text-xs font-bold tracking-[0.2em]">Step {step}</p>
+                      <p className="font-impact text-xl">{label}</p>
                     </div>
                   );
                 })}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-impact text-2xl text-accent" id="currentStep">STEP {currentStep}</span>
-              <span className="text-slate-500 font-bold">of 4</span>
-            </div>
           </div>
 
-          <div className="bg-white rounded-3xl border-3 border-black bold-shadow p-8 md:p-12 fade-in delay-100 relative overflow-hidden">
+          <div className="bg-white rounded-[32px] border-3 border-black shadow-form p-8 md:p-12 fade-in delay-100 relative overflow-hidden">
             {(prevStep || currentStep) && (
               <>
                 {prevStep && (
@@ -299,7 +377,7 @@ export default function ProfileSetupPage() {
                         selectedCuisines={selectedCuisines}
                         selectedAllergies={selectedAllergies}
                         budget={budget}
-                        goToStep={goToStep}
+                        onEditStep={handleEditStep}
                         isCompleting={isCompleting}
                       />
                     )}
@@ -327,7 +405,7 @@ export default function ProfileSetupPage() {
                       selectedCuisines={selectedCuisines}
                       selectedAllergies={selectedAllergies}
                       budget={budget}
-                      goToStep={goToStep}
+                      onEditStep={handleEditStep}
                       isCompleting={isCompleting}
                     />
                   )}
@@ -336,11 +414,11 @@ export default function ProfileSetupPage() {
             )}
           </div>
 
-          <div className="mt-12 pt-8 border-t-2 border-black flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="mt-12 pt-8 border-t border-dashed border-slate-300 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
             <button
               id="backBtn"
               className={cn(
-                "w-full sm:w-auto px-10 py-4 rounded-xl border-2 border-black bg-white font-bold text-slate-800 transition-all flex items-center justify-center gap-2 uppercase text-lg hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+                "w-full sm:w-auto rounded-2xl border border-slate-200 bg-white px-10 py-4 font-semibold text-slate-600 transition-all hover:border-black hover:text-black",
                 currentStep === 1 ? "hidden" : ""
               )}
               onClick={previousStep}
@@ -349,21 +427,21 @@ export default function ProfileSetupPage() {
               Back
             </button>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto ml-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:ml-auto">
               <button
                 id="skipBtn"
                 className={cn(
-                  "w-full sm:w-auto px-12 py-4 rounded-xl bg-white border-2 border-black text-slate-600 font-bold transition-all uppercase text-lg hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+                  "w-full sm:w-auto rounded-2xl border border-slate-300 px-12 py-4 font-semibold text-slate-500 transition-all hover:border-black hover:text-black",
                   currentStep === totalSteps ? "hidden" : ""
                 )}
-                onClick={nextStep}
+                onClick={() => void nextStep()}
               >
                 Skip
               </button>
               <button
                 id="nextBtn"
-                className="w-full sm:w-auto px-16 py-4 rounded-xl bg-accent text-white font-bold border-2 border-black transition-all flex items-center justify-center gap-2 uppercase text-lg hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:bg-black"
-                onClick={nextStep}
+                className="w-full sm:w-auto rounded-2xl border-2 border-black bg-accent px-16 py-4 font-impact text-xl uppercase tracking-wide text-white shadow-strong transition-all hover:-translate-y-0.5 hover:bg-black"
+                onClick={() => void nextStep()}
               >
                 {currentStep === totalSteps ? (
                   <>
@@ -411,79 +489,159 @@ export default function ProfileSetupPage() {
       </footer>
 
       <style jsx global>{`
-        .profile-setup .bold-shadow { box-shadow: 8px 8px 0px 0px rgba(0,0,0,1); }
-        .profile-setup .bold-shadow-sm { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
         .profile-setup .grid-pattern-subtle {
-          background-color: #F5EFE6;
-          background-image: radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
-          background-size: 20px 20px;
+          background-color: #f5efe6;
+          background-image: radial-gradient(circle, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+          background-size: 24px 24px;
         }
         .profile-setup .fade-in { animation: fadeIn 0.6s ease-out forwards; }
         .profile-setup .form-step { animation: slideIn 0.5s ease-out; }
         .profile-setup .form-step.slide-out { animation: slideOut 0.3s ease-out; }
-        .profile-setup .progress-segment { transition: all 0.5s ease-out; }
-        .profile-setup .progress-segment.active { background-color: #FF6B35; }
-        .profile-setup .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .profile-setup .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
-        .profile-setup .custom-scrollbar::-webkit-scrollbar-thumb { background: #1A4D2E; border-radius: 9999px; }
-        .profile-setup input[type="checkbox"] { cursor: pointer; transition: all 0.2s ease; }
-        .profile-setup input[type="checkbox"]:checked { background: #1A4D2E; border-color: #1A4D2E; }
-        .profile-setup .budget-marker .emoji-container > div { position: relative; }
-        .profile-setup .budget-marker.active .emoji-container > div {
-          background: linear-gradient(135deg, #FF6B35 0%, #ff8c5a 100%);
-          transform: scale(1.15);
-          box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
-          animation: bounceEmoji 0.5s ease-out;
+        .profile-setup .shadow-progress { box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2); }
+        .profile-setup .shadow-form { box-shadow: 0 35px 60px rgba(15, 23, 42, 0.25); }
+        .profile-setup .shadow-strong { box-shadow: 0 25px 45px rgba(15, 23, 42, 0.25); }
+        .profile-setup .card-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 48px;
+          border-radius: 16px;
+          border: 1px solid #0b1c21;
+          background: #fff7f2;
+          font-family: 'Material Symbols Outlined';
+          font-size: 24px;
+          color: #ff6b35;
         }
-        .profile-setup .budget-marker .emoji-container > div::after {
-          content: '';
+        .profile-setup .form-card {
+          border: 2px solid rgba(15, 23, 42, 0.1);
+          border-radius: 28px;
+          padding: 32px;
+          background: white;
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.1);
+        }
+        .profile-setup .form-select {
+          width: 100%;
+          border: 2px solid rgba(15, 23, 42, 0.15);
+          border-radius: 20px;
+          padding: 18px 56px 18px 20px;
+          font-weight: 600;
+          color: #0f172a;
+          background: #fdfbfa;
+          appearance: none;
+        }
+        .profile-setup .form-select:focus {
+          outline: none;
+          border-color: #ff6b35;
+          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+        }
+        .profile-setup .option-pill {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border: 2px solid rgba(15, 23, 42, 0.1);
+          border-radius: 20px;
+          padding: 18px 20px;
+          background: #fff;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .profile-setup .option-pill-active {
+          border-color: #ff6b35;
+          background: rgba(255, 107, 53, 0.08);
+          color: #ff6b35;
+        }
+        .profile-setup .sr-only {
           position: absolute;
-          bottom: -8px;
-          left: 50%;
-          transform: translateX(-50%) scale(0);
-          width: 8px;
-          height: 8px;
-          background: #FF6B35;
-          border-radius: 50%;
-          border: 2px solid #000;
-          transition: transform 0.3s ease;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
         }
-        .profile-setup .budget-marker.active .emoji-container > div::after { transform: translateX(-50%) scale(1); }
-        .profile-setup .emoji-container > div:hover { animation: popOut 0.4s ease-out forwards; }
+        .profile-setup .budget-slider {
+          width: 100%;
+          height: 12px;
+          appearance: none;
+          background: transparent;
+          position: relative;
+          z-index: 2;
+        }
         .profile-setup .budget-slider::-webkit-slider-thumb {
           appearance: none;
           width: 32px;
           height: 32px;
-          background: #FF6B35;
-          border: 3px solid #000;
           border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-          transition: all 0.2s;
-        }
-        .profile-setup .budget-slider::-webkit-slider-thumb:hover {
-          transform: scale(1.1);
-          box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+          background: #ff6b35;
+          border: 4px solid #fff;
+          box-shadow: 0 5px 20px rgba(255, 107, 53, 0.45);
         }
         .profile-setup .budget-slider::-moz-range-thumb {
           width: 32px;
           height: 32px;
-          background: #FF6B35;
-          border: 3px solid #000;
           border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-          transition: all 0.2s;
+          background: #ff6b35;
+          border: 4px solid #fff;
+          box-shadow: 0 5px 20px rgba(255, 107, 53, 0.45);
         }
-        .profile-setup .budget-slider::-moz-range-thumb:hover {
-          transform: scale(1.1);
-          box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+        .profile-setup .tier-card {
+          border: 2px solid rgba(15, 23, 42, 0.1);
+          border-radius: 24px;
+          padding: 24px;
+          background: #fff;
+          text-align: left;
+          display: flex;
+          gap: 16px;
+          transition: all 0.2s ease;
+        }
+        .profile-setup .tier-card-active {
+          border-color: #ff6b35;
+          background: rgba(255, 107, 53, 0.08);
+        }
+        .profile-setup .info-banner {
+          display: flex;
+          gap: 12px;
+          border-radius: 24px;
+          border: 1px solid rgba(15, 23, 42, 0.1);
+          padding: 20px 24px;
+          background: #fffefa;
+          align-items: center;
+        }
+        .profile-setup .review-card {
+          border: 2px solid rgba(15, 23, 42, 0.08);
+          border-radius: 28px;
+          padding: 28px;
+          background: #fff;
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        }
+        .profile-setup .review-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .profile-setup .edit-link {
+          font-size: 0.85rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #ff6b35;
+          letter-spacing: 0.1em;
+        }
+        .profile-setup .edit-link:hover { text-decoration: underline; }
+        .profile-setup .cuisine-pill {
+          border-radius: 999px;
+          border: 1px solid rgba(15, 23, 42, 0.15);
+          padding: 8px 16px;
+          font-weight: 600;
+          color: #0f172a;
+          background: #fdfbfa;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-50px); } }
-        @keyframes bounceEmoji { 0%, 100% { transform: scale(1.15) translateY(0); } 50% { transform: scale(1.25) translateY(-8px); } }
-        @keyframes popOut { 0% { transform: scale(1) translateY(0); } 50% { transform: scale(1.3) translateY(-10px); } 100% { transform: scale(1.25) translateY(-8px); } }
       `}</style>
         </main>
       )}
@@ -500,24 +658,21 @@ type CuisinesStepProps = {
 
 function CuisinesStep({ region, setRegion, selectedCuisines, toggleCuisine }: CuisinesStepProps) {
   return (
-    <div className="mb-16">
-      <div className="mb-8">
-        <h1 className="font-impact text-5xl md:text-6xl text-black mb-3 uppercase leading-tight">What cuisines do you eat?</h1>
-        <p className="text-slate-600 text-lg font-semibold">Select the regions and cuisines you're interested in.</p>
-      </div>
+    <div className="space-y-10">
+      <header className="space-y-2">
+        <h1 className="font-impact text-5xl md:text-6xl text-black uppercase leading-tight">What cuisines do you eat?</h1>
+        <p className="text-lg font-semibold text-slate-500">Select the regions and cuisines you're interested in.</p>
+      </header>
 
-      <div className="space-y-10">
-        <div>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-grid border-2 border-black rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-black">public</span>
-            </div>
-            <h3 className="font-impact text-2xl uppercase tracking-wide text-slate-800">Region</h3>
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_2fr]">
+        <div className="form-card">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined card-icon">public</span>
+            <h3 className="font-impact text-2xl text-black">Region</h3>
           </div>
-          <div className="relative">
+          <div className="relative mt-6">
             <select
-              className="w-full px-5 py-4 rounded-xl border-3 border-black bg-white text-slate-800 font-bold text-lg appearance-none cursor-pointer focus:outline-none focus:ring-4 focus:ring-accent/20 transition-all hover:bg-highlight"
-              style={{ boxShadow: "4px 4px 0px 0px rgba(0,0,0,1)" }}
+              className="form-select"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
             >
@@ -529,40 +684,42 @@ function CuisinesStep({ region, setRegion, selectedCuisines, toggleCuisine }: Cu
               <option value="mexican">Mexican</option>
               <option value="mediterranean">Mediterranean</option>
             </select>
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-              <span className="material-symbols-outlined text-2xl text-black">expand_more</span>
-            </div>
+            <span className="material-symbols-outlined pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-2xl text-slate-400">
+              expand_more
+            </span>
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-primary border-2 border-black rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white">restaurant</span>
+        <div className="form-card">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="material-symbols-outlined card-icon bg-primary text-white">restaurant</span>
+            <div>
+              <h3 className="font-impact text-2xl text-black uppercase">Preferred Cuisines</h3>
+              <p className="text-sm font-semibold uppercase text-slate-400">(Optional)</p>
             </div>
-            <h3 className="font-impact text-2xl uppercase tracking-wide text-slate-800">Preferred Cuisines</h3>
-            <span className="text-sm font-bold text-slate-400 uppercase">(Optional)</span>
           </div>
-          <div className="max-h-64 overflow-y-auto pr-4 custom-scrollbar bg-highlight rounded-2xl border-2 border-black p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {cuisines.map((name) => {
-                const checked = selectedCuisines.includes(name);
-                return (
-                  <label
-                    key={name}
-                    className="flex items-center gap-3 p-3 cursor-pointer group hover:bg-white rounded-lg transition-all border-2 border-transparent hover:border-black"
-                  >
-                    <input
-                      className="w-5 h-5 rounded border-2 border-black text-primary focus:ring-primary focus:ring-2"
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleCuisine(name)}
-                    />
-                    <span className="text-slate-700 font-bold group-hover:text-primary transition-colors">{name}</span>
-                  </label>
-                );
-              })}
-            </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {cuisines.map((name) => {
+              const checked = selectedCuisines.includes(name);
+              return (
+                <label
+                  key={name}
+                  className={cn(
+                    "option-pill",
+                    checked && "option-pill-active"
+                  )}
+                >
+                  <input
+                    className="sr-only"
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCuisine(name)}
+                  />
+                  <span className="material-symbols-outlined text-2xl text-slate-400">restaurant_menu</span>
+                  <span className="font-semibold">{name}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -577,40 +734,41 @@ type ConstraintsStepProps = {
 
 function ConstraintsStep({ selectedAllergies, toggleAllergy }: ConstraintsStepProps) {
   return (
-    <div className="mb-16">
-      <div className="mb-8">
-        <h2 className="font-impact text-5xl md:text-6xl text-black mb-3 uppercase leading-tight">Tell us about your constraints</h2>
-        <p className="text-slate-600 text-lg font-semibold">Help us avoid recommending dishes you can't eat.</p>
-      </div>
+    <div className="space-y-10">
+      <header className="space-y-2">
+        <h2 className="font-impact text-5xl md:text-6xl text-black uppercase leading-tight">Tell us about your constraints</h2>
+        <p className="text-lg font-semibold text-slate-500">Help us avoid recommending dishes you can't eat.</p>
+      </header>
 
-      <div className="space-y-10">
-        <div>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-accent border-2 border-black rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white">emergency</span>
+      <div className="form-card">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined card-icon bg-accent text-white">emergency</span>
+            <div>
+              <h3 className="font-impact text-2xl text-black uppercase">Allergies</h3>
+              <p className="text-sm font-semibold uppercase text-slate-400">(Optional)</p>
             </div>
-            <h3 className="font-impact text-2xl uppercase tracking-wide text-slate-800">Allergies</h3>
-            <span className="text-sm font-bold text-slate-400 uppercase">(Optional)</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {allergies.map((name) => {
-              const checked = selectedAllergies.includes(name);
-              return (
-                <label
-                  key={name}
-                  className="flex items-center gap-3 p-4 cursor-pointer bg-white hover:bg-highlight rounded-xl border-2 border-black transition-all hover:-translate-y-0.5 bold-shadow-sm"
-                >
-                  <input
-                    className="w-5 h-5 rounded border-2 border-black text-accent focus:ring-accent focus:ring-2"
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleAllergy(name)}
-                  />
-                  <span className="text-slate-800 font-bold">{name}</span>
-                </label>
-              );
-            })}
-          </div>
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {allergies.map((name) => {
+            const checked = selectedAllergies.includes(name);
+            return (
+              <label
+                key={name}
+                className={cn("option-pill", checked && "option-pill-active")}
+              >
+                <input
+                  className="sr-only"
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleAllergy(name)}
+                />
+                <span className="material-symbols-outlined text-2xl text-slate-400">medication</span>
+                <span className="font-semibold">{name}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -625,60 +783,63 @@ type BudgetStepProps = {
 
 function BudgetStep({ budgetLevel, setBudgetLevel, budget }: BudgetStepProps) {
   return (
-    <div className="mb-4">
-      <div className="mb-8">
-        <h2 className="font-impact text-5xl md:text-6xl text-black mb-3 uppercase leading-tight">What's your budget level?</h2>
-        <p className="text-slate-600 text-lg font-semibold">This helps us prioritize recommendations.</p>
-      </div>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <h2 className="font-impact text-5xl md:text-6xl text-black uppercase leading-tight">What's your budget level?</h2>
+        <p className="text-lg font-semibold text-slate-500">This helps us prioritize recommendations.</p>
+      </header>
 
-      <div className="bg-white rounded-2xl border-3 border-black p-8 bold-shadow">
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-accent text-white rounded-xl border-2 border-black">
+      <div className="form-card space-y-10">
+        <div className="flex flex-col gap-3 text-center">
+          <div className="mx-auto inline-flex items-center gap-3 rounded-2xl border border-black bg-accent px-6 py-3 text-white">
             <span className="material-symbols-outlined text-2xl">{budget.icon}</span>
             <span className="font-impact text-3xl uppercase">{budget.label}</span>
           </div>
-          <p className="mt-4 text-slate-600 font-semibold">{budget.description}</p>
+          <p className="text-base font-semibold text-slate-500">{budget.description}</p>
         </div>
 
-        <div className="relative px-4">
-          <input
-            type="range"
-            min={1}
-            max={3}
-            value={budgetLevel}
-            className="budget-slider w-full h-3 bg-highlight rounded-full appearance-none cursor-pointer border-2 border-black"
-            style={{ boxShadow: "3px 3px 0px 0px rgba(0,0,0,1)" }}
-            onChange={(e) => setBudgetLevel(Number(e.target.value) as BudgetLevel)}
-          />
-          <div className="flex justify-between mt-6 px-2">
-            {[
-              { level: 1 as BudgetLevel, emoji: "😊", label: "Budget" },
-              { level: 2 as BudgetLevel, emoji: "😄", label: "Standard" },
-              { level: 3 as BudgetLevel, emoji: "💰", label: "Premium" },
-            ].map(({ level, emoji, label }) => (
-              <div key={label} className={cn("flex flex-col items-center budget-marker", budgetLevel === level && "active")}>
-                <div className="emoji-container relative">
-                  <div
-                    className="w-16 h-16 bg-white border-3 border-black rounded-full flex items-center justify-center text-4xl cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                    onClick={() => setBudgetLevel(level)}
-                  >
-                    {emoji}
-                  </div>
+        <div className="space-y-6">
+          <div className="relative">
+            <input
+              type="range"
+              min={1}
+              max={3}
+              value={budgetLevel}
+              className="budget-slider"
+              onChange={(e) => setBudgetLevel(Number(e.target.value) as BudgetLevel)}
+            />
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+              <div className="h-1 rounded-full bg-slate-200" />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {([
+              { level: 1 as BudgetLevel, icon: "payments" },
+              { level: 2 as BudgetLevel, icon: "account_balance_wallet" },
+              { level: 3 as BudgetLevel, icon: "diamond" },
+            ]).map(({ level, icon }) => (
+              <button
+                type="button"
+                key={level}
+                className={cn("tier-card", budgetLevel === level && "tier-card-active")}
+                onClick={() => setBudgetLevel(level)}
+              >
+                <span className="material-symbols-outlined text-3xl text-accent">{icon}</span>
+                <div>
+                  <p className="font-impact text-2xl text-black">{budgetLevels[level].label}</p>
+                  <p className="text-sm font-semibold text-slate-400">{budgetLevels[level].description}</p>
                 </div>
-                <span className="text-sm font-bold text-slate-600 mt-3 uppercase">{label}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="mt-6 p-6 bg-grid rounded-2xl border-2 border-black">
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-black mt-1">info</span>
-          <p className="text-sm text-black font-bold italic">
-            Budget level affects how we rank recommendations, but all swaps are designed to be affordable and accessible.
-          </p>
-        </div>
+      <div className="info-banner">
+        <span className="material-symbols-outlined text-black">info</span>
+        <p className="text-sm font-semibold text-black">
+          Budget level affects how we rank recommendations, but all swaps are designed to be affordable and accessible.
+        </p>
       </div>
     </div>
   );
@@ -689,11 +850,11 @@ type ReviewStepProps = {
   selectedCuisines: string[];
   selectedAllergies: string[];
   budget: { label: string; description: string; icon: string };
-  goToStep: (step: number) => void;
+  onEditStep: (step: number) => Promise<void> | void;
   isCompleting: boolean;
 };
 
-function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, goToStep, isCompleting }: ReviewStepProps) {
+function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, onEditStep, isCompleting }: ReviewStepProps) {
   const regionLabel = useMemo(() => {
     const options: Record<string, string> = {
       "south-india": "South India",
@@ -707,68 +868,70 @@ function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, goToS
   }, [region]);
 
   return (
-    <div className="mb-4">
-      <div className="mb-8">
-        <h2 className="font-impact text-5xl md:text-6xl text-black mb-3 uppercase leading-tight">You're all set!</h2>
-        <p className="text-slate-600 text-lg font-semibold">Review your preferences before we find your perfect swaps.</p>
-      </div>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <h2 className="font-impact text-5xl md:text-6xl text-black uppercase leading-tight">You're all set!</h2>
+        <p className="text-lg font-semibold text-slate-500">Review your preferences before we find your perfect swaps.</p>
+      </header>
 
-      <div className="space-y-6">
-        <div className="p-6 bg-highlight rounded-2xl border-2 border-black">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="review-card md:col-span-2">
+          <div className="review-card-header">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-grid border-2 border-black rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-black">public</span>
+              <span className="material-symbols-outlined card-icon">public</span>
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-400">Your Cuisines</p>
+                <h3 className="font-impact text-3xl text-black">{regionLabel}</h3>
               </div>
-              <h3 className="font-impact text-2xl uppercase">Your Cuisines</h3>
             </div>
-            <button className="text-accent font-bold text-sm uppercase hover:underline" onClick={() => goToStep(1)}>
+            <button className="edit-link" onClick={() => void onEditStep(1)}>
               Edit
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="px-4 py-2 bg-accent text-white rounded-lg border-2 border-black font-bold text-sm" id="reviewRegion">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="cuisine-pill bg-accent text-white border-0" id="reviewRegion">
               {regionLabel}
             </span>
             {renderCuisinePillList(selectedCuisines)}
           </div>
         </div>
 
-        <div className="p-6 bg-highlight rounded-2xl border-2 border-black">
-          <div className="flex items-center justify-between mb-4">
+        <div className="review-card">
+          <div className="review-card-header">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-accent border-2 border-black rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-white">emergency</span>
+              <span className="material-symbols-outlined card-icon bg-accent text-white">emergency</span>
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-400">Your Constraints</p>
+                <h3 className="font-impact text-3xl text-black">Allergies</h3>
               </div>
-              <h3 className="font-impact text-2xl uppercase">Your Constraints</h3>
             </div>
-            <button className="text-accent font-bold text-sm uppercase hover:underline" onClick={() => goToStep(2)}>
+            <button className="edit-link" onClick={() => void onEditStep(2)}>
               Edit
             </button>
           </div>
-          <p className="text-slate-600 font-semibold" id="reviewAllergies">
+          <p className="mt-4 text-base font-semibold text-slate-600" id="reviewAllergies">
             {selectedAllergies.length ? selectedAllergies.join(", ") : "No allergies selected"}
           </p>
         </div>
 
-        <div className="p-6 bg-highlight rounded-2xl border-2 border-black">
-          <div className="flex items-center justify-between mb-4">
+        <div className="review-card">
+          <div className="review-card-header">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary border-2 border-black rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-white" id="reviewBudgetIcon">
-                  {budget.icon}
-                </span>
+              <span className="material-symbols-outlined card-icon bg-primary text-white" id="reviewBudgetIcon">
+                {budget.icon}
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-400">Your Budget</p>
+                <h3 className="font-impact text-3xl text-black" id="reviewBudgetLevel">
+                  {budget.label}
+                </h3>
               </div>
-              <h3 className="font-impact text-2xl uppercase">Your Budget</h3>
             </div>
-            <button className="text-accent font-bold text-sm uppercase hover:underline" onClick={() => goToStep(3)}>
+            <button className="edit-link" onClick={() => void onEditStep(3)}>
               Edit
             </button>
           </div>
-          <p className="font-impact text-3xl text-primary mb-2" id="reviewBudgetLevel">
-            {budget.label}
-          </p>
-          <p className="text-slate-600 font-semibold" id="reviewBudgetDesc">
+          <p className="mt-4 text-base font-semibold text-slate-600" id="reviewBudgetDesc">
             {budget.description}
           </p>
         </div>
@@ -776,15 +939,17 @@ function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, goToS
 
       <div
         className={cn(
-          "mt-8 p-8 bg-primary text-white rounded-2xl border-3 border-black bold-shadow text-center",
+          "rounded-[28px] border-3 border-black bg-primary px-10 py-12 text-center text-white shadow-form",
           isCompleting && "animate-pulse"
         )}
       >
-        <div className="w-16 h-16 bg-white border-2 border-black rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="material-symbols-outlined text-primary text-4xl">check_circle</span>
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white text-primary">
+          <span className="material-symbols-outlined text-4xl">check_circle</span>
         </div>
-        <h3 className="font-impact text-4xl mb-3 uppercase">Ready to Swap!</h3>
-        <p className="text-white/90 font-semibold text-lg">We'll use these preferences to find your perfect plant-based alternatives.</p>
+        <h3 className="font-impact text-4xl uppercase">Ready to Swap!</h3>
+        <p className="mt-2 text-base font-semibold text-white/80">
+          We'll use these preferences to find your perfect plant-based alternatives.
+        </p>
       </div>
     </div>
   );
@@ -793,7 +958,7 @@ function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, goToS
 function renderCuisinePillList(list: string[]) {
   if (!list.length) return null;
   return list.map((item) => (
-    <span key={item} className="px-4 py-2 bg-white text-slate-900 rounded-lg border-2 border-black font-bold text-sm">
+    <span key={item} className="cuisine-pill">
       {item}
     </span>
   ));
