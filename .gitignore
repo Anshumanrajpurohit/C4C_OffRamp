@@ -37,3 +37,5 @@ coverage.xml
 *.njsproj
 *.sln
 *.sw?
+
+envi
