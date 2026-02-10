@@ -159,7 +159,7 @@ export default function Home() {
               institutional scale and individual taste.
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-2 pt-2">
-              <PrimaryCTAButton as={Link} href="/swap" className="w-80 h-100">
+              <PrimaryCTAButton as={Link} href="/swap" className="w-[30rem] h-100">
                 Start Your Swap
               </PrimaryCTAButton>
             </div>

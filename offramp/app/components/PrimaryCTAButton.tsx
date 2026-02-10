@@ -34,6 +34,7 @@ export function PrimaryCTAExamples() {
   );
 }
 
+
 const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
   --cta-bg: #FF6B35;
   --cta-border: #DE5C2D;
@@ -43,21 +44,21 @@ const StyledPrimaryCTAButton = styled.button<{ $variant: "default" | "ghost" }>`
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  min-width: 11.5rem;
-  padding: 0 2.25rem 0 1.25rem;
-  height: 3.4rem;
+  min-width: 14rem;
+  padding: 0 2.75rem 0 1.75rem;
+  height: 4.2rem;
   border-radius: 999px;
   border: 1px solid var(--cta-border);
   background: var(--cta-bg);
   color: var(--cta-color);
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.25em;
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
   cursor: pointer;
   position: relative;
-  box-shadow: rgba(255, 110, 0 , 0.4) 5px 5px, rgba(255, 110, 0 , 0.3) 10px 10px, rgba(255, 110, 0 , 0.2) 15px 15px,;
+  box-shadow: rgba(255, 110, 0 , 0.9) 5px 5px, rgba(255, 110, 0 , 0.9) 10px 10px, rgba(255, 110, 0 , 0.9) 15px 15px,;
   transition: transform 150ms ease-in-out, box-shadow 150ms ease-in-out;
   font-family: var(--font-plus-jakarta, var(--font-geist-sans), "Istok Web", sans-serif);
 
