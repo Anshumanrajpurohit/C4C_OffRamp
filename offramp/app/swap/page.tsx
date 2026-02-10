@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { findReplacementGroups, DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
-import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -685,14 +684,6 @@ function SwapPageInner() {
             <p className="max-w-xl text-lg font-semibold text-slate-700">
               Search any dish and see our best plant-powered swaps without leaving this page. No login required.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <PrimaryCTAButton as={Link} href="#search">
-                Start Your Swap
-              </PrimaryCTAButton>
-              <PrimaryCTAButton as={Link} href="/#how-it-works" variant="ghost">
-                How it Works
-              </PrimaryCTAButton>
-            </div>
           </div>
 
           {/* <div className="relative flex justify-center">

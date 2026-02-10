@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Playfair_Display } from "next/font/google";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { DishDetail as DishDetailType } from "../../lib/dishes";
 
@@ -62,6 +62,10 @@ const glassStyles = {
 export function DishDetail({ dish, onBack, onCook }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ title: string; subtitle?: string } | null>(null);
   const [reviews, setReviews] = useState<ReviewEntry[]>(fallbackReviews);
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -105,6 +109,31 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const openBlinkitSearch = (query: string) => {
     window.open(`https://blinkit.com/s/?q=${encodeURIComponent(query)}`, "_blank", "noopener,noreferrer");
   };
+  const showToast = (title: string, subtitle?: string) => {
+    setToastMessage({ title, subtitle });
+    window.setTimeout(() => setToastMessage(null), 3200);
+  };
+  const handleWalknBuyClick = () => {
+    if (!navigator.geolocation) {
+      showToast("Location access required", "Allow in permission settings");
+      return;
+    }
+
+    setMapLoading(true);
+    setMapOpen(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setMapCoords({ lat: position.coords.latitude, lon: position.coords.longitude });
+        setMapLoading(false);
+      },
+      () => {
+        showToast("Location access required", "Allow in permission settings");
+        setMapLoading(false);
+        setMapOpen(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
   const impactStats = [
     { icon: "water_drop", label: "Water Saved", value: "450L", helper: "vs seafood curry" },
     { icon: "cloud", label: "CO2 Reduced", value: "2.4kg", helper: "per serving" },
@@ -117,6 +146,15 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
         "Finish with tamarind water for brightness.",
         "Garnish with fried curry leaves for snap.",
       ];
+
+  useEffect(() => {
+    if (!mapOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mapOpen]);
 
   const handleReviewSubmit = () => {
     if (!userRating || reviewText.trim().length < 6) {
@@ -213,9 +251,13 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
           <span className="text-xl font-bold text-[#102117]">Buy Full Dish</span>
           <span className="text-sm text-slate-500">Delivered hot in select cities</span>
         </button>
-        <button className="flex flex-col items-center justify-center rounded-3xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#f8f1e5] to-[#efe3d1] p-6 text-center shadow-lg transition hover:-translate-y-1">
-          <span className="material-symbols-outlined mb-2 text-4xl text-emerald-600">grocery</span>
-          <span className="text-xl font-bold text-[#102117]">Buy Ingredient Kit</span>
+        <button
+          type="button"
+          className="flex flex-col items-center justify-center rounded-3xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#f8f1e5] to-[#efe3d1] p-6 text-center shadow-lg transition hover:-translate-y-1"
+          onClick={handleWalknBuyClick}
+        >
+          <span className="material-symbols-outlined mb-2 text-4xl text-emerald-600">storefront</span>
+          <span className="text-xl font-bold text-[#102117]">Walk'n Buy</span>
           <span className="text-sm text-slate-500">Pre-portioned produce + spice pack</span>
         </button>
       </div>
@@ -493,6 +535,51 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
           <span className="material-symbols-outlined text-2xl">chat_bubble</span>
         </button>
       </div>
+
+      {mapOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+          onClick={() => setMapOpen(false)}
+        >
+          <div
+            className="relative w-[min(94vw,980px)] overflow-hidden rounded-3xl border border-white/30 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow"
+              onClick={() => setMapOpen(false)}
+              aria-label="Close map"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+            {mapLoading && (
+              <div className="flex h-[86vh] w-full items-center justify-center bg-white/70">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-14 w-14 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600 opacity-70" />
+                  <p className="text-xs font-bold uppercase tracking-[0.35em] text-slate-500">Loading map</p>
+                </div>
+              </div>
+            )}
+            {!mapLoading && (
+              <iframe
+                title="Walk'n Buy map"
+                src={mapCoords ? `/map.html?lat=${mapCoords.lat}&lon=${mapCoords.lon}` : "/map.html"}
+                className="h-[86vh] w-full"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed right-6 top-6 z-[60] rounded-2xl bg-white/95 px-5 py-3 text-center shadow-lg">
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-slate-700">{toastMessage.title}</p>
+          {toastMessage.subtitle && (
+            <p className="mt-1 text-[11px] font-semibold text-slate-500">{toastMessage.subtitle}</p>
+          )}
+        </div>
+      )}
 
       <ChatWidget open={chatOpen} onClose={() => setChatOpen(false)} dish={dish} />
     </section>
