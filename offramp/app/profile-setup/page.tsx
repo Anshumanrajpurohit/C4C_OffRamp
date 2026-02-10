@@ -37,6 +37,10 @@ const cuisines = [
 
 const allergies = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
 
+const upcomingRegions = ["West India", "Central India", "Global Fusion"];
+const upcomingCuisines = ["Bengali", "Goan", "Indo-Chinese", "Konkan"];
+const upcomingAllergies = ["Gluten", "Shellfish", "Mustard"];
+
 const budgetLevels: Record<BudgetLevel, { label: string; description: string; icon: string }> = {
   1: {
     label: "Budget-conscious",
@@ -53,6 +57,12 @@ const budgetLevels: Record<BudgetLevel, { label: string; description: string; ic
     description: "Premium ingredients and specialty items",
     icon: "diamond",
   },
+};
+
+const budgetMoodByLevel: Record<BudgetLevel, { emoji: string; label: string }> = {
+  1: { emoji: "🙂", label: "Budget-friendly pick" },
+  2: { emoji: "😌", label: "Balanced comfort" },
+  3: { emoji: "🤩", label: "Premium treat" },
 };
 
 const cn = (...classes: Array<string | null | undefined | false>) =>
@@ -620,6 +630,13 @@ export default function ProfileSetupPage() {
           background: rgba(255, 107, 53, 0.08);
           color: #ff6b35;
         }
+        .profile-setup .option-pill-disabled {
+          border-style: dashed;
+          background: rgba(241, 245, 249, 0.8);
+          color: #94a3b8;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
         .profile-setup .sr-only {
           position: absolute;
           width: 1px;
@@ -655,6 +672,34 @@ export default function ProfileSetupPage() {
           background: #ff6b35;
           border: 4px solid #fff;
           box-shadow: 0 5px 20px rgba(255, 107, 53, 0.45);
+        }
+        .profile-setup .budget-mood-bubble {
+          position: absolute;
+          top: -60px;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          border: 2px solid #ff6b35;
+          background: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.4rem;
+          box-shadow: 0 10px 25px rgba(255, 107, 53, 0.25);
+          transition: left 0.3s ease, transform 0.2s ease;
+          pointer-events: none;
+        }
+        .profile-setup .budget-mood-bubble::after {
+          content: "";
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          width: 12px;
+          height: 12px;
+          background: #fff;
+          border-left: 2px solid #ff6b35;
+          border-bottom: 2px solid #ff6b35;
+          transform: translate(-50%, 0) rotate(45deg);
         }
         .profile-setup .tier-card {
           border: 2px solid rgba(15, 23, 42, 0.1);
@@ -757,6 +802,20 @@ function CuisinesStep({ region, setRegion, selectedCuisines, toggleCuisine }: Cu
               expand_more
             </span>
           </div>
+          <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+              <span className="material-symbols-outlined text-base text-slate-400">pending</span>
+              Coming Soon
+            </div>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {upcomingRegions.map((item) => (
+                <span key={item} className="option-pill option-pill-disabled">
+                  <span className="material-symbols-outlined text-2xl text-slate-400">lock_clock</span>
+                  <span className="font-semibold">{item}</span>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="form-card">
@@ -789,6 +848,20 @@ function CuisinesStep({ region, setRegion, selectedCuisines, toggleCuisine }: Cu
                 </label>
               );
             })}
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                <span className="material-symbols-outlined text-base text-slate-400">restaurant_menu</span>
+                Coming Soon
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {upcomingCuisines.map((item) => (
+                  <span key={item} className="option-pill option-pill-disabled">
+                    <span className="material-symbols-outlined text-2xl text-slate-400">browse_gallery</span>
+                    <span className="font-semibold">{item}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -839,6 +912,20 @@ function ConstraintsStep({ selectedAllergies, toggleAllergy }: ConstraintsStepPr
             );
           })}
         </div>
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+            <span className="material-symbols-outlined text-base text-slate-400">healing</span>
+            Coming Soon
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {upcomingAllergies.map((item) => (
+              <span key={item} className="option-pill option-pill-disabled">
+                <span className="material-symbols-outlined text-2xl text-slate-400">symptoms</span>
+                <span className="font-semibold">{item}</span>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -851,6 +938,9 @@ type BudgetStepProps = {
 };
 
 function BudgetStep({ budgetLevel, setBudgetLevel, budget }: BudgetStepProps) {
+  const mood = budgetMoodByLevel[budgetLevel];
+  const sliderPercentage = ((budgetLevel - 1) / 2) * 100;
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
@@ -880,6 +970,14 @@ function BudgetStep({ budgetLevel, setBudgetLevel, budget }: BudgetStepProps) {
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 pointer-events-none">
               <div className="h-1 rounded-full bg-slate-200" />
             </div>
+            <div
+              className="budget-mood-bubble"
+              style={{ left: `calc(${sliderPercentage}% - 22px)` }}
+              aria-hidden="true"
+            >
+              {mood.emoji}
+            </div>
+            <span className="sr-only">{mood.label}</span>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {([

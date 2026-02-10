@@ -1447,66 +1447,61 @@ function DishCard({ dish }: { dish: Dish }) {
     { icon: "local_fire_department", label: caloriesLabel },
     { icon: "visibility", label: viewedByLabel },
   ];
-  const backStatPills = [
-    { icon: "star", label: ratingLabel },
-    { icon: "inventory_2", label: itemsLabel },
-  ];
   const detailLines = [`${dish.restaurant}`, `${dish.category} spices`];
 
   return (
-    <div className="group relative w-72 shrink-0 cursor-pointer snap-start overflow-hidden rounded-3xl border-3 border-black bg-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)] min-h-[22rem]">
-      <div className="card-flip-wrapper">
-        <div className="card-flip">
-          <div className="card-face card-face--front">
-            <div className="relative h-full w-full overflow-hidden">
-              <Image
-                src={dish.image}
-                alt={dish.name}
-                fill
-                sizes="288px"
-                className="object-cover transition duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent transition duration-300" />
-              <div className="absolute inset-0 flex flex-col justify-end px-4 py-3 text-white">
-                <p className="font-impact text-2xl tracking-wide">{dish.name}</p>
-                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-white/80">
-                  <span>{dish.restaurant}</span>
-                  <span>{dish.category}</span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-white/90">
-                  {statPills.map((stat) => (
-                    <span
-                      key={`${dish.id}-${stat.icon}`}
-                      className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur"
-                    >
-                      <span className="material-symbols-outlined text-sm">{stat.icon}</span>
-                      {stat.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+    <div className="group relative w-72 shrink-0 snap-start overflow-hidden rounded-3xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)]">
+      <div className="relative h-48 w-full overflow-hidden bg-black">
+        <Image
+          src={dish.image}
+          alt={dish.name}
+          fill
+          sizes="288px"
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+        <div className="absolute inset-0 flex flex-col justify-end px-4 py-3 text-white">
+          <p className="font-impact text-2xl tracking-wide">{dish.name}</p>
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-white/80">
+            <span>{dish.restaurant}</span>
+            <span>{dish.category}</span>
           </div>
-          <div className="card-face card-face--back bg-white p-4 text-left text-slate-800">
-            <p className="font-impact text-xl uppercase text-black">Ingredients & details</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Chef says</p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
-              {detailLines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
-                <span className="material-symbols-outlined text-base text-primary">star</span>
-                {ratingLabel}
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-white/90">
+            {statPills.map((stat) => (
+              <span
+                key={`${dish.id}-${stat.icon}`}
+                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur"
+              >
+                <span className="material-symbols-outlined text-sm">{stat.icon}</span>
+                {stat.label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
-                <span className="material-symbols-outlined text-base text-primary">inventory_2</span>
-                {itemsLabel}
-              </span>
-            </div>
-            <p className="mt-3 text-xs font-bold uppercase text-slate-400">Hover to return</p>
+            ))}
           </div>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-3 border-t-2 border-black/10 bg-white p-4 text-left text-slate-800">
+        <div className="flex items-center justify-between">
+          <p className="font-impact text-xl uppercase text-black">Ingredients & details</p>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Coming Soon</span>
+        </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Chef says</p>
+        <ul className="list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
+          {detailLines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+            <span className="material-symbols-outlined text-base text-primary">star</span>
+            {ratingLabel}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+            <span className="material-symbols-outlined text-base text-primary">inventory_2</span>
+            {itemsLabel}
+          </span>
+        </div>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">
+          Fresh prep notes are being polished—stay tuned for chef-mode insights.
         </div>
       </div>
     </div>
