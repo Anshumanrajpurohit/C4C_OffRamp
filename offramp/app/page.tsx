@@ -159,19 +159,9 @@ export default function Home() {
               institutional scale and individual taste.
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-4 pt-4">
-              <PrimaryCTAButton as={Link} href="/swap">
+              <PrimaryCTAButton as={Link} href="/swap" >
                 Start Your Swap
               </PrimaryCTAButton>
-              <div className="flex items-center justify-center gap-3">
-                <div className="flex">
-                  <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCmXWgfmkBW0knY8iCK19eDfVdjqg9_NJP65h6LW2k3jTASn4RdjbCo4xELyCMIeGx4jO3RtiwfcXlUW7cOIaqfR4FxiiCZLrNOMJeFVMkmbHRDjQ7kJ4bh5CCwyXa-npc78dJaJ7DPqQs5YMIZa4OU1cXB6fLBW7ifYsDAGTRJOKWiAEm-68s0eTvrwsPVJ1B1tQ80r3elbuKnAFsBbnoXIjrBEn0FaGYtuhlUS7a7-9Xex1iRgepRVFJOZUY3zHs0hofs5DEY-Kd"
-                    alt="Community"
-                    className="h-10 w-10 rounded-full border-2 border-black object-cover"
-                  />
-                </div>
-                <span className="text-sm font-bold uppercase tracking-tight">12k+ Swappers</span>
-              </div>
             </div>
           </div>
 
