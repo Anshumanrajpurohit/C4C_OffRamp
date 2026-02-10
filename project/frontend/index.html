@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plant-Based Transition Companion</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Dataset-Driven Guidance</p>
+          <h1>Gradually replace chicken favorites with confident plant-based plates.</h1>
+        </div>
+        <div class="badge">Trusted recipes only</div>
+      </header>
+
+      <section class="controls">
+        <label class="field">
+          <span>Search focus</span>
+          <input id="searchInput" type="text" placeholder="e.g. chicken tikka" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Diet boundary</span>
+          <select id="dietSelect">
+            <option value="vegetarian" selected>Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="jain">Jain</option>
+          </select>
+        </label>
+        <button id="searchBtn" type="button">Find dishes</button>
+      </section>
+
+      <section class="layout">
+        <article class="panel" aria-live="polite">
+          <h2>Recommended dishes</h2>
+          <ul id="dishList" class="dish-list"></ul>
+          <p id="emptyState" class="muted">Start by running a search to see vegetarian swaps.</p>
+        </article>
+        <article class="panel detail" aria-live="polite">
+          <h2>Dish detail</h2>
+          <div id="dishDetail" class="detail-body">
+            <p class="muted">Select a dish to review its ingredients, nutrition, and preparation notes.</p>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
