@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeganSwap Dashboard</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #102a43;
+        background-color: #f7fbff;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #f7fbff 0%, #e6f4ea 100%);
+        min-height: 100vh;
+      }
+
+      .app-shell {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      header h1 {
+        margin-bottom: 0.5rem;
+        font-size: clamp(2rem, 4vw, 2.75rem);
+      }
+
+      header p {
+        margin: 0 auto;
+        max-width: 650px;
+        color: #486581;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 18px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 18px 35px rgba(15, 99, 76, 0.08);
+      }
+
+      .card h2 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      label {
+        font-weight: 600;
+        color: #243b53;
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #cbd2d9;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+      }
+
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+
+      .checkbox-group,
+      .inline-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .checkbox-group label,
+      .inline-group label {
+        font-weight: 500;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.85rem 1.6rem;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #24b47e, #0f9d58);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 20px rgba(15, 157, 88, 0.2);
+      }
+
+      .recipes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .recipe-card {
+        border: 1px solid #eff2f7;
+        border-radius: 14px;
+        padding: 1rem;
+        background: #fbfdfc;
+      }
+
+      .recipe-card h3 {
+        margin: 0 0 0.35rem;
+        font-size: 1.1rem;
+      }
+
+      .recipe-meta {
+        font-size: 0.95rem;
+        color: #486581;
+      }
+
+      .results-list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+      }
+
+      .results-list li {
+        background: #f2fbf6;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 0.6rem;
+        border: 1px solid #d2f5e4;
+      }
+
+      .muted {
+        color: #829ab1;
+        font-size: 0.95rem;
+      }
+
+      .status {
+        font-size: 0.95rem;
+        color: #486581;
+      }
+
+      @media (max-width: 640px) {
+        .checkbox-group,
+        .inline-group {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>VeganSwap Control Room</h1>
+        <p>
+          Discover plant-based twins for your favorite dishes and quickly audit the recipe
+          catalog — powered by the VeganSwap FastAPI backend.
+        </p>
+      </header>
+
+      <section class="card">
+        <h2>🔄 Find Swap Suggestions</h2>
+        <p class="muted">
+          Enter the non-vegetarian dish you want to replace and optionally specify dietary
+          restrictions plus a texture match preference (0 → low, 1 → high similarity).
+        </p>
+        <form id="swap-form">
+          <div>
+            <label for="dish-name">Dish to replace</label>
+            <input id="dish-name" name="dish" type="text" placeholder="e.g., Butter Chicken" required />
+          </div>
+
+          <div>
+            <label>Dietary restrictions</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" value="gluten_free" /> Gluten-free</label>
+              <label><input type="checkbox" value="nut_free" /> Nut-free</label>
+              <label><input type="checkbox" value="soy_free" /> Soy-free</label>
+              <label><input type="checkbox" value="onion_free" /> Onion-free</label>
+              <label><input type="checkbox" value="garlic_free" /> Garlic-free</label>
+            </div>
+          </div>
+
+          <div>
+            <label for="texture">Texture similarity (0 - 1)</label>
+            <input id="texture" type="number" min="0" max="1" step="0.05" placeholder="0.85" />
+          </div>
+
+          <button type="submit">Generate Swap Ideas</button>
+          <span class="status" id="swap-status"></span>
+        </form>
+        <ul class="results-list" id="swap-results"></ul>
+      </section>
+
+      <section class="card">
+        <h2>📚 Recipe Catalog</h2>
+        <form id="recipe-filter" class="inline-group">
+          <label>
+            Diet
+            <select id="diet-select">
+              <option value="">All</option>
+              <option value="vegan">Vegan</option>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="jain">Jain</option>
+            </select>
+          </label>
+          <label>
+            Limit
+            <input id="limit" type="number" value="12" min="1" max="50" />
+          </label>
+          <label>
+            Skip
+            <input id="skip" type="number" value="0" min="0" />
+          </label>
+          <button type="submit">Refresh List</button>
+          <span class="status" id="recipes-status"></span>
+        </form>
+        <div class="recipes-grid" id="recipes-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2>🎯 Advanced Filter & Rank</h2>
+        <p class="muted">
+          Combine diet, must-have ingredients, and exclusions. Results come back already ranked
+          using texture plus ingredient overlap scoring.
+        </p>
+        <form id="advanced-filter">
+          <div class="inline-group">
+            <label>
+              Diet
+              <select id="adv-diet">
+                <option value="">Any</option>
+                <option value="vegan">Vegan</option>
+                <option value="vegetarian">Vegetarian</option>
+                <option value="jain">Jain</option>
+              </select>
+            </label>
+            <label>
+              Include ingredients (comma separated)
+              <input id="include-ingredients" type="text" placeholder="tofu, cashew" />
+            </label>
+            <label>
+              Exclude ingredients (comma separated)
+              <input id="exclude-ingredients" type="text" placeholder="soy" />
+            </label>
+          </div>
+          <div>
+            <label>
+              Dietary restrictions (comma separated)
+              <input id="adv-restrictions" type="text" placeholder="gluten_free, nut_free" />
+            </label>
+          </div>
+          <div>
+            <label>
+              Reference ingredients for ranking (comma separated)
+              <textarea id="reference-ingredients" placeholder="tomato, garam masala"></textarea>
+            </label>
+          </div>
+          <div class="inline-group">
+            <label>
+              Limit results
+              <input id="adv-limit" type="number" value="5" min="1" max="25" />
+            </label>
+            <button type="submit">Run Smart Filter</button>
+            <span class="status" id="advanced-status"></span>
+          </div>
+        </form>
+        <ul class="results-list" id="advanced-results"></ul>
+      </section>
+    </div>
+
+    <script>
+      const inferApiBase = () => {
+        if (window.__VEGANSWAP_API_BASE__) {
+          return window.__VEGANSWAP_API_BASE__;
+        }
+        const origin = window.location.origin;
+        if (origin && origin !== "null") {
+          return origin.replace(/\/$/, "");
+        }
+        return "http://localhost:8000";
+      };
+
+      const API_BASE_URL = inferApiBase();
+
+      const swapForm = document.getElementById("swap-form");
+      const swapResults = document.getElementById("swap-results");
+      const swapStatus = document.getElementById("swap-status");
+
+      const recipeFilterForm = document.getElementById("recipe-filter");
+      const recipesGrid = document.getElementById("recipes-grid");
+      const recipeStatus = document.getElementById("recipes-status");
+
+      const advancedForm = document.getElementById("advanced-filter");
+      const advancedResults = document.getElementById("advanced-results");
+      const advancedStatus = document.getElementById("advanced-status");
+
+      swapForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const dishName = document.getElementById("dish-name").value.trim();
+        const texturePreference = document.getElementById("texture").value;
+        const restrictionChecks = swapForm.querySelectorAll("input[type='checkbox']:checked");
+        const restrictions = Array.from(restrictionChecks).map((checkbox) => checkbox.value);
+
+        const payload = {
+          dish_name: dishName,
+          dietary_restrictions: restrictions,
+          texture_preference: texturePreference ? Number(texturePreference) : null,
+        };
+
+        swapStatus.textContent = "Loading...";
+        swapResults.innerHTML = "";
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/swap/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Swap request failed (${response.status})`);
+          }
+
+          const data = await response.json();
+          renderSwapResults(data.suggestions);
+          swapStatus.textContent = `Found ${data.suggestions.length} suggestion(s)`;
+        } catch (error) {
+          console.error(error);
+          swapStatus.textContent = "Something went wrong. Check console for details.";
+        }
+      });
+
+      recipeFilterForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        fetchRecipes();
+      });
+
+      advancedForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        advancedStatus.textContent = "Filtering...";
+        advancedResults.innerHTML = "";
+
+        const payload = {
+          diet: document.getElementById("adv-diet").value || null,
+          include_ingredients: splitInput(document.getElementById("include-ingredients").value),
+          exclude_ingredients: splitInput(document.getElementById("exclude-ingredients").value),
+          dietary_restrictions: splitInput(document.getElementById("adv-restrictions").value),
+          reference_ingredients: splitInput(document.getElementById("reference-ingredients").value),
+          limit: Number(document.getElementById("adv-limit").value) || 5,
+        };
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/recipes/filter`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Filter request failed (${response.status})`);
+          }
+
+          const data = await response.json();
+          renderAdvancedResults(data);
+          advancedStatus.textContent = `Top ${data.length} ranked recipe(s)`;
+        } catch (error) {
+          console.error(error);
+          advancedStatus.textContent = "Unable to fetch ranked recipes.";
+        }
+      });
+
+      async function fetchRecipes() {
+        const diet = document.getElementById("diet-select").value;
+        const limit = document.getElementById("limit").value || 12;
+        const skip = document.getElementById("skip").value || 0;
+
+        recipeStatus.textContent = "Loading...";
+        recipesGrid.innerHTML = "";
+
+        const params = new URLSearchParams({ limit, skip });
+        if (diet) params.append("diet", diet);
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/recipes?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Recipe fetch failed (${response.status})`);
+          }
+          const data = await response.json();
+          renderRecipeCards(data);
+          recipeStatus.textContent = `${data.length} recipe(s) loaded`;
+        } catch (error) {
+          console.error(error);
+          recipeStatus.textContent = "Unable to load recipes.";
+        }
+      }
+
+      function renderRecipeCards(recipes) {
+        if (!recipes.length) {
+          recipesGrid.innerHTML = '<p class="muted">No recipes found.</p>';
+          return;
+        }
+
+        const cards = recipes
+          .map((recipe) => {
+            const diet = recipe.diet?.toUpperCase() || "";
+            const texture = recipe.texture_score != null ? `${(recipe.texture_score * 100).toFixed(0)}% texture match` : "Texture TBD";
+            return `
+              <article class="recipe-card">
+                <h3>${recipe.name}</h3>
+                <p class="recipe-meta">${diet} • ${recipe.state || "Unknown origin"}</p>
+                <p class="muted">${recipe.hero_summary || "No summary available."}</p>
+                <p class="recipe-meta">${texture}</p>
+              </article>
+            `;
+          })
+          .join("");
+
+        recipesGrid.innerHTML = cards;
+      }
+
+      function renderSwapResults(results) {
+        if (!results.length) {
+          swapResults.innerHTML = '<li>No swaps found. Try adjusting filters.</li>';
+          return;
+        }
+
+        swapResults.innerHTML = results
+          .map(
+            (result) => `
+              <li>
+                <strong>${result.name}</strong><br />
+                <span class="muted">Confidence score: ${(result.score * 100).toFixed(1)}%</span>
+              </li>
+            `
+          )
+          .join("");
+      }
+
+      function renderAdvancedResults(recipes) {
+        if (!recipes.length) {
+          advancedResults.innerHTML = '<li>No recipes matched the advanced filter.</li>';
+          return;
+        }
+
+        advancedResults.innerHTML = recipes
+          .map(
+            (recipe) => `
+              <li>
+                <strong>${recipe.name}</strong> — ${recipe.diet}<br />
+                <span class="muted">${recipe.hero_summary || "No summary provided."}</span>
+              </li>
+            `
+          )
+          .join("");
+      }
+
+      function splitInput(value) {
+        return value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      // Initial load
+      fetchRecipes();
+    </script>
+  </body>
+</html>
