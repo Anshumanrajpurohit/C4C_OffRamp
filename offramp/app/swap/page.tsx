@@ -202,6 +202,21 @@ const formatViewsLabel = (value?: number | null) => {
   return `${abbreviated} views`;
 };
 
+const mockNutritionMatchLabel = (id: string, rating?: number | null) => {
+  const base = 86 + ((id?.length ?? 5) % 9);
+  const adjusted = Math.min(99, Math.max(82, Math.round(base + ((rating ?? 4.5) - 4.5) * 4)));
+  return `${adjusted}% match`;
+};
+
+const mockCostSavedLabel = (id: string, fallback?: number | null) => {
+  const hash = id
+    ?.split("")
+    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0) ?? 120;
+  const base = fallback ?? 90;
+  const saved = Math.max(60, Math.min(260, Math.round((hash % 110) + base)));
+  return `~₹${saved} saved`;
+};
+
 function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -1432,10 +1447,14 @@ function DishCard({ dish }: { dish: Dish }) {
   const totalTimeLabel = formatMinutesLabel(detail?.totalTime ?? detail?.cookTime ?? detail?.prepTime);
   const caloriesLabel = formatCaloriesLabel(detail?.calories);
   const itemsLabel = formatItemsLabel(detail?.ingredients?.length);
+  const nutritionMatchLabel = mockNutritionMatchLabel(dish.id, dish.rating);
+  const costSavedLabel = mockCostSavedLabel(dish.id, detail?.priceSwap ?? detail?.estimatedCost ?? null);
   const ratingLabel = `${dish.rating.toFixed(1)} rating`;
   const statPills = [
     { icon: "schedule", label: totalTimeLabel },
     { icon: "local_fire_department", label: caloriesLabel },
+    { icon: "verified", label: nutritionMatchLabel },
+    { icon: "savings", label: costSavedLabel },
     { icon: "visibility", label: viewedByLabel },
   ];
   const detailLines = [`${dish.restaurant}`, `${dish.category} spices`];
@@ -1516,10 +1535,14 @@ function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSele
   const totalTimeLabel = formatMinutesLabel(dish.detail.totalTime ?? dish.detail.cookTime ?? dish.detail.prepTime);
   const caloriesLabel = formatCaloriesLabel(dish.detail.calories);
   const itemsLabel = formatItemsLabel(dish.detail.ingredients?.length);
+  const nutritionMatchLabel = mockNutritionMatchLabel(dish.id, dish.rating);
+  const costSavedLabel = mockCostSavedLabel(dish.id, dish.detail.priceSwap ?? dish.detail.estimatedCost ?? null);
   const ratingLabel = `${dish.rating.toFixed(1)} rating`;
   const statPills = [
     { icon: "schedule", label: totalTimeLabel },
     { icon: "local_fire_department", label: caloriesLabel },
+    { icon: "verified", label: nutritionMatchLabel },
+    { icon: "savings", label: costSavedLabel },
     { icon: "visibility", label: viewedByLabel },
   ];
   const backStatPills = [
@@ -1608,6 +1631,9 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
   const viewedBy = (dish.reviews || 1450).toLocaleString();
   const ingredients = dish.ingredients?.slice(0, 5) || [];
   const chefTips = dish.chefTips?.slice(0, 2) || [];
+  const slug = dish.slug ?? dish.name ?? "swap-dish";
+  const nutritionMatchLabel = mockNutritionMatchLabel(slug, dish.rating);
+  const costSavedLabel = mockCostSavedLabel(slug, dish.estimatedCost ?? null);
 
   return (
     <button
@@ -1650,6 +1676,14 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
                 <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                   <span className="material-symbols-outlined text-base text-primary">visibility</span>
                   Viewed by {viewedBy} people
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="material-symbols-outlined text-base text-primary">verified</span>
+                  {nutritionMatchLabel}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="material-symbols-outlined text-base text-primary">savings</span>
+                  {costSavedLabel}
                 </span>
                 <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                   View Recipe →
