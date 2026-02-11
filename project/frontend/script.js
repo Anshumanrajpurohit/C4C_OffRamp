@@ -10,6 +10,9 @@ function resolveApiBase() {
 
 const API_BASE = resolveApiBase();
 const PLACEHOLDER_IMAGE = "assets/ingredient-placeholder.svg";
+const DEFAULT_EMPTY_MESSAGE = "Start by running a search to see vegetarian swaps.";
+const DEFAULT_DETAIL_MESSAGE = "Select a dish to review its ingredients, nutrition, and preparation notes.";
+const TASTE_SAMPLE_LIMIT = 12;
 
 const searchInput = document.getElementById("searchInput");
 const dietSelect = document.getElementById("dietSelect");
@@ -17,6 +20,7 @@ const searchBtn = document.getElementById("searchBtn");
 const dishList = document.getElementById("dishList");
 const dishDetail = document.getElementById("dishDetail");
 const emptyState = document.getElementById("emptyState");
+const tasteFilters = document.getElementById("tasteFilters");
 
 let currentDish = null;
 
@@ -25,6 +29,10 @@ async function fetchDishes() {
     diet: dietSelect.value,
     query: searchInput.value.trim(),
   });
+  getSelectedTastes().forEach((taste) => params.append("tastes", taste));
+  resetDetailView();
+  emptyState.hidden = true;
+  emptyState.textContent = DEFAULT_EMPTY_MESSAGE;
   setListLoading(true);
   try {
     const response = await fetch(`${API_BASE}/recipes?${params.toString()}`);
@@ -57,6 +65,7 @@ function renderList(dishes) {
     emptyState.hidden = false;
     return;
   }
+  emptyState.textContent = DEFAULT_EMPTY_MESSAGE;
   emptyState.hidden = true;
   const fragment = document.createDocumentFragment();
   dishes.forEach((name) => {
@@ -217,6 +226,70 @@ function renderDetail(detail) {
   dishDetail.appendChild(container);
 }
 
+function resetDetailView(message = DEFAULT_DETAIL_MESSAGE) {
+  currentDish = null;
+  if (dishDetail) {
+    dishDetail.innerHTML = `<p class="muted">${message}</p>`;
+  }
+}
+
+function getSelectedTastes() {
+  if (!tasteFilters) {
+    return [];
+  }
+  return Array.from(tasteFilters.querySelectorAll('input[name="tasteFilter"]:checked')).map((input) => input.value);
+}
+
+async function bootstrapTasteFilters() {
+  if (!tasteFilters) {
+    return;
+  }
+  try {
+    const response = await fetch(`${API_BASE}/tastes`);
+    if (!response.ok) {
+      throw new Error("Unable to load taste filters");
+    }
+    const payload = await response.json();
+    renderTasteFilters(payload.tastes || []);
+  } catch (error) {
+    console.error(error);
+    tasteFilters.innerHTML = '<p class="muted field-hint">Taste preferences unavailable right now.</p>';
+  }
+}
+
+function renderTasteFilters(labels) {
+  if (!tasteFilters) {
+    return;
+  }
+  tasteFilters.innerHTML = "";
+  const curated = (labels || []).slice(0, TASTE_SAMPLE_LIMIT);
+  if (!curated.length) {
+    tasteFilters.innerHTML = '<p class="muted field-hint">Taste preferences unavailable right now.</p>';
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  curated.forEach((label) => fragment.appendChild(createTasteChip(label)));
+  tasteFilters.appendChild(fragment);
+}
+
+function createTasteChip(label) {
+  const wrapper = document.createElement("label");
+  wrapper.className = "taste-chip";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.name = "tasteFilter";
+  input.value = label;
+  const text = document.createElement("span");
+  text.textContent = label;
+  wrapper.appendChild(input);
+  wrapper.appendChild(text);
+  input.addEventListener("change", () => {
+    wrapper.classList.toggle("is-active", input.checked);
+    fetchDishes();
+  });
+  return wrapper;
+}
+
 searchBtn.addEventListener("click", fetchDishes);
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -226,4 +299,6 @@ searchInput.addEventListener("keydown", (event) => {
 
 dietSelect.addEventListener("change", fetchDishes);
 
+bootstrapTasteFilters();
+resetDetailView();
 fetchDishes();

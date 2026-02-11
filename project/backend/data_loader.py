@@ -15,6 +15,7 @@ class DataLoader:
     def __init__(self, data_path: Path) -> None:
         self._data_path = data_path
         self._lock = Lock()
+        self._taste_cache: Optional[List[str]] = None
         if not self._data_path.exists():
             raise FileNotFoundError(f"Dataset not found at {self._data_path}")
 
@@ -55,3 +56,19 @@ class DataLoader:
             if updated_entry is not None:
                 self._write_raw(payload)
             return updated_entry
+
+    def available_tastes(self) -> List[str]:
+        """Returns cached list of taste labels derived from the dataset."""
+        if self._taste_cache is not None:
+            return list(self._taste_cache)
+        taste_labels = set()
+        for recipe in self.load_recipes():
+            for label in recipe.get("tasteProfile") or []:
+                normalized = (label or "").strip()
+                if normalized:
+                    taste_labels.add(normalized)
+            flavor = (recipe.get("flavorProfile") or "").strip()
+            if flavor:
+                taste_labels.add(flavor)
+        self._taste_cache = sorted(taste_labels, key=str.casefold)
+        return list(self._taste_cache)

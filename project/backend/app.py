@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,8 +45,9 @@ def health() -> dict:
 def list_recipes(
     diet: Literal["vegetarian", "vegan", "jain"] = Query("vegetarian"),
     query: str = Query("", max_length=80),
+    tastes: Optional[List[str]] = Query(default=None),
 ) -> dict:
-    dishes = _agent.recommend_dishes(diet, query)
+    dishes = _agent.recommend_dishes(diet, query, tastes or [])
     if not dishes:
         raise HTTPException(status_code=404, detail="No dishes match the current filters.")
     return {"dishes": dishes}
@@ -61,3 +62,8 @@ def recipe_detail(slug_or_name: str) -> dict:
     if not detail.get("youtube_url"):
         detail["youtube_url"] = None
     return detail
+
+
+@app.get("/tastes")
+def taste_options() -> dict:
+    return {"tastes": _data_loader.available_tastes()}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+import random
 from typing import Any, Dict, List, Optional, Sequence
 
 import httpx
@@ -150,18 +151,26 @@ class FoodTransitionAgent:
         ranker: RecommendationRanker,
         youtube_tool: YouTubeBackfillTool,
         formatter: UIResponseFormatter,
+        *,
+        max_recommendations: int = 10,
+        ranking_pool_multiplier: int = 3,
     ) -> None:
         self._loader = data_loader
         self._filter_engine = filter_engine
         self._ranker = ranker
         self._youtube_tool = youtube_tool
         self._formatter = formatter
+        self._max_recommendations = max(1, max_recommendations)
+        self._ranking_pool_multiplier = max(1, ranking_pool_multiplier)
 
-    def recommend_dishes(self, diet: str, query: str) -> List[str]:
+    def recommend_dishes(self, diet: str, query: str, tastes: Optional[Sequence[str]] = None) -> List[str]:
         recipes = self._loader.load_recipes()
         filtered = self._filter_engine.apply(recipes, diet)
-        ranked = self._ranker.rank(filtered, query)
-        return self._formatter.list_response(ranked)
+        focused = self._filter_by_query(filtered, query)
+        taste_filtered = self._filter_by_taste(focused, tastes)
+        ranked = self._ranker.rank(taste_filtered, query)
+        curated = self._limit_and_shuffle(ranked)
+        return self._formatter.list_response(curated)
 
     def recipe_detail(self, slug_or_name: str) -> Dict[str, Any]:
         recipe = self._loader.get_recipe(slug_or_name)
@@ -171,3 +180,66 @@ class FoodTransitionAgent:
         if youtube_url and not recipe.get("youtube_url"):
             recipe["youtube_url"] = youtube_url
         return self._formatter.detail_response(recipe)
+
+    def _filter_by_query(self, recipes: Sequence[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+        if not query:
+            return list(recipes)
+        needle = query.lower().strip()
+        replace_hits: List[Dict[str, Any]] = []
+        fuzzy_hits: List[Dict[str, Any]] = []
+        for recipe in recipes:
+            replacements = [value.lower() for value in recipe.get("replaces") or [] if isinstance(value, str)]
+            if any(needle in value for value in replacements):
+                replace_hits.append(recipe)
+                continue
+            searchable = " ".join(
+                [
+                    str(recipe.get("name", "")),
+                    str(recipe.get("heroSummary", "")),
+                    str(recipe.get("whyItWorks", "")),
+                    " ".join(recipe.get("categories") or []),
+                ]
+            ).lower()
+            if needle in searchable:
+                fuzzy_hits.append(recipe)
+        if replace_hits:
+            return replace_hits
+        if fuzzy_hits:
+            return fuzzy_hits
+        return list(recipes)
+
+    def _filter_by_taste(
+        self,
+        recipes: Sequence[Dict[str, Any]],
+        tastes: Optional[Sequence[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        if not tastes:
+            return list(recipes)
+        taste_tokens = {label.lower().strip() for label in tastes if label}
+        if not taste_tokens:
+            return list(recipes)
+        aligned: List[Dict[str, Any]] = []
+        for recipe in recipes:
+            recipe_labels = {
+                (label or "").lower().strip()
+                for label in (recipe.get("tasteProfile") or [])
+                if isinstance(label, str) and label.strip()
+            }
+            flavor = (recipe.get("flavorProfile") or "").strip().lower()
+            if flavor:
+                recipe_labels.add(flavor)
+            if recipe_labels & taste_tokens:
+                aligned.append(recipe)
+        return aligned
+
+    def _limit_and_shuffle(self, recipes: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not recipes:
+            return []
+        pool_size = self._max_recommendations * self._ranking_pool_multiplier
+        pool = list(recipes[:pool_size])
+        if len(pool) <= self._max_recommendations:
+            random.shuffle(pool)
+            return pool
+        sample = random.sample(pool, self._max_recommendations)
+        random.shuffle(sample)
+        return sample
