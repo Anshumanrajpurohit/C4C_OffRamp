@@ -282,10 +282,10 @@ export default function ProfileSetupPage() {
   const completeSetup = () => {
     setIsCompleting(true);
     setTimeout(() => {
-      alert("Setup complete! Redirecting to your personalized swap recommendations...");
+      // alert("Setup complete! Redirecting to your personalized swap recommendations...");
       setIsCompleting(false);
       router.push("/swap");
-    }, 1000);
+    }, 500);
   };
 
   const stepLabelStyles = (step: number) => {
@@ -312,7 +312,7 @@ export default function ProfileSetupPage() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-1">
             <img
-              src="/logo-removebg-preview.png"
+              src="/image.png"
               alt="OffRamp logo"
               className="h-24 w-24 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />
@@ -541,7 +541,7 @@ export default function ProfileSetupPage() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
           <div className="group flex items-center gap-1">
             <img
-              src="/logo-removebg-preview.png"
+              src="/image.png"
               alt="OffRamp logo"
               className="h-[120px] w-[120px] rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />

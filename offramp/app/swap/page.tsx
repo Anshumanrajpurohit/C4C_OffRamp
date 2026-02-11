@@ -618,7 +618,7 @@ function SwapPageInner() {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div className="group flex items-center gap-1">
             <img
-              src="/logo-removebg-preview.png"
+              src="/logo.png"
               alt="OffRamp logo"
               className="h-24 w-24 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />
@@ -672,7 +672,7 @@ function SwapPageInner() {
             <Link href="/swap" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Food Swap
             </Link>
-            <Link href="/#coming-soon" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
+            <Link href="/coming-soon" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Coming Soon
             </Link>
             <Link href="/#about" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
@@ -1388,7 +1388,7 @@ function SwapPageInner() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
           <div className="group flex items-center gap-1">
             <img
-              src="/logo-removebg-preview.png"
+              src="/image.png"
               alt="OffRamp logo"
               className="h-[120px] w-[120px] rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
             />

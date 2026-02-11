@@ -11,7 +11,8 @@ export default function SiteNav() {
         <LogoMark
           href="/#home"
           textClassName="text-3xl text-[#0b1c21]"
-          sizePx={108}
+          sizePx={180}
+          hideLabel
           ariaLabel="Go to OffRamp home"
           priority
         />
@@ -65,6 +66,12 @@ export default function SiteNav() {
             className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
           >
             Food Swap
+          </Link>
+          <Link
+            href="/compass"
+            className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+          >
+            Compass
           </Link>
           <Link
             href="/coming-soon"

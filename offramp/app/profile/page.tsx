@@ -75,7 +75,7 @@ const toList = (value?: string[] | null, fallback: string[] = []) => {
 
 const getAvatarUrl = (profile?: ProfileRecord | null) => {
   if (profile?.avatar_url) return profile.avatar_url;
-  return "/logo-removebg-preview.png";
+  return "/image.png";
 };
 
 export default function ProfilePage() {
@@ -234,7 +234,7 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-6">
             <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
-              <Image src={getAvatarUrl(profile)} alt={displayName} fill sizes="96px" className="object-cover" />
+              <Image src={getAvatarUrl(profile)} alt={displayName} fill sizes="96px" className="object-contain" />
               <span className="absolute -bottom-2 -right-2 rounded-2xl bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.4em] text-white">
                 {preferences.dietList[0] ?? "Vegan"}
               </span>

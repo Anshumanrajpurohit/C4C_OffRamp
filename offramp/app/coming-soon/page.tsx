@@ -12,7 +12,7 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 });
 
-const tapeTiles = Array.from({ length: 8 });
+const tapeTiles = Array.from({ length: 32 });
 const TAPE_SEAL_SRC = "/seal.png";
 
 export const metadata: Metadata = {
