@@ -158,6 +158,84 @@ const dishes: Dish[] = [
 const SEARCH_KEYWORDS = ["chicken", "mutton", "fish", "prawn", "egg", "beef", "lamb", "biryani", "kebab", "tikka"];
 const jainKeywords = ["jain", "satvik", "no onion", "no garlic"];
 
+type DietMode = "veg" | "vegan" | "jain";
+
+const DIET_SUGGESTIONS: string[] = [
+  "veg",
+  "vegetarian",
+  "pure veg",
+  "vegan",
+  "plant based",
+  "dairy free",
+  "jain",
+  "satvik",
+  "no onion",
+  "no garlic",
+];
+
+const getDietModeFromSort = (sortId: string | null): DietMode | null => {
+  if (sortId === "veg" || sortId === "vegan" || sortId === "jain") return sortId;
+  return null;
+};
+
+const stripDietTokens = (input: string) => {
+  const original = input ?? "";
+  const lower = original.toLowerCase();
+
+  const hasJain =
+    /\bjain\b/.test(lower) ||
+    /\bsatvik\b/.test(lower) ||
+    /\bsattvic\b/.test(lower) ||
+    /no\s+onion/.test(lower) ||
+    /without\s+onion/.test(lower) ||
+    /no\s+garlic/.test(lower) ||
+    /without\s+garlic/.test(lower);
+
+  const hasVegan =
+    /\bvegan\b/.test(lower) ||
+    /plant\s*based/.test(lower) ||
+    /dairy\s*free/.test(lower) ||
+    /no\s+dairy/.test(lower);
+
+  const hasVeg = /\bveg\b/.test(lower) || /\bvegetarian\b/.test(lower) || /pure\s+veg/.test(lower);
+
+  const mode: DietMode | null = hasJain ? "jain" : hasVegan ? "vegan" : hasVeg ? "veg" : null;
+
+  let cleaned = original;
+  const replacements: Array<[RegExp, string]> = [
+    [/\bjain\b/gi, " "],
+    [/\bsatvik\b/gi, " "],
+    [/\bsattvic\b/gi, " "],
+    [/\bvegan\b/gi, " "],
+    [/plant\s*based/gi, " "],
+    [/dairy\s*free/gi, " "],
+    [/no\s+dairy/gi, " "],
+    [/\bvegetarian\b/gi, " "],
+    [/pure\s+veg/gi, " "],
+    [/\bveg\b/gi, " "],
+    [/no\s+onion/gi, " "],
+    [/without\s+onion/gi, " "],
+    [/no\s+garlic/gi, " "],
+    [/without\s+garlic/gi, " "],
+  ];
+
+  for (const [pattern, next] of replacements) {
+    cleaned = cleaned.replace(pattern, next);
+  }
+
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  return { cleaned, mode };
+};
+
+const matchesDietMode = (dish: DishDetailType, mode: DietMode) => {
+  if (mode === "vegan") return dish.diet === "vegan";
+  if (mode === "veg") return dish.diet === "vegetarian" || dish.diet === "jain";
+
+  const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
+  return dish.diet === "jain" || jainKeywords.some((kw) => haystack.includes(kw));
+};
+
 const keywordToCategoryMap: Record<string, string[]> = {
   chicken: ["chicken"],
   mutton: ["mutton"],
@@ -220,6 +298,8 @@ const mockCostSavedLabel = (id: string, fallback?: number | null) => {
 function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [normalizedSearchTerm, setNormalizedSearchTerm] = useState("");
+  const [dietIntent, setDietIntent] = useState<DietMode | null>(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
   const searchParams = useSearchParams();
@@ -411,14 +491,39 @@ function SwapPageInner() {
   // Use the swap engine to find plant-based alternatives
   const swapResults = useMemo(() => {
     if (!searchTerm.trim()) return [];
-    return findReplacementGroups(searchTerm);
-  }, [searchTerm]);
+
+    const normalized = normalizedSearchTerm.trim();
+    if (normalized) {
+      return findReplacementGroups(normalized);
+    }
+
+    if (dietIntent) {
+      const matches = DISH_CATALOG.filter((dish) => matchesDietMode(dish, dietIntent));
+      if (!matches.length) return [];
+      return [
+        {
+          id: `diet-${dietIntent}`,
+          title: dietIntent === "vegan" ? "Vegan picks" : dietIntent === "jain" ? "Jain-friendly picks" : "Veg picks",
+          keywords: [dietIntent],
+          description: "Showing dishes that match your diet filter.",
+          dishes: matches,
+        },
+      ];
+    }
+
+    return [];
+  }, [searchTerm, normalizedSearchTerm, dietIntent]);
   const processedSwapResults = useMemo(() => {
     if (!swapResults.length) return [];
+
+    const dietMode = getDietModeFromSort(selectedSort) ?? dietIntent;
 
     return swapResults
       .map((group) => {
         let dishes = [...group.dishes];
+        if (dietMode) {
+          dishes = dishes.filter((dish) => matchesDietMode(dish, dietMode));
+        }
         if (selectedSort) {
           dishes = [...dishes].sort((a, b) => compareDishesBySort(a, b));
         }
@@ -428,7 +533,7 @@ function SwapPageInner() {
         return { ...group, dishes };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta]);
+  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta, dietIntent]);
 
   const keywordAlternatives = useMemo(() => {
     const buildKey = (value: string) => value.trim().toLowerCase();
@@ -473,12 +578,13 @@ function SwapPageInner() {
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
     const lower = query.trim().toLowerCase();
+    const matchingDiet = DIET_SUGGESTIONS.filter((kw) => kw.includes(lower) || lower.includes(kw));
     const matchingNonVeg = SEARCH_KEYWORDS.filter((kw) => kw.includes(lower) || lower.includes(kw));
     const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
     const mappedAlternatives = keywordAlternatives
       .flatMap((group) => group.items.map((item) => item.name))
       .filter((name) => name.toLowerCase().includes(lower));
-    return [...new Set([...matchingNonVeg, ...dishNames, ...mappedAlternatives])].slice(0, 10);
+    return [...new Set([...matchingDiet, ...matchingNonVeg, ...dishNames, ...mappedAlternatives])].slice(0, 10);
   }, [query, keywordAlternatives]);
 
   useEffect(() => {
@@ -497,7 +603,13 @@ function SwapPageInner() {
 
   // Handle search submission
   const handleSearch = (term: string) => {
+    const { cleaned, mode } = stripDietTokens(term);
     setSearchTerm(term);
+    setNormalizedSearchTerm(cleaned);
+    setDietIntent(mode);
+    if (mode) {
+      setSelectedSort((prev) => (prev === mode ? prev : mode));
+    }
   };
 
   const handleSuggestionSelect = (value: string) => {
@@ -565,6 +677,10 @@ function SwapPageInner() {
     if (term) {
       picks = picks.filter(({ dish }) => dish.name.toLowerCase().includes(term));
     }
+    const dietMode = getDietModeFromSort(selectedSort) ?? dietIntent;
+    if (dietMode) {
+      picks = picks.filter(({ detail }) => (detail ? matchesDietMode(detail, dietMode) : false));
+    }
     if (activeFilters.length) {
       picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
     }
@@ -572,7 +688,7 @@ function SwapPageInner() {
       picks = [...picks].sort((a, b) => compareDishesBySort(a.detail, b.detail));
     }
     return picks.map(({ dish }) => dish).slice(0, 8);
-  }, [query, topPicksWithDetail, activeFilters, selectedSort]);
+  }, [query, topPicksWithDetail, activeFilters, selectedSort, dietIntent]);
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
@@ -620,9 +736,8 @@ function SwapPageInner() {
             <img
               src="/logo.png"
               alt="OffRamp logo"
-              className="h-24 w-24 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
+              className="w-40 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6 "
             />
-            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
             <div className="relative group">
@@ -671,6 +786,9 @@ function SwapPageInner() {
             </div>
             <Link href="/swap" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Food Swap
+            </Link>
+            <Link href="/compass" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full" prefetch={false}>
+              Compass
             </Link>
             <Link href="/coming-soon" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Coming Soon
@@ -773,6 +891,8 @@ function SwapPageInner() {
                     onClick={() => {
                       setQuery("");
                       setSearchTerm("");
+                      setNormalizedSearchTerm("");
+                      setDietIntent(null);
                     }}
                     className="text-slate-500 transition hover:text-black"
                     aria-label="Clear search"
@@ -979,7 +1099,7 @@ function SwapPageInner() {
                   <div>
                     <div className="mb-2 flex items-center gap-2">
                       <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
-                        Plant-based alternative for "{searchTerm}"
+                        Alternative for "{searchTerm}"
                       </span>
                     </div>
                     <p className="font-impact text-4xl uppercase text-black">{group.title}</p>

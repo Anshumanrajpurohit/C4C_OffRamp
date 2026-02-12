@@ -45,7 +45,7 @@ The bot mirrors the full OFFRAMP journey:
 
 - Welcome screen with quick replies for dish swaps, nearby food, preference setup, and “How this works”.
 - Dish Wizard photo flow: prompts for a food photo, runs OpenRouter vision analysis to classify plant vs non-plant, surfaces swaps, comparisons, allergens, and low-confidence recovery options.
-- Dish → plant-based alternative flow with Jain/taste/budget refinements and impact feedback.
+- Dish → Alternativeflow with Jain/taste/budget refinements and impact feedback.
 - Location-based restaurant finder that respects dietary rules and allergies, with follow-up actions (maps, filters, new search).
 - Progressive preference onboarding (diet, restrictions, taste, budget) reused across flows.
 - Dedicated allergy safety loop with confirmations and context-aware resumption.
