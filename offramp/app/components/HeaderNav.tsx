@@ -25,7 +25,8 @@ export function HeaderNav({ onLogin, onSearch }: Props) {
           href="/"
           className="h-12 overflow-hidden rounded-full bg-white px-3 py-2 hover:shadow-sm"
           textClassName="text-2xl"
-          sizePx={84}
+          sizePx={180}
+          hideLabel
           ariaLabel="Go to preferences home"
           priority
         />

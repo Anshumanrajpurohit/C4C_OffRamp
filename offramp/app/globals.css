@@ -712,8 +712,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .tape-strip__inner {
-    animation: none !important;
-    transform: none !important;
+    animation-duration: 60s !important;
   }
 }
 

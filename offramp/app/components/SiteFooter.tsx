@@ -8,8 +8,9 @@ export default function SiteFooter() {
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
         <LogoMark
           href="/#home"
+          hideLabel
           textClassName="text-4xl"
-          sizePx={126}
+          sizePx={180}
           ariaLabel="OffRamp home"
         />
         <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">

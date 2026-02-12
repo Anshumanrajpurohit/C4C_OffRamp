@@ -175,6 +175,42 @@ export const REPLACEMENT_CATEGORIES: ReplacementCategory[] = [
     keywords: ["mutton", "lamb", "goat", "beef"],
     description: "Slow-cooked comfort foods reimagined with plants.",
   },
+  {
+    id: "salad",
+    title: "Salad Swaps",
+    keywords: ["salad", "caesar", "greens"],
+    description: "Fresh, crunchy bowls with bright dressings and plant protein.",
+  },
+  {
+    id: "dosa",
+    title: "Dosa & South Indian Swaps",
+    keywords: ["dosa", "uttapam", "south indian"],
+    description: "Crispy crepes and tiffin favorites with plant-forward fillings.",
+  },
+  {
+    id: "sandwich",
+    title: "Sandwich & Wrap Swaps",
+    keywords: ["sandwich", "wrap", "toast"],
+    description: "Quick handheld meals with hearty, veg-first fillings.",
+  },
+  {
+    id: "cheese",
+    title: "Cheesy & Creamy Swaps",
+    keywords: ["cheese", "paneer", "cream", "creamy", "dairy"],
+    description: "Comfort textures using nuts, coconut, tofu, or lighter dairy.",
+  },
+  {
+    id: "pasta",
+    title: "Pasta Comfort Swaps",
+    keywords: ["pasta", "carbonara", "mac", "macaroni"],
+    description: "Creamy comfort vibes—mapped to the closest Indian plant-based equivalents.",
+  },
+  {
+    id: "pizza",
+    title: "Pizza-style Comfort Swaps",
+    keywords: ["pizza"],
+    description: "Party-friendly comfort picks when you want that indulgent bite.",
+  },
 ];
 
 const slugToFileName = (slug: string) =>
@@ -220,7 +256,88 @@ export function findReplacementGroups(query: string): ReplacementGroup[] {
   }
 
   const normalized = trimmed.toLowerCase();
-  const tokens = Array.from(new Set(normalized.split(/[^a-z0-9]+/g).filter(Boolean)));
+
+  const tokenize = (value: string) => Array.from(new Set(value.split(/[^a-z0-9]+/g).filter(Boolean)));
+  const slugify = (value: string) => tokenize(value).join("-");
+
+  const addAll = (set: Set<string>, values: string[]) => {
+    for (const v of values) set.add(v);
+  };
+
+  const expandedTokens = new Set<string>(tokenize(normalized));
+
+  // Phrase-level intent expansion so common user queries map to our catalog.
+  const phraseExpansions: Array<{ test: RegExp; add: string[] }> = [
+    { test: /butter\s+chicken/, add: ["butter-chicken", "chicken", "creamy"] },
+    { test: /paneer\s+butter\s+masala/, add: ["paneer-butter-masala", "paneer", "creamy"] },
+    { test: /caesar/, add: ["salad"] },
+    { test: /carbonara/, add: ["pasta", "creamy", "cheese"] },
+    { test: /mac\s*(and|&)\s*cheese/, add: ["pasta", "macaroni", "cheese", "creamy", "comfort"] },
+    { test: /cheese\s+pizza/, add: ["pizza", "cheese", "party", "comfort"] },
+    { test: /cheese\s+pasta/, add: ["pasta", "cheese", "creamy", "comfort"] },
+    { test: /cheese\s+dosa/, add: ["dosa", "breakfast", "comfort"] },
+    { test: /cheese\s+sandwich/, add: ["sandwich", "toast", "cheese", "quick"] },
+    { test: /tuna\s+sandwich/, add: ["seafood", "sandwich", "quick"] },
+    { test: /prawn\s+masala/, add: ["seafood", "curry", "masala"] },
+    { test: /rogan\s+josh/, add: ["mutton", "curry", "comfort"] },
+    { test: /egg\s+curry/, add: ["egg", "curry", "masala"] },
+    { test: /egg\s+masala/, add: ["egg", "curry", "masala"] },
+    { test: /chicken\s+curry/, add: ["chicken", "curry", "masala"] },
+    { test: /chicken\s+masala/, add: ["chicken", "curry", "masala"] },
+    { test: /chicken\s+biryani/, add: ["chicken-biryani", "chicken", "biryani", "one-pot"] },
+  ];
+
+  for (const rule of phraseExpansions) {
+    if (rule.test.test(normalized)) {
+      addAll(expandedTokens, rule.add);
+    }
+  }
+
+  const slug = slugify(normalized);
+  if (slug) expandedTokens.add(slug);
+
+  // Token-level expansion for broad coverage.
+  const tokenExpansions: Record<string, string[]> = {
+    veg: ["vegetarian"],
+    vegetarian: ["veg"],
+    biryani: ["one-pot", "aromatic", "festive"],
+    curry: ["main", "comfort"],
+    masala: ["curry", "main", "comfort"],
+    dosa: ["breakfast", "street-food"],
+    sandwich: ["quick", "snack", "street-food"],
+    wrap: ["quick", "snack", "street-food"],
+    pizza: ["party", "comfort"],
+    pasta: ["comfort", "creamy"],
+    cheese: ["creamy", "dairy"],
+    paneer: ["cheese", "creamy"],
+    tuna: ["seafood"],
+    prawn: ["seafood"],
+    shrimp: ["seafood"],
+    fish: ["seafood"],
+    rogan: ["mutton"],
+    josh: ["mutton"],
+    egg: ["egg-dish"],
+  };
+
+  for (const token of Array.from(expandedTokens)) {
+    const extras = tokenExpansions[token];
+    if (extras) {
+      addAll(expandedTokens, extras);
+    }
+  }
+
+  const tokens = Array.from(expandedTokens);
+
+  const dishText = (dish: DishDetail) =>
+    `${dish.name} ${dish.course} ${dish.flavorProfile} ${dish.state} ${dish.region} ${(dish.categories || []).join(" ")} ${(dish.replaces || []).join(" ")} ${dish.heroSummary ?? ""} ${dish.whyItWorks ?? ""}`.toLowerCase();
+
+  const matchesKeyword = (haystack: string, keyword: string) => {
+    if (!keyword) return false;
+    if (haystack.includes(keyword)) return true;
+    // Also match hyphen/space variants.
+    const alt = keyword.includes("-") ? keyword.replace(/-/g, " ") : keyword.replace(/\s+/g, "-");
+    return alt !== keyword && haystack.includes(alt);
+  };
 
   const seenDishes = new Set<string>();
   const groups: ReplacementGroup[] = [];
@@ -234,10 +351,15 @@ export function findReplacementGroups(query: string): ReplacementGroup[] {
       continue;
     }
 
-    const dishes = DISH_CATALOG.filter((dish) =>
-      dish.categories.includes(category.id) ||
-      dish.replaces.some((item) => matchedKeywords.some((keyword) => item.toLowerCase().includes(keyword)))
-    );
+    const dishes = DISH_CATALOG.filter((dish) => {
+      const haystack = dishText(dish);
+      const categoryMatch = (dish.categories || []).some((c) => c.toLowerCase() === category.id.toLowerCase());
+      const replacesMatch = (dish.replaces || []).some((item) =>
+        matchedKeywords.some((keyword) => matchesKeyword(item.toLowerCase(), keyword))
+      );
+      const textMatch = matchedKeywords.some((keyword) => matchesKeyword(haystack, keyword));
+      return categoryMatch || replacesMatch || textMatch;
+    });
 
     if (dishes.length === 0) {
       continue;
@@ -268,11 +390,16 @@ export function findReplacementGroups(query: string): ReplacementGroup[] {
     return groups;
   }
 
-  const fallbackMatches = DISH_CATALOG.filter((dish) => {
-    const nameMatch = dish.name.toLowerCase().includes(normalized);
-    const replaceMatch = dish.replaces.some((item) => item.toLowerCase().includes(normalized));
-    return nameMatch || replaceMatch;
-  });
+  // Broader fallback: token overlap against dish text.
+  const fallbackMatches = DISH_CATALOG.map((dish) => {
+    const haystack = dishText(dish);
+    const score = tokens.reduce((acc, token) => (matchesKeyword(haystack, token) ? acc + 1 : acc), 0);
+    return { dish, score };
+  })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || (b.dish.rating ?? 0) - (a.dish.rating ?? 0) || a.dish.name.localeCompare(b.dish.name))
+    .slice(0, 18)
+    .map((item) => item.dish);
 
   if (fallbackMatches.length === 0) {
     return [];

@@ -146,7 +146,7 @@ export default function Home() {
     <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
       <GlobalNav enableHashNavigation />
 
-      <section className="relative overflow-hidden px-6 pt-20 pb-32">
+      <section className="relative overflow-hidden px-6 pt-12 md:pt-16 lg:pt-20 pb-32">
         <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
           <div className="relative z-10 space-y-8 text-center">
             <h1 className="animate-slide-up delay-100 font-impact text-6xl uppercase leading-[0.9] text-black md:text-8xl">
@@ -155,8 +155,8 @@ export default function Home() {
               <span className="text-accent">SWAP THE REST.</span>
             </h1>
             <p className="mx-auto max-w-lg animate-slide-up delay-200 text-xl font-medium leading-relaxed text-slate-700">
-              Transition to plant-based choices through familiar flavors. No pressure, just better plates. Engineered for
-              institutional scale and individual taste.
+              Helping people change what they eat without changing who they are, 
+              through  AI-guided food transitions through familiar flavors. Built for scale. Designed for taste
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-2 pt-2">
               <PrimaryCTAButton as={Link} href="/swap" className="w-[30rem] h-100">
@@ -188,7 +188,7 @@ export default function Home() {
                     </div>
                     <div className="group relative h-48 overflow-hidden rounded-2xl border-3 border-black">
                       <img
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyvMJxTIMMwc-wRM6Uoq6gZtK8VhvsEdu5kLCANQL6StiRziybbXqp5Chw1NlgSDIc2lHJdOLcX5EnJcKOYYqpri69sgrHm49vHF6nDpGNJt-wHMs-UOvIQJ5u1_lMbT2EcUKjo3TqCfc-GAc8csZh97LKggABoIGomSUEdFvwxC9aLYVZC5TMYk3VsBM_olIrA2-cXcDf2hy8Bz1ntnmnayRFrMZrdJcxjXsxfhhdXF0sNclSWAjV3xFhjsysn4dddY02Wb4QFBfM"
+                        src="https://i.ytimg.com/vi/-1Z_34FdVyk/maxresdefault.jpg"
                         alt="After"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />

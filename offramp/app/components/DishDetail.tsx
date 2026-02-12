@@ -46,10 +46,25 @@ const formatMacroLabel = (value?: string | number, unit = "g") => {
   if (typeof value === "number") return `${value} ${unit}`;
   return value;
 };
+const mockNutritionMatchLabel = (id: string, rating?: number | null) => {
+  const base = 86 + ((id?.length ?? 5) % 9);
+  const adjusted = Math.min(99, Math.max(82, Math.round(base + ((rating ?? 4.5) - 4.5) * 4)));
+  return `${adjusted}% match`;
+};
+const mockCostSavedLabel = (id: string, fallback?: number | null) => {
+  const hash = id
+    ?.split("")
+    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0) ?? 120;
+  const base = fallback ?? 90;
+  const saved = Math.max(60, Math.min(260, Math.round((hash % 110) + base)));
+  return `~₹${saved}`;
+};
 const nutritionIconMap: Record<string, string> = {
   Calories: "local_fire_department",
   Protein: "monitor_weight",
   Fiber: "spa",
+  Match: "verified",
+  "Cost Saved": "savings",
 };
 
 const glassStyles = {
@@ -78,10 +93,14 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const heroSummary = dish.heroSummary ?? dish.whyItWorks;
   const totalTime = formatTimeLabel(dish.totalTime || dish.cookTime || dish.prepTime);
   const servingsLabel = "Serves 4";
+  const nutritionMatch = mockNutritionMatchLabel(dish.slug ?? dish.name, dish.rating);
+  const costSaved = mockCostSavedLabel(dish.slug ?? dish.name, dish.estimatedCost ?? dish.priceSwap ?? null);
   const nutrition = [
     { label: "Calories", value: formatCaloriesLabel(dish.calories) },
     { label: "Protein", value: formatMacroLabel(dish.protein, "g") },
     { label: "Fiber", value: formatMacroLabel(dish.fiber, "g") },
+    { label: "Match", value: nutritionMatch },
+    { label: "Cost Saved", value: `${costSaved} saved` },
   ];
   const heroChips: StatChip[] = [
     { icon: "schedule", title: "Minutes", value: totalTime },
@@ -98,6 +117,13 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
     title: metric.label,
     value: metric.value,
   }));
+  const splitMetricValue = (value: string) => {
+    const match = value.match(/^([~₹]?\s*[0-9]+(?:\.[0-9]+)?%?)(.*)$/);
+    return {
+      primary: match ? match[1].trim() : value,
+      suffix: match ? match[2].trim() : "",
+    };
+  };
   const steps = dish.steps.length
     ? dish.steps
     : [
@@ -477,12 +503,15 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
                     className="flex flex-1 flex-col items-center gap-1 px-4 py-3 text-center"
                   >
                     <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{metric.title}</p>
-                    <div className="flex items-baseline gap-1 text-white">
-                      <span className="text-2xl font-semibold">{metric.value.replace(/[^0-9.]+$/, "")}</span>
-                      <span className="text-sm font-medium text-white/70">
-                        {metric.value.replace(/^[0-9.\s]+/, "").trim() || metric.value}
-                      </span>
-                    </div>
+                    {(() => {
+                      const { primary, suffix } = splitMetricValue(metric.value);
+                      return (
+                        <div className="flex items-baseline gap-1 text-white">
+                          <span className="text-2xl font-semibold">{primary}</span>
+                          {suffix && <span className="text-sm font-medium text-white/70">{suffix}</span>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>

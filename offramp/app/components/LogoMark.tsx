@@ -5,6 +5,7 @@ type LogoMarkProps = {
   as?: "link" | "anchor" | "span";
   href?: string;
   label?: string;
+  hideLabel?: boolean;
   size?: "sm" | "md" | "lg";
   sizePx?: number;
   className?: string;
@@ -21,7 +22,7 @@ const SIZE_MAP: Record<NonNullable<LogoMarkProps["size"]>, number> = {
   lg: 48,
 };
 
-const DEFAULT_LOGO_SRC = "/logo-removebg-preview.png";
+const DEFAULT_LOGO_SRC = "/logo.png";
 
 const baseWrapper = "group inline-flex items-center gap-0";
 const baseImage = "rounded-full object-contain transition-transform duration-300 group-hover:rotate-10";
@@ -33,6 +34,7 @@ export function LogoMark({
   size = "md",
   sizePx,
   label = "OffRamp",
+  hideLabel = false,
   className = "",
   imageClassName = "",
   textClassName = "",
@@ -57,7 +59,7 @@ export function LogoMark({
         priority={priority}
         className={logoImageClasses}
       />
-      <span className={logoTextClasses}>{label}</span>
+      {!hideLabel && <span className={logoTextClasses}>{label}</span>}
     </>
   );
 

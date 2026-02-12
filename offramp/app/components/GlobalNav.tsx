@@ -24,8 +24,8 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
         <LogoMark
           as={enableHashNavigation ? "anchor" : "link"}
           href={anchorHref("home")}
-          textClassName="text-3xl text-[#0b1c21]"
-          sizePx={108}
+          hideLabel
+          sizePx={180}
           ariaLabel="Go to OffRamp home"
           priority
         />
@@ -76,6 +76,9 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
           </div>
           <Link href="/swap" className={navLinkClass}>
             Food Swap
+          </Link>
+          <Link href="/compass" className={navLinkClass} prefetch={false}>
+            Compass
           </Link>
           {comingSoonLink}
           <Link href="/about" className={navLinkClass} prefetch={false}>

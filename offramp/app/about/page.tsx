@@ -39,21 +39,21 @@ const valuePillars = [
 const contactOptions = [
   {
     label: "Email Us",
-    value: "hello@offramp.co",
+    value: "Movement@offramp.co",
     href: "mailto:hello@offramp.co",
     icon: "mail",
     shadow: "shadow-[6px_6px_0px_0px_#FF6B35]",
   },
   {
     label: "Call Us",
-    value: "+91 80 4123 5678",
+    value: "+91 XX XXXX XXXX",
     href: "tel:+918041235678",
     icon: "call",
     shadow: "shadow-[6px_6px_0px_0px_#F9DC5C]",
   },
   {
     label: "Visit HQ",
-    value: "Indiranagar, Bengaluru",
+    value: "C4C campus,Bengaluru.",
     href: "https://maps.google.com/?q=Indiranagar+Bengaluru",
     icon: "location_on",
     shadow: "shadow-[6px_6px_0px_0px_#1E4D2B]",
@@ -198,7 +198,7 @@ export default function AboutPage() {
               The Collective
             </div>
             <h2 className={`${displayFont.className} mt-6 text-4xl font-semibold uppercase text-[#0b1c21]`}>
-              Rooted in Bengaluru, thinking global.
+              Rooted in India, thinking global.
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-[#3a372f]">
               Our team blends food scientists, behavioral economists, and chefs. Bengaluru keeps us honest—a city where tradition and

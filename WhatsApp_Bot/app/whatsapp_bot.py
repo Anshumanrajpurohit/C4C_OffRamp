@@ -685,7 +685,7 @@ def _send_welcome(context: UserContext) -> List[OutgoingMessage]:
     context.step = 0
     context.pending.clear()
     text = (
-        "Hey 👋 I’m OFFRAMP 🌱\n\n"
+        "Hey 👋 I’m OffRamp 🌱\n\n"
         "I help you:\n"
         "• Find dietary-safe food\n"
         "• Discover plant-based alternatives\n"
