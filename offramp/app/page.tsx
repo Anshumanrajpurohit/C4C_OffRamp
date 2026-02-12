@@ -188,7 +188,7 @@ export default function Home() {
                     </div>
                     <div className="group relative h-48 overflow-hidden rounded-2xl border-3 border-black">
                       <img
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyvMJxTIMMwc-wRM6Uoq6gZtK8VhvsEdu5kLCANQL6StiRziybbXqp5Chw1NlgSDIc2lHJdOLcX5EnJcKOYYqpri69sgrHm49vHF6nDpGNJt-wHMs-UOvIQJ5u1_lMbT2EcUKjo3TqCfc-GAc8csZh97LKggABoIGomSUEdFvwxC9aLYVZC5TMYk3VsBM_olIrA2-cXcDf2hy8Bz1ntnmnayRFrMZrdJcxjXsxfhhdXF0sNclSWAjV3xFhjsysn4dddY02Wb4QFBfM"
+                        src="https://i.ytimg.com/vi/-1Z_34FdVyk/maxresdefault.jpg"
                         alt="After"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
