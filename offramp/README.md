@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## VeganSwap engine integration
+
+The `/swap` experience now talks to the FastAPI project that lives in `c4c/veganswap`. To use the live recommendations:
+
+1. From `c4c/veganswap/backend` start the API (for example `uvicorn app.main:app --reload`).
+2. Copy `.env.example` to `.env.local` and set `VEGANSWAP_API_BASE_URL` to the FastAPI origin (default `http://localhost:8000`).
+3. Restart the Next.js dev server so the new environment variable is picked up.
+
+Once configured, the swap page keeps the OffRamp UI but pipes every search through the VeganSwap engine, giving you dietary guardrails plus texture-match sliders directly in the hero search form. When the backend is unavailable the page automatically falls back to the local mock catalog.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

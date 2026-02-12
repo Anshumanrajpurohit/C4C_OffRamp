@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
@@ -168,6 +168,40 @@ const keywordToCategoryMap: Record<string, string[]> = {
   egg: ["egg"],
 };
 
+const VEGANSWAP_RESTRICTIONS = [
+  { id: "gluten_free", label: "Gluten-free" },
+  { id: "nut_free", label: "Nut-free" },
+  { id: "soy_free", label: "Soy-free" },
+  { id: "onion_free", label: "No Onion" },
+  { id: "garlic_free", label: "No Garlic" },
+];
+
+const DEFAULT_TEXTURE_TARGET = 0.85;
+
+type VeganSwapFilters = {
+  dietaryRestrictions: string[];
+  texturePreference: number | null;
+};
+
+type VeganSwapMeta = {
+  appliedRestrictions: string[];
+  texturePreference: number | null;
+  originalDish?: string;
+};
+
+type VeganSwapClientResponse = {
+  dishes: DishDetailType[];
+  meta?: VeganSwapMeta;
+};
+
+const formatRestrictionLabel = (value: string) => {
+  const match = VEGANSWAP_RESTRICTIONS.find((entry) => entry.id === value);
+  if (match) {
+    return match.label;
+  }
+  return value.replace(/_/g, " ");
+};
+
 const parsePriceToNumber = (value?: string | number | null): number | null => {
   if (value === null || value === undefined) return null;
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -207,6 +241,15 @@ function SwapPageInner() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
+  const [texturePreference, setTexturePreference] = useState<number | null>(null);
+  const [swapEngineDishes, setSwapEngineDishes] = useState<DishDetailType[]>([]);
+  const [swapEngineLoading, setSwapEngineLoading] = useState(false);
+  const [swapEngineError, setSwapEngineError] = useState<string | null>(null);
+  const [swapEngineMeta, setSwapEngineMeta] = useState<VeganSwapMeta>({
+    appliedRestrictions: [],
+    texturePreference: null,
+  });
   const searchParams = useSearchParams();
   const demoParam = searchParams.get("demo");
   const isDemoTable = demoParam === "1" || demoParam === "2";
@@ -393,11 +436,89 @@ function SwapPageInner() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  // Use the swap engine to find plant-based alternatives
-  const swapResults = useMemo(() => {
+  const fetchVeganswapResults = useCallback(
+    async (term: string, filters: VeganSwapFilters) => {
+      const normalized = term.trim();
+      if (!normalized) {
+        setSwapEngineDishes([]);
+        setSwapEngineError(null);
+        setSwapEngineMeta({ appliedRestrictions: [], texturePreference: null });
+        return;
+      }
+
+      setSwapEngineLoading(true);
+      setSwapEngineError(null);
+      setSwapEngineMeta({
+        appliedRestrictions: filters.dietaryRestrictions,
+        texturePreference: filters.texturePreference,
+        originalDish: normalized,
+      });
+
+      try {
+        const response = await fetch("/api/veganswap/swap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dishName: normalized,
+            dietaryRestrictions: filters.dietaryRestrictions,
+            texturePreference: filters.texturePreference,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`VeganSwap request failed: ${response.status}`);
+        }
+
+        const payload: VeganSwapClientResponse = await response.json();
+        setSwapEngineDishes(payload.dishes ?? []);
+        setSwapEngineMeta({
+          appliedRestrictions: payload.meta?.appliedRestrictions ?? filters.dietaryRestrictions,
+          texturePreference:
+            payload.meta?.texturePreference ??
+            (typeof filters.texturePreference === "number" ? filters.texturePreference : null),
+          originalDish: payload.meta?.originalDish ?? normalized,
+        });
+      } catch (error) {
+        console.error("VeganSwap engine error", error);
+        setSwapEngineDishes([]);
+        setSwapEngineError("Live VeganSwap engine unavailable. Showing local matches instead.");
+      } finally {
+        setSwapEngineLoading(false);
+      }
+    },
+    []
+  );
+
+  // Use the local dataset and live VeganSwap logic to find plant-based alternatives
+  const localSwapResults = useMemo(() => {
     if (!searchTerm.trim()) return [];
     return findReplacementGroups(searchTerm);
   }, [searchTerm]);
+
+  const swapEngineDescription = useMemo(() => {
+    const parts: string[] = ["Live VeganSwap logic"];
+    if (swapEngineMeta.appliedRestrictions?.length) {
+      parts.push(`Safe for ${swapEngineMeta.appliedRestrictions.map(formatRestrictionLabel).join(", ")}`);
+    }
+    if (typeof swapEngineMeta.texturePreference === "number") {
+      parts.push(`Texture target ${(swapEngineMeta.texturePreference * 100).toFixed(0)}%`);
+    }
+    return parts.join(" • ");
+  }, [swapEngineMeta]);
+
+  const swapResults = useMemo(() => {
+    const groups: ReplacementGroup[] = [];
+    if (swapEngineDishes.length) {
+      groups.push({
+        id: "veganswap-engine",
+        title: "VeganSwap Engine Picks",
+        keywords: searchTerm ? [searchTerm] : ["veganswap"],
+        description: swapEngineDescription,
+        dishes: swapEngineDishes,
+      });
+    }
+    return [...groups, ...localSwapResults];
+  }, [localSwapResults, swapEngineDishes, searchTerm, swapEngineDescription]);
   const processedSwapResults = useMemo(() => {
     if (!swapResults.length) return [];
 
@@ -482,7 +603,9 @@ function SwapPageInner() {
 
   // Handle search submission
   const handleSearch = (term: string) => {
-    setSearchTerm(term);
+    const normalized = term.trim();
+    setSearchTerm(normalized);
+    fetchVeganswapResults(normalized, { dietaryRestrictions, texturePreference });
   };
 
   const handleSuggestionSelect = (value: string) => {
@@ -558,6 +681,12 @@ function SwapPageInner() {
     }
     return picks.map(({ dish }) => dish).slice(0, 8);
   }, [query, topPicksWithDetail, activeFilters, selectedSort]);
+
+  const toggleRestriction = (name: string) => {
+    setDietaryRestrictions((prev) =>
+      prev.includes(name) ? prev.filter((entry) => entry !== name) : [...prev, name]
+    );
+  };
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
@@ -898,6 +1027,66 @@ function SwapPageInner() {
                   Find Swaps
                 </button>
               </div>
+              <div className="mt-4 w-full rounded-2xl border border-dashed border-black/10 bg-highlight/40 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                  VeganSwap filters
+                  {swapEngineLoading && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold text-primary">
+                      <span className="material-symbols-outlined text-base">motion_photos_auto</span>
+                      syncing
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {VEGANSWAP_RESTRICTIONS.map((option) => {
+                    const isActive = dietaryRestrictions.includes(option.id);
+                    return (
+                      <button
+                        type="button"
+                        key={option.id}
+                        onClick={() => toggleRestriction(option.id)}
+                        className={`inline-flex items-center gap-1 rounded-full border-2 border-black px-3 py-1 text-xs font-black uppercase transition ${
+                          isActive ? "bg-primary text-white" : "bg-white text-black hover:bg-highlight"
+                        }`}
+                      >
+                        {option.label}
+                        {isActive && <span className="material-symbols-outlined text-sm">check</span>}
+                      </button>
+                    );
+                  })}
+                  {!dietaryRestrictions.length && (
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">None selected</span>
+                  )}
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-700">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                    Texture match
+                  </div>
+                  <div className="flex flex-1 items-center gap-3">
+                    <input
+                      type="range"
+                      min={60}
+                      max={100}
+                      step={5}
+                      value={Math.round((texturePreference ?? DEFAULT_TEXTURE_TARGET) * 100)}
+                      onChange={(event) => setTexturePreference(Number(event.target.value) / 100)}
+                      className="flex-1 accent-primary"
+                    />
+                    <span className="text-sm font-black text-black">
+                      {texturePreference === null ? "Auto" : `${Math.round((texturePreference ?? 0) * 100)}%`}
+                    </span>
+                    {texturePreference !== null && (
+                      <button
+                        type="button"
+                        onClick={() => setTexturePreference(null)}
+                        className="text-xs font-bold uppercase text-primary transition hover:text-black"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </form>
             {suggestions.length > 0 && !searchTerm && (
               <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -924,6 +1113,20 @@ function SwapPageInner() {
                 </ul>
               </div>
             )}
+            <div className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {swapEngineLoading && <span className="text-primary">VeganSwap engine ranking live picks…</span>}
+              {!swapEngineLoading && swapEngineError && (
+                <span className="text-red-600">{swapEngineError}</span>
+              )}
+              {!swapEngineLoading && !swapEngineError && swapEngineDishes.length > 0 && (
+                <span className="text-primary">
+                  VeganSwap engine ready — {swapEngineDishes.length} smart match{swapEngineDishes.length === 1 ? "" : "es"} ranked.
+                </span>
+              )}
+              {!swapEngineLoading && !swapEngineError && !swapEngineDishes.length && (
+                <span>VeganSwap engine will activate after your next search.</span>
+              )}
+            </div>
           </div>
         </div>
         {activeFilters.length > 0 && (
