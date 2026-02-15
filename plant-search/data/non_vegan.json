@@ -1,0 +1,3502 @@
+[
+  {
+    "id": "NV001",
+    "name": "Chicken Tikka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "charred", "spicy"],
+        "secondary": ["tangy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["charred-outside", "juicy", "tender"],
+    "emotion_features": ["bold", "satisfying", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV002",
+    "name": "Tandoori Chicken",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "earthy", "spicy"],
+        "secondary": ["charred", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["crispy-outside", "chewy", "juicy"],
+    "emotion_features": ["hearty", "bold", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV003",
+    "name": "Butter Chicken",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "high",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "buttery", "sweet"],
+        "secondary": ["floral", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["comfort", "indulgent", "mild"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV004",
+    "name": "Chicken Biryani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["floral", "spicy", "earthy"],
+        "secondary": ["caramelized", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["fluffy", "tender", "soft"],
+    "emotion_features": ["festive", "hearty", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV005",
+    "name": "Mutton Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "garlicky", "rich"],
+        "secondary": ["peppery", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "dense", "tender"],
+    "emotion_features": ["hearty", "comfort", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "common"
+  },
+  {
+    "id": "NV006",
+    "name": "Chicken Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "garlicky", "spicy"],
+        "secondary": ["peppery", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "juicy"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV007",
+    "name": "Egg Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "earthy"],
+        "secondary": ["peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["soft", "creamy-sauce", "tender"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV008",
+    "name": "Fish Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "briny", "spicy"],
+        "secondary": ["citrusy", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["flaky", "tender", "soft"],
+    "emotion_features": ["bold", "comfort", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV009",
+    "name": "Keema Matar",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "garlicky", "earthy"],
+        "secondary": ["peppery", "sweet"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["minced", "soft", "chunky"],
+    "emotion_features": ["hearty", "comfort", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV010",
+    "name": "Chicken Seekh Kebab",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "herby", "charred"],
+        "secondary": ["garlicky", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["juicy", "chewy", "charred-outside"],
+    "emotion_features": ["bold", "indulgent", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV011",
+    "name": "Mutton Biryani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "medium",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["floral", "smoky", "rich"],
+        "secondary": ["caramelized", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "fluffy"],
+    "emotion_features": ["festive", "indulgent", "hearty"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "common"
+  },
+  {
+    "id": "NV012",
+    "name": "Chicken 65",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "tangy", "garlicky"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "crunchy", "juicy"],
+    "emotion_features": ["bold", "fun", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV013",
+    "name": "Prawn Masala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["briny", "tangy", "spicy"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["juicy", "tender", "chewy"],
+    "emotion_features": ["bold", "satisfying", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV014",
+    "name": "Rogan Josh",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "spicy", "floral"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "dense", "juicy"],
+    "emotion_features": ["bold", "hearty", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV015",
+    "name": "Chicken Shawarma",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["garlicky", "tangy", "smoky"],
+        "secondary": ["peppery", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "chewy", "crispy-edges"],
+    "emotion_features": ["comfort", "bold", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV016",
+    "name": "Egg Bhurji",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["buttery", "spicy", "fresh"],
+        "secondary": ["peppery", "garlicky"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "none"
+      }
+    },
+    "texture_features": ["soft", "fluffy", "chunky"],
+    "emotion_features": ["comfort", "simple", "light"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV017",
+    "name": "Fish Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "briny", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "flaky", "crunchy"],
+    "emotion_features": ["bold", "fun", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV018",
+    "name": "Chicken Korma",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "high",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["nutty", "creamy", "sweet"],
+        "secondary": ["floral", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["mild", "comfort", "indulgent"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV019",
+    "name": "Chicken Lollipop",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "low",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "tangy", "garlicky"],
+        "secondary": ["charred", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "juicy", "crunchy"],
+    "emotion_features": ["fun", "bold", "indulgent"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV020",
+    "name": "Mutton Keema",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "rich", "garlicky"],
+        "secondary": ["peppery", "caramelized"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["minced", "dense", "juicy"],
+    "emotion_features": ["hearty", "bold", "comfort"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV021",
+    "name": "Egg Masala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "earthy"],
+        "secondary": ["peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["soft", "creamy-sauce", "tender"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV022",
+    "name": "Chicken Handi",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "smoky", "rich"],
+        "secondary": ["floral", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "creamy-sauce"],
+    "emotion_features": ["comfort", "indulgent", "hearty"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV023",
+    "name": "Chicken Malai Tikka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "medium",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "buttery", "mild"],
+        "secondary": ["floral", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy"],
+    "emotion_features": ["mild", "indulgent", "light"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV024",
+    "name": "Chicken Frankie",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "garlicky"],
+        "secondary": ["peppery", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "none"
+      }
+    },
+    "texture_features": ["chewy", "soft", "tender"],
+    "emotion_features": ["fun", "comfort", "light"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV025",
+    "name": "Mutton Seekh Kebab",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "herby", "rich"],
+        "secondary": ["charred", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "juicy", "charred-outside"],
+    "emotion_features": ["bold", "indulgent", "hearty"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV026",
+    "name": "Prawn Biryani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "low",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["briny", "floral", "spicy"],
+        "secondary": ["caramelized", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "chewy", "fluffy"],
+    "emotion_features": ["festive", "indulgent", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV027",
+    "name": "Chicken Wings",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "tangy", "smoky"],
+        "secondary": ["sweet", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "juicy", "crunchy"],
+    "emotion_features": ["fun", "bold", "indulgent"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV028",
+    "name": "Mutton Paya",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "rich", "briny"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["gelatinous", "soft", "tender"],
+    "emotion_features": ["nostalgic", "hearty", "comfort"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV029",
+    "name": "Chicken Dum Biryani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["floral", "smoky", "spicy"],
+        "secondary": ["caramelized", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["fluffy", "juicy", "tender"],
+    "emotion_features": ["festive", "indulgent", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV030",
+    "name": "Chicken Pepper Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "charred", "earthy"],
+        "secondary": ["woody", "spicy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dry", "crispy", "chewy"],
+    "emotion_features": ["bold", "hearty", "intense"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV031",
+    "name": "Chicken Chettinad",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "earthy", "tangy"],
+        "secondary": ["woody", "spicy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dry", "tender", "chewy"],
+    "emotion_features": ["intense", "bold", "hearty"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV032",
+    "name": "Boiled Eggs",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "none",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["mild", "fresh", "earthy"],
+        "secondary": ["floral"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "single-note"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "none"
+      }
+    },
+    "texture_features": ["firm", "dense", "soft-center"],
+    "emotion_features": ["simple", "light", "clean"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV033",
+    "name": "Egg Paratha",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["buttery", "earthy", "fresh"],
+        "secondary": ["charred", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "flaky", "soft"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "medium", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV034",
+    "name": "Mutton Haleem",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "spicy"],
+        "secondary": ["caramelized", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["smooth", "thick", "dense"],
+    "emotion_features": ["hearty", "nostalgic", "comfort"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV035",
+    "name": "Chicken Tikka Masala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "medium",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "smoky", "tangy"],
+        "secondary": ["floral", "sweet"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "creamy-sauce"],
+    "emotion_features": ["comfort", "indulgent", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV036",
+    "name": "Prawn Koliwada",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["briny", "citrusy", "spicy"],
+        "secondary": ["charred", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "crunchy", "juicy"],
+    "emotion_features": ["bold", "fun", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV037",
+    "name": "Chicken Pulao",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["floral", "earthy", "mild"],
+        "secondary": ["woody", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "none"
+      }
+    },
+    "texture_features": ["fluffy", "tender", "soft"],
+    "emotion_features": ["light", "comfort", "simple"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "low" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV038",
+    "name": "Chicken Achari",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "briny", "peppery"],
+        "secondary": ["earthy", "citrusy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "soft"],
+    "emotion_features": ["bold", "nostalgic", "intense"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV039",
+    "name": "Fish Tikka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "briny", "tangy"],
+        "secondary": ["charred", "citrusy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["flaky", "charred-outside", "tender"],
+    "emotion_features": ["light", "bold", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV040",
+    "name": "Mutton Chops",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "rich", "charred"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "charred-outside", "dense"],
+    "emotion_features": ["bold", "hearty", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "high" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV041",
+    "name": "Chicken Ghee Roast",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "rich", "spicy"],
+        "secondary": ["buttery", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dry", "crispy", "tender"],
+    "emotion_features": ["bold", "indulgent", "intense"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV042",
+    "name": "Mutton Stew",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["mild", "earthy", "buttery"],
+        "secondary": ["floral", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "gelatinous"],
+    "emotion_features": ["warm", "comfort", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV043",
+    "name": "Chicken Cafreal",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["herby", "citrusy", "spicy"],
+        "secondary": ["charred", "earthy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["charred-outside", "juicy", "tender"],
+    "emotion_features": ["bold", "exotic", "intense"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV044",
+    "name": "Egg Fried Rice",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "garlicky", "fresh"],
+        "secondary": ["peppery", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["fluffy", "crispy-bits", "soft"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "medium", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV045",
+    "name": "Chicken Rezala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "high",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["floral", "mild", "sweet"],
+        "secondary": ["woody", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["soft", "tender", "creamy-sauce"],
+    "emotion_features": ["mild", "comfort", "delicate"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV046",
+    "name": "Mutton Shammi Kebab",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "herby", "rich"],
+        "secondary": ["charred", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy-outside", "soft-inside", "dense"],
+    "emotion_features": ["nostalgic", "indulgent", "comfort"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV047",
+    "name": "Chicken Nihari",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "floral"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "gelatinous", "soft"],
+    "emotion_features": ["hearty", "nostalgic", "warm"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV048",
+    "name": "Chicken Sukka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "earthy", "charred"],
+        "secondary": ["woody", "smoky"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dry", "chewy", "crispy"],
+    "emotion_features": ["bold", "intense", "hearty"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV049",
+    "name": "Kheema Pav",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["spicy", "garlicky", "earthy"],
+        "secondary": ["sweet", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["minced", "soft", "chewy-bread"],
+    "emotion_features": ["comfort", "street-food", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV050",
+    "name": "Chicken Kathi Roll",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "tangy", "garlicky"],
+        "secondary": ["charred", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["chewy", "crispy-edges", "tender"],
+    "emotion_features": ["fun", "street-food", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV051",
+    "name": "Mutton Rogan Josh",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "spicy", "floral"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "dense", "juicy"],
+    "emotion_features": ["bold", "hearty", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV052",
+    "name": "Goan Fish Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "coconutty", "spicy"],
+        "secondary": ["citrusy", "briny"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["flaky", "tender", "soft"],
+    "emotion_features": ["tropical", "comfort", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV053",
+    "name": "Bhuna Gosht",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "caramelized"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "dense", "dry"],
+    "emotion_features": ["hearty", "bold", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV054",
+    "name": "Chicken Kolhapuri",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "earthy", "spicy"],
+        "secondary": ["woody", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "thick-gravy"],
+    "emotion_features": ["intense", "bold", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV055",
+    "name": "Prawn Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "chewy", "juicy"],
+    "emotion_features": ["bold", "indulgent", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV056",
+    "name": "Chicken Kadai",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "tangy", "earthy"],
+        "secondary": ["charred", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "chunky", "thick-gravy"],
+    "emotion_features": ["comfort", "satisfying", "hearty"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV057",
+    "name": "Mutton Korma",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "high",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["nutty", "creamy", "sweet"],
+        "secondary": ["floral", "rich"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["mild", "indulgent", "comfort"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "common"
+  },
+  {
+    "id": "NV058",
+    "name": "Chicken Jalfrezi",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "fresh"],
+        "secondary": ["peppery", "citrusy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "crunchy-vegetables", "juicy"],
+    "emotion_features": ["light", "bold", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV059",
+    "name": "Bombay Duck Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "flaky", "crunchy"],
+    "emotion_features": ["bold", "nostalgic", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV060",
+    "name": "Chicken Saagwala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "creamy", "herby"],
+        "secondary": ["peppery", "garlicky"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["comfort", "healthy", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV061",
+    "name": "Mutton Do Pyaza",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["sweet", "earthy", "caramelized"],
+        "secondary": ["peppery", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "chunky", "soft"],
+    "emotion_features": ["comfort", "hearty", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV062",
+    "name": "Chicken Chukka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "earthy", "charred"],
+        "secondary": ["woody", "spicy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dry", "crispy", "chewy"],
+    "emotion_features": ["bold", "intense", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV063",
+    "name": "Pomfret Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "flaky", "tender"],
+    "emotion_features": ["bold", "indulgent", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV064",
+    "name": "Egg Roast",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "earthy"],
+        "secondary": ["peppery", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["soft", "creamy-sauce", "tender"],
+    "emotion_features": ["comfort", "simple", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV065",
+    "name": "Chicken Xacuti",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "medium",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["nutty", "coconutty", "spicy"],
+        "secondary": ["floral", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "thick-gravy"],
+    "emotion_features": ["exotic", "comfort", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV066",
+    "name": "Mutton Raan",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "medium",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["rich", "floral", "sweet"],
+        "secondary": ["woody", "caramelized"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "dense"],
+    "emotion_features": ["festive", "indulgent", "grand"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "rare"
+  },
+  {
+    "id": "NV067",
+    "name": "Chicken Manchurian",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "high",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["sweet", "tangy", "garlicky"],
+        "secondary": ["umami", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "saucy", "juicy"],
+    "emotion_features": ["fun", "fusion", "indulgent"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV068",
+    "name": "Hilsa Fish Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "medium",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "briny", "mustard"],
+        "secondary": ["peppery", "earthy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["flaky", "oily", "tender"],
+    "emotion_features": ["nostalgic", "bold", "festive"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "high",
+    "availability": "rare"
+  },
+  {
+    "id": "NV069",
+    "name": "Chicken Vindaloo",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "garlicky"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "thick-gravy"],
+    "emotion_features": ["intense", "bold", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV070",
+    "name": "Mutton Kofta Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "garlicky"],
+        "secondary": ["peppery", "floral"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["soft", "dense", "creamy-sauce"],
+    "emotion_features": ["comfort", "hearty", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV071",
+    "name": "Chicken Stew",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["mild", "coconutty", "fresh"],
+        "secondary": ["floral", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["comfort", "warm", "light"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "common"
+  },
+  {
+    "id": "NV072",
+    "name": "Prawn Balchao",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "medium",
+        "sour_level": "high",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "spicy", "briny"],
+        "secondary": ["sweet", "citrusy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "tender", "chunky"],
+    "emotion_features": ["bold", "exotic", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV073",
+    "name": "Chicken Pathani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "medium",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "nutty", "mild"],
+        "secondary": ["floral", "sweet"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["mild", "indulgent", "comfort"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV074",
+    "name": "Mutton Saag",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "herby", "rich"],
+        "secondary": ["peppery", "garlicky"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["comfort", "hearty", "healthy"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV075",
+    "name": "Chicken Afghani",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "mild",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "mild", "herby"],
+        "secondary": ["floral", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "creamy", "soft"],
+    "emotion_features": ["mild", "elegant", "light"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV076",
+    "name": "Crab Curry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "low",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "tangy"],
+        "secondary": ["coconutty", "earthy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "tender", "chunky"],
+    "emotion_features": ["festive", "indulgent", "exotic"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV077",
+    "name": "Chicken Changezi",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "tangy", "rich"],
+        "secondary": ["floral", "garlicky"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "creamy-sauce"],
+    "emotion_features": ["indulgent", "comfort", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV078",
+    "name": "Mutton Boti Kebab",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "charred", "spicy"],
+        "secondary": ["herby", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "charred-outside", "juicy"],
+    "emotion_features": ["bold", "indulgent", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV079",
+    "name": "Chicken Kosha",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "caramelized"],
+        "secondary": ["woody", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "thick-gravy", "dense"],
+    "emotion_features": ["hearty", "bold", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV080",
+    "name": "Squid Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["chewy", "crispy", "tender"],
+    "emotion_features": ["bold", "exotic", "indulgent"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV081",
+    "name": "Chicken Angara",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "spicy", "charred"],
+        "secondary": ["tangy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["charred-outside", "juicy", "tender"],
+    "emotion_features": ["bold", "intense", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV082",
+    "name": "Mutton Liver Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "rich", "peppery"],
+        "secondary": ["charred", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dense", "chewy", "crispy"],
+    "emotion_features": ["intense", "bold", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "common"
+  },
+  {
+    "id": "NV083",
+    "name": "Chicken Dum Ka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["mild", "floral", "creamy"],
+        "secondary": ["woody", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "juicy"],
+    "emotion_features": ["comfort", "elegant", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV084",
+    "name": "Prawn Pulao",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "low",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["briny", "floral", "mild"],
+        "secondary": ["woody", "buttery"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "none"
+      }
+    },
+    "texture_features": ["fluffy", "chewy", "tender"],
+    "emotion_features": ["light", "comfort", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "low" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV085",
+    "name": "Chicken Makhanwala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "high",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "buttery", "sweet"],
+        "secondary": ["floral", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["comfort", "indulgent", "mild"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV086",
+    "name": "Mutton Brain Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "buttery"],
+        "secondary": ["peppery", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["creamy", "soft", "crispy-outside"],
+    "emotion_features": ["exotic", "indulgent", "bold"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "very-high" },
+    "price_range": "medium",
+    "availability": "rare"
+  },
+  {
+    "id": "NV087",
+    "name": "Chicken Lababdar",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "high",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "sweet", "tangy"],
+        "secondary": ["floral", "rich"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["indulgent", "comfort", "festive"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV088",
+    "name": "Surmai Tikka",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["smoky", "briny", "tangy"],
+        "secondary": ["charred", "citrusy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["flaky", "tender", "charred-outside"],
+    "emotion_features": ["light", "bold", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV089",
+    "name": "Chicken Do Pyaza",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "medium",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["sweet", "earthy", "caramelized"],
+        "secondary": ["peppery", "tangy"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "chunky", "soft"],
+    "emotion_features": ["comfort", "satisfying", "hearty"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV090",
+    "name": "Mutton Kundan Kaliyan",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "low",
+        "sweet_level": "high",
+        "sour_level": "none",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["creamy", "nutty", "sweet"],
+        "secondary": ["floral", "rich"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "sweet",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["elegant", "indulgent", "festive"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "very-high" },
+    "price_range": "high",
+    "availability": "rare"
+  },
+  {
+    "id": "NV091",
+    "name": "Chicken Kali Mirch",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "broth-like"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "creamy", "rich"],
+        "secondary": ["woody", "earthy"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "juicy", "creamy-sauce"],
+    "emotion_features": ["bold", "intense", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV092",
+    "name": "Fish Moilee",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "medium",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "none"
+      },
+      "flavor_base": {
+        "primary": ["coconutty", "mild", "tangy"],
+        "secondary": ["floral", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "subtle",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["flaky", "tender", "soft"],
+    "emotion_features": ["light", "comfort", "tropical"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV093",
+    "name": "Chicken Hariyali",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "low",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["herby", "fresh", "tangy"],
+        "secondary": ["citrusy", "earthy"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "juicy", "charred-outside"],
+    "emotion_features": ["light", "fresh", "satisfying"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "low" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV094",
+    "name": "Mutton Khurchan",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "low",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["rich", "earthy", "caramelized"],
+        "secondary": ["peppery", "woody"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["minced", "chewy", "dry"],
+    "emotion_features": ["hearty", "bold", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV095",
+    "name": "Chicken Noodles",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "low",
+        "bitter_level": "none",
+        "spice_heat": "low"
+      },
+      "flavor_base": {
+        "primary": ["garlicky", "smoky", "umami"],
+        "secondary": ["peppery", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["chewy", "crispy-vegetables", "tender"],
+    "emotion_features": ["comfort", "fun", "satisfying"],
+    "nutrition": { "protein": "medium", "energy": "high", "fat": "medium" },
+    "price_range": "low",
+    "availability": "very-common"
+  },
+  {
+    "id": "NV096",
+    "name": "Mackerel Fry",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["briny", "spicy", "charred"],
+        "secondary": ["citrusy", "peppery"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "smoky",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["crispy", "flaky", "oily"],
+    "emotion_features": ["bold", "satisfying", "coastal"],
+    "nutrition": { "protein": "very-high", "energy": "high", "fat": "high" },
+    "price_range": "low",
+    "availability": "common"
+  },
+  {
+    "id": "NV097",
+    "name": "Chicken Khada Masala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["peppery", "earthy", "spicy"],
+        "secondary": ["woody", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["tender", "dry", "chunky"],
+    "emotion_features": ["intense", "bold", "hearty"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "moderate"
+  },
+  {
+    "id": "NV098",
+    "name": "Mutton Kaleji",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["meat-like", "aged"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "none",
+        "bitter_level": "high",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["earthy", "rich", "peppery"],
+        "secondary": ["woody", "charred"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "bitter",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["dense", "chewy", "tender"],
+    "emotion_features": ["intense", "bold", "nostalgic"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "medium" },
+    "price_range": "low",
+    "availability": "common"
+  },
+  {
+    "id": "NV099",
+    "name": "Chicken Dahi Wala",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "medium",
+        "source": ["meat-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "medium",
+        "sweet_level": "none",
+        "sour_level": "medium",
+        "bitter_level": "none",
+        "spice_heat": "medium"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "creamy", "mild"],
+        "secondary": ["floral", "fresh"]
+      },
+      "taste_intensity": {
+        "overall": "medium",
+        "complexity": "straightforward"
+      },
+      "aftertaste": {
+        "type": "clean",
+        "duration": "short"
+      }
+    },
+    "texture_features": ["tender", "soft", "creamy-sauce"],
+    "emotion_features": ["light", "comfort", "satisfying"],
+    "nutrition": { "protein": "high", "energy": "medium", "fat": "medium" },
+    "price_range": "medium",
+    "availability": "common"
+  },
+  {
+    "id": "NV100",
+    "name": "Prawn Ghee Roast",
+    "category": "non-vegan",
+    "taste_features": {
+      "umami_depth": {
+        "level": "strong",
+        "source": ["broth-like", "fermented"]
+      },
+      "seasoning_profile": {
+        "salt_level": "high",
+        "sweet_level": "none",
+        "sour_level": "high",
+        "bitter_level": "medium",
+        "spice_heat": "high"
+      },
+      "flavor_base": {
+        "primary": ["tangy", "rich", "spicy"],
+        "secondary": ["buttery", "briny"]
+      },
+      "taste_intensity": {
+        "overall": "bold",
+        "complexity": "layered"
+      },
+      "aftertaste": {
+        "type": "lingering",
+        "duration": "long"
+      }
+    },
+    "texture_features": ["chewy", "crispy", "tender"],
+    "emotion_features": ["bold", "indulgent", "coastal"],
+    "nutrition": { "protein": "very-high", "energy": "medium", "fat": "high" },
+    "price_range": "high",
+    "availability": "moderate"
+  }
+]

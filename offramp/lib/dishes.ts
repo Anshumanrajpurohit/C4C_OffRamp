@@ -1,5 +1,16 @@
 import mockData from "../Mock.json";
 
+export type DishMatchMeta = {
+  source?: "plant-search" | "local";
+  priceRange?: string;
+  protein?: string;
+  availability?: string;
+  score?: number;
+  reasons?: string[];
+  dishId?: string | number;
+  originalDish?: string;
+};
+
 export type DishDetail = {
   slug: string;
   name: string;
@@ -29,6 +40,7 @@ export type DishDetail = {
   priceOriginal?: number;
   priceSwap?: number;
   estimatedCost?: number;
+  matchMeta?: DishMatchMeta;
 };
 
 export type ReplacementCategory = {

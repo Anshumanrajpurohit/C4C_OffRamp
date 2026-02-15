@@ -1,0 +1,281 @@
+from __future__ import annotations
+
+import json
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Query, Request, status
+
+from engine.extractor import dict_to_dish_response, dict_to_features
+from engine.ranker import rank_top_matches
+from engine.scorer import score_all
+
+from .models import (
+    DeleteResponse,
+    DishCreate,
+    DishResponse,
+    DishSummary,
+    HealthResponse,
+    SearchRequest,
+    SearchResult,
+)
+
+router = APIRouter()
+
+
+def _save_json_file(path: Path, data: List[Dict[str, Any]]) -> None:
+    """Save data to a JSON file."""
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _find_dish_by_name(dishes: List[Dict[str, Any]], name: str) -> Optional[Dict[str, Any]]:
+    """Find a dish by name (case-insensitive)."""
+    name_lower = name.lower()
+    for dish in dishes:
+        if dish["name"].lower() == name_lower:
+            return dish
+    return None
+
+
+def _find_dish_by_id(dishes: List[Dict[str, Any]], dish_id: str) -> Optional[Dict[str, Any]]:
+    """Find a dish by ID."""
+    for dish in dishes:
+        if dish.get("id") == dish_id:
+            return dish
+    return None
+
+
+def _filter_dishes(
+    dishes: List[Dict[str, Any]],
+    *,
+    category: Optional[str] = None,
+    protein: Optional[str] = None,
+    price_range: Optional[str] = None,
+    name: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Filter dishes based on criteria."""
+    results = []
+    name_lower = name.lower() if name else None
+    
+    for dish in dishes:
+        if category and dish["category"] != category:
+            continue
+        if protein and dish["nutrition"]["protein"] != protein:
+            continue
+        if price_range and dish["price_range"] != price_range:
+            continue
+        if name_lower and not dish["name"].lower().startswith(name_lower):
+            continue
+        results.append(dish)
+    
+    return results
+
+
+def _dish_to_create_dict(dish: DishCreate) -> Dict[str, Any]:
+    """Convert DishCreate model to dictionary matching JSON structure."""
+    return {
+        "id": dish.id or str(uuid.uuid4()),
+        "name": dish.name,
+        "category": dish.category,
+        "taste_features": {
+            "umami_depth": {
+                "level": dish.taste_features.umami_depth.level,
+                "source": dish.taste_features.umami_depth.source,
+            },
+            "seasoning_profile": {
+                "salt_level": dish.taste_features.seasoning_profile.salt_level,
+                "sweet_level": dish.taste_features.seasoning_profile.sweet_level,
+                "sour_level": dish.taste_features.seasoning_profile.sour_level,
+                "bitter_level": dish.taste_features.seasoning_profile.bitter_level,
+                "spice_heat": dish.taste_features.seasoning_profile.spice_heat,
+            },
+            "flavor_base": {
+                "primary": dish.taste_features.flavor_base.primary,
+                "secondary": dish.taste_features.flavor_base.secondary,
+            },
+            "taste_intensity": {
+                "overall": dish.taste_features.taste_intensity.overall,
+                "complexity": dish.taste_features.taste_intensity.complexity,
+            },
+            "aftertaste": {
+                "type": dish.taste_features.aftertaste.type,
+                "duration": dish.taste_features.aftertaste.duration,
+            },
+        },
+        "texture_features": dish.texture_features,
+        "emotion_features": dish.emotion_features,
+        "nutrition": {
+            "protein": dish.nutrition.protein,
+            "energy": dish.nutrition.energy,
+            "fat": dish.nutrition.fat,
+        },
+        "price_range": dish.price_range,
+        "availability": dish.availability,
+        "created_at": datetime.now().isoformat(),
+    }
+
+
+@router.post("/search", response_model=List[SearchResult])
+async def search_dishes(request: Request, payload: SearchRequest) -> List[SearchResult]:
+    top_n_default = getattr(request.app.state, "top_n_default", 10)
+    top_n = payload.top_n or top_n_default
+    
+    # Find source dish in non-vegan dishes
+    non_vegan_dishes = getattr(request.app.state, "non_vegan_dishes", [])
+    source_dish = _find_dish_by_name(non_vegan_dishes, payload.dish_name)
+    
+    if not source_dish:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dish not found")
+    
+    # Convert to features
+    source_features = dict_to_features(source_dish)
+    vegan_map = getattr(request.app.state, "vegan_dishes", {})
+    
+    if not vegan_map:
+        return []
+    
+    # Score and rank
+    score_map = score_all(source_features, vegan_map)
+    candidate_count = len(vegan_map)
+    ranked_full = rank_top_matches(score_map, vegan_map, candidate_count)
+    
+    return [SearchResult(**item) for item in ranked_full[:top_n]]
+
+
+@router.get("/dish/{name}", response_model=DishResponse)
+async def get_dish(name: str, request: Request) -> DishResponse:
+    # Search in both vegan and non-vegan dishes
+    all_dishes = (
+        getattr(request.app.state, "non_vegan_dishes", []) +
+        getattr(request.app.state, "vegan_dishes_raw", [])
+    )
+    
+    dish = _find_dish_by_name(all_dishes, name)
+    if not dish:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dish not found")
+    
+    return dict_to_dish_response(dish)
+
+
+@router.post("/dish/add", response_model=DishResponse, status_code=status.HTTP_201_CREATED)
+async def add_dish(request: Request, payload: DishCreate) -> DishResponse:
+    # Check for duplicate name
+    all_dishes = (
+        getattr(request.app.state, "non_vegan_dishes", []) +
+        getattr(request.app.state, "vegan_dishes_raw", [])
+    )
+    
+    if _find_dish_by_name(all_dishes, payload.name):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Dish with that name already exists")
+    
+    # Convert to dict
+    dish_dict = _dish_to_create_dict(payload)
+    
+    # Determine which file to append to
+    if payload.category == "vegan":
+        dishes_list = getattr(request.app.state, "vegan_dishes_raw", [])
+        file_path = getattr(request.app.state, "vegan_path")
+        
+        # Add to list
+        dishes_list.append(dish_dict)
+        request.app.state.vegan_dishes_raw = dishes_list
+        
+        # Update feature map
+        vegan_map: Dict[str, Any] = getattr(request.app.state, "vegan_dishes", {})
+        vegan_map[dish_dict["id"]] = dict_to_features(dish_dict)
+        request.app.state.vegan_dishes = vegan_map
+        
+    else:  # non-vegan
+        dishes_list = getattr(request.app.state, "non_vegan_dishes", [])
+        file_path = getattr(request.app.state, "non_vegan_path")
+        
+        # Add to list
+        dishes_list.append(dish_dict)
+        request.app.state.non_vegan_dishes = dishes_list
+    
+    # Save to JSON file
+    _save_json_file(file_path, dishes_list)
+    
+    return dict_to_dish_response(dish_dict)
+
+
+@router.delete("/dish/{dish_id}", response_model=DeleteResponse)
+async def delete_dish(dish_id: str, request: Request) -> DeleteResponse:
+    # Try to find and remove from vegan dishes
+    vegan_dishes = getattr(request.app.state, "vegan_dishes_raw", [])
+    vegan_path = getattr(request.app.state, "vegan_path")
+    
+    for i, dish in enumerate(vegan_dishes):
+        if dish.get("id") == dish_id:
+            vegan_dishes.pop(i)
+            request.app.state.vegan_dishes_raw = vegan_dishes
+            _save_json_file(vegan_path, vegan_dishes)
+            
+            # Update feature map
+            vegan_map: Dict[str, Any] = getattr(request.app.state, "vegan_dishes", {})
+            vegan_map.pop(dish_id, None)
+            request.app.state.vegan_dishes = vegan_map
+            
+            return DeleteResponse(status="deleted", deleted_id=dish_id)
+    
+    # Try to find and remove from non-vegan dishes
+    non_vegan_dishes = getattr(request.app.state, "non_vegan_dishes", [])
+    non_vegan_path = getattr(request.app.state, "non_vegan_path")
+    
+    for i, dish in enumerate(non_vegan_dishes):
+        if dish.get("id") == dish_id:
+            non_vegan_dishes.pop(i)
+            request.app.state.non_vegan_dishes = non_vegan_dishes
+            _save_json_file(non_vegan_path, non_vegan_dishes)
+            return DeleteResponse(status="deleted", deleted_id=dish_id)
+    
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "Dish not found")
+
+
+@router.get("/dishes", response_model=List[DishSummary])
+async def list_dishes(
+    request: Request,
+    category: Optional[str] = Query(None, pattern="^(vegan|non-vegan)$"),
+    protein: Optional[str] = None,
+    price_range: Optional[str] = None,
+    name: Optional[str] = Query(None, min_length=1),
+) -> List[DishSummary]:
+    # Combine all dishes
+    all_dishes = (
+        getattr(request.app.state, "non_vegan_dishes", []) +
+        getattr(request.app.state, "vegan_dishes_raw", [])
+    )
+    
+    # Filter
+    filtered = _filter_dishes(
+        all_dishes,
+        category=category,
+        protein=protein,
+        price_range=price_range,
+        name=name,
+    )
+    
+    # Convert to summary
+    results = []
+    for dish in filtered[:50]:  # Limit to 50 results
+        results.append(
+            DishSummary(
+                id=dish.get("id", ""),
+                name=dish["name"],
+                category=dish["category"],
+                price_range=dish["price_range"],
+                protein=dish["nutrition"]["protein"],
+            )
+        )
+    
+    return results
+
+
+@router.get("/health", response_model=HealthResponse)
+async def health_check(request: Request) -> HealthResponse:
+    non_vegan_count = len(getattr(request.app.state, "non_vegan_dishes", []))
+    vegan_count = len(getattr(request.app.state, "vegan_dishes_raw", []))
+    return HealthResponse(status="ok", dish_count=non_vegan_count + vegan_count)

@@ -5,9 +5,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { useSearchParams } from "next/navigation";
-import { findReplacementGroups, DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
+import { DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import {
+  PlantSearchError,
+  getAllDishes,
+  getDish,
+  healthCheck,
+  searchPlantAlternatives,
+  type PlantDishResponse,
+  type PlantHealthResponse,
+  type PlantSearchResult,
+} from "@/services/plantSearchService";
 
 const impact = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-impact" });
 const jakarta = Plus_Jakarta_Sans({
@@ -246,7 +256,7 @@ const keywordToCategoryMap: Record<string, string[]> = {
   egg: ["egg"],
 };
 
-const VEGANSWAP_RESTRICTIONS = [
+const PLANT_SEARCH_RESTRICTIONS = [
   { id: "gluten_free", label: "Gluten-free" },
   { id: "nut_free", label: "Nut-free" },
   { id: "soy_free", label: "Soy-free" },
@@ -256,24 +266,73 @@ const VEGANSWAP_RESTRICTIONS = [
 
 const DEFAULT_TEXTURE_TARGET = 0.85;
 
-type VeganSwapFilters = {
+type PlantSearchFilters = {
   dietaryRestrictions: string[];
   texturePreference: number | null;
 };
 
-type VeganSwapMeta = {
+type PlantSearchMeta = {
   appliedRestrictions: string[];
   texturePreference: number | null;
   originalDish?: string;
+  engine?: "plant-search";
+  priceRanges?: string[];
+  proteinTags?: string[];
+  availabilityTags?: string[];
 };
 
-type VeganSwapClientResponse = {
-  dishes: DishDetailType[];
-  meta?: VeganSwapMeta;
+type PlantRecommendation = {
+  id: string;
+  name: string;
+  protein: string;
+  priceRange: string;
+  score: number;
+  availability: string;
+  reasons: string[];
+  detail?: DishDetailType;
 };
+
+const createEmptySwapMeta = (): PlantSearchMeta => ({
+  appliedRestrictions: [],
+  texturePreference: null,
+  originalDish: undefined,
+  engine: undefined,
+  priceRanges: [],
+  proteinTags: [],
+  availabilityTags: [],
+});
+
+const summarizeRawResults = (results: PlantSearchResult[]) => {
+  const priceRanges = new Set<string>();
+  const proteinTags = new Set<string>();
+  const availabilityTags = new Set<string>();
+
+  results.forEach((result) => {
+    if (result.price_range) priceRanges.add(result.price_range);
+    if (result.protein) proteinTags.add(result.protein);
+    if (result.availability) availabilityTags.add(result.availability);
+  });
+
+  return {
+    priceRanges: Array.from(priceRanges),
+    proteinTags: Array.from(proteinTags),
+    availabilityTags: Array.from(availabilityTags),
+  } satisfies Pick<PlantSearchMeta, "priceRanges" | "proteinTags" | "availabilityTags">;
+};
+
+const toPlantRecommendation = (result: PlantSearchResult, detail?: DishDetailType): PlantRecommendation => ({
+  id: result.dish_id,
+  name: result.name,
+  protein: result.protein,
+  priceRange: result.price_range,
+  score: result.score,
+  availability: result.availability,
+  reasons: result.reasons,
+  detail,
+});
 
 const formatRestrictionLabel = (value: string) => {
-  const match = VEGANSWAP_RESTRICTIONS.find((entry) => entry.id === value);
+  const match = PLANT_SEARCH_RESTRICTIONS.find((entry) => entry.id === value);
   if (match) {
     return match.label;
   }
@@ -341,10 +400,11 @@ function SwapPageInner() {
   const [swapEngineDishes, setSwapEngineDishes] = useState<DishDetailType[]>([]);
   const [swapEngineLoading, setSwapEngineLoading] = useState(false);
   const [swapEngineError, setSwapEngineError] = useState<string | null>(null);
-  const [swapEngineMeta, setSwapEngineMeta] = useState<VeganSwapMeta>({
-    appliedRestrictions: [],
-    texturePreference: null,
-  });
+  const [swapEngineMeta, setSwapEngineMeta] = useState<PlantSearchMeta>(() => createEmptySwapMeta());
+  const [plantRecommendations, setPlantRecommendations] = useState<PlantRecommendation[]>([]);
+  const [engineHealth, setEngineHealth] = useState<PlantHealthResponse | null>(null);
+  const [backendDishNames, setBackendDishNames] = useState<string[]>([]);
+  const [spotlightDish, setSpotlightDish] = useState<PlantDishResponse | null>(null);
   const searchParams = useSearchParams();
   const demoParam = searchParams.get("demo");
   const isDemoTable = demoParam === "1" || demoParam === "2";
@@ -365,6 +425,7 @@ function SwapPageInner() {
 
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+  const swapRequestIdRef = useRef(0);
 
   const cuisineOptions = ["Tamil", "Telugu", "Kerala", "Hyderabadi", "Punjabi", "Gujarati"];
   const allergyOptions = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
@@ -413,6 +474,10 @@ function SwapPageInner() {
       { id: "old", label: "Oldest Updated", description: "Legacy staples" },
       { id: "recommended", label: "Most Recommended", description: "Best-rated swaps" },
       { id: "budget", label: "Budget Friendly", description: "Lower swap cost" },
+      { id: "protein_high", label: "High Protein", description: "Engine-verified protein rich" },
+      { id: "price_low", label: "Budget Match", description: "Plant engine low price range" },
+      { id: "availability_easy", label: "Easy Availability", description: "Common pantry or easy sourcing" },
+      { id: "score_elite", label: "Elite Match", description: "95%+ match confidence" },
     ],
     []
   );
@@ -421,6 +486,48 @@ function SwapPageInner() {
     const total = DISH_CATALOG.length;
     const newestThreshold = total - Math.max(1, Math.floor(total * 0.3));
     const oldestThreshold = Math.max(1, Math.floor(total * 0.3));
+
+    const isHighProteinDish = (dish?: DishDetailType) => {
+      if (!dish) return false;
+      const metaProtein = dish.matchMeta?.protein?.toLowerCase();
+      if (metaProtein) {
+        return metaProtein.includes("high") || metaProtein.includes("power");
+      }
+      const numericProtein = typeof dish.protein === "number" ? dish.protein : undefined;
+      return typeof numericProtein === "number" ? numericProtein >= 15 : false;
+    };
+
+    const matchesPriceBand = (dish?: DishDetailType, band: "low" | "premium") => {
+      if (!dish) return false;
+      const metaPrice = dish.matchMeta?.priceRange?.toLowerCase();
+      if (metaPrice) {
+        if (band === "low") {
+          return metaPrice.includes("low") || metaPrice.includes("budget");
+        }
+        return metaPrice.includes("premium") || metaPrice.includes("high");
+      }
+      const price = dishMeta[dish.slug]?.swapCost;
+      if (typeof price !== "number") return false;
+      return band === "low" ? price <= 180 : price >= 260;
+    };
+
+    const hasEasyAvailability = (dish?: DishDetailType) => {
+      if (!dish) return false;
+      const availability = dish.matchMeta?.availability?.toLowerCase();
+      if (availability) {
+        return availability.includes("common") || availability.includes("easy") || availability.includes("everyday");
+      }
+      return true;
+    };
+
+    const hasEliteScore = (dish?: DishDetailType) => {
+      const score = dish?.matchMeta?.score;
+      if (typeof score === "number") {
+        return score >= 0.95;
+      }
+      return false;
+    };
+
     return {
       new: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) >= newestThreshold,
       old: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) <= oldestThreshold,
@@ -429,6 +536,10 @@ function SwapPageInner() {
         const price = dishMeta[dish.slug]?.swapCost;
         return typeof price === "number" ? price <= 180 : false;
       },
+      protein_high: (dish) => isHighProteinDish(dish),
+      price_low: (dish) => matchesPriceBand(dish, "low"),
+      availability_easy: (dish) => hasEasyAvailability(dish),
+      score_elite: (dish) => hasEliteScore(dish),
     };
   }, [dishMeta]);
 
@@ -531,84 +642,189 @@ function SwapPageInner() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  const fetchVeganswapResults = useCallback(
-    async (term: string, filters: VeganSwapFilters) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const [health, dishes] = await Promise.all([
+          healthCheck(),
+          getAllDishes({ category: "vegan" }),
+        ]);
+
+        if (!isMounted) return;
+
+        setEngineHealth(health);
+        setBackendDishNames(dishes.map((dish) => dish.name));
+
+        const spotlightCandidate = dishes.find((dish) => dish.category === "vegan");
+        if (spotlightCandidate) {
+          try {
+            const detail = await getDish(spotlightCandidate.name);
+            if (isMounted) {
+              setSpotlightDish(detail);
+            }
+          } catch (error) {
+            console.error("Failed to fetch spotlight dish", error);
+          }
+        }
+      } catch (error) {
+        console.error("Plant search bootstrap failed", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const fetchPlantSearchResults = useCallback(
+    async (term: string, filters: PlantSearchFilters, signal?: AbortSignal, requestId?: number) => {
       const normalized = term.trim();
       if (!normalized) {
-        setSwapEngineDishes([]);
-        setSwapEngineError(null);
-        setSwapEngineMeta({ appliedRestrictions: [], texturePreference: null });
+        if (requestId === undefined || requestId === swapRequestIdRef.current) {
+          setSwapEngineDishes([]);
+          setSwapEngineError(null);
+          setSwapEngineMeta(createEmptySwapMeta());
+          setPlantRecommendations([]);
+        }
         return;
       }
 
-      setSwapEngineLoading(true);
-      setSwapEngineError(null);
-      setSwapEngineMeta({
-        appliedRestrictions: filters.dietaryRestrictions,
-        texturePreference: filters.texturePreference,
-        originalDish: normalized,
-      });
+      if (requestId === undefined || requestId === swapRequestIdRef.current) {
+        setSwapEngineLoading(true);
+        setSwapEngineError(null);
+        setSwapEngineMeta({
+          ...createEmptySwapMeta(),
+          appliedRestrictions: filters.dietaryRestrictions,
+          texturePreference: filters.texturePreference,
+          originalDish: normalized,
+        });
+      }
 
       try {
-        const response = await fetch("/api/veganswap/swap", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            dishName: normalized,
-            dietaryRestrictions: filters.dietaryRestrictions,
-            texturePreference: filters.texturePreference,
-          }),
+        const { dishes, raw } = await searchPlantAlternatives({
+          dishName: normalized,
+          limit: 9,
+          signal,
         });
 
-        if (!response.ok) {
-          throw new Error(`VeganSwap request failed: ${response.status}`);
+        if (requestId !== undefined && requestId !== swapRequestIdRef.current) {
+          return;
         }
 
-        const payload: VeganSwapClientResponse = await response.json();
-        setSwapEngineDishes(payload.dishes ?? []);
+        setSwapEngineDishes(dishes ?? []);
+        setPlantRecommendations(raw.slice(0, 3).map((result, index) => toPlantRecommendation(result, dishes[index])));
+        const summary = summarizeRawResults(raw);
         setSwapEngineMeta({
-          appliedRestrictions: payload.meta?.appliedRestrictions ?? filters.dietaryRestrictions,
+          ...createEmptySwapMeta(),
+          appliedRestrictions: filters.dietaryRestrictions,
           texturePreference:
-            payload.meta?.texturePreference ??
-            (typeof filters.texturePreference === "number" ? filters.texturePreference : null),
-          originalDish: payload.meta?.originalDish ?? normalized,
+            typeof filters.texturePreference === "number" ? filters.texturePreference : null,
+          originalDish: normalized,
+          engine: raw.length ? "plant-search" : undefined,
+          ...summary,
         });
+        setSwapEngineError(null);
       } catch (error) {
-        console.error("VeganSwap engine error", error);
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        if (requestId !== undefined && requestId !== swapRequestIdRef.current) {
+          return;
+        }
+        console.error("Plant search engine error", error);
         setSwapEngineDishes([]);
-        setSwapEngineError("Live VeganSwap engine unavailable. Showing local matches instead.");
+        setPlantRecommendations([]);
+        if (error instanceof PlantSearchError && error.status === 404) {
+          setSwapEngineError("No live plant-search matches were found. Try another dish name.");
+        } else {
+          setSwapEngineError("Live plant-search engine unavailable. Try again in a moment.");
+        }
+        setSwapEngineMeta(createEmptySwapMeta());
       } finally {
-        setSwapEngineLoading(false);
+        if (requestId === undefined || requestId === swapRequestIdRef.current) {
+          setSwapEngineLoading(false);
+        }
       }
     },
     []
   );
 
-  // Use the local dataset and live VeganSwap logic to find plant-based alternatives
-  const localSwapResults = useMemo(() => {
-    if (!searchTerm.trim()) return [];
-
+  useEffect(() => {
     const normalized = normalizedSearchTerm.trim();
-    if (normalized) {
-      return findReplacementGroups(normalized);
+    const requestTerm = normalized || searchTerm.trim();
+    const isDietOnlyQuery = !normalized && !!dietIntent;
+
+    if (!requestTerm || isDietOnlyQuery) {
+      setSwapEngineDishes([]);
+      setSwapEngineLoading(false);
+      setSwapEngineError(null);
+      setSwapEngineMeta(createEmptySwapMeta());
+      setPlantRecommendations([]);
+      return;
     }
 
-    if (dietIntent) {
-      const matches = DISH_CATALOG.filter((dish) => matchesDietMode(dish, dietIntent));
-      if (!matches.length) return [];
-      return [
-        {
-          id: `diet-${dietIntent}`,
-          title: dietIntent === "vegan" ? "Vegan picks" : dietIntent === "jain" ? "Jain-friendly picks" : "Veg picks",
-          keywords: [dietIntent],
-          description: "Showing dishes that match your diet filter.",
-          dishes: matches,
-        },
-      ];
+    const controller = new AbortController();
+    swapRequestIdRef.current += 1;
+    const requestId = swapRequestIdRef.current;
+
+    fetchPlantSearchResults(
+      requestTerm,
+      {
+        dietaryRestrictions,
+        texturePreference,
+      },
+      controller.signal,
+      requestId
+    );
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    searchTerm,
+    normalizedSearchTerm,
+    dietaryRestrictions,
+    texturePreference,
+    dietIntent,
+    fetchPlantSearchResults,
+  ]);
+
+  const swapResults = useMemo(() => {
+    if (!swapEngineDishes.length) {
+      return [];
     }
 
-    return [];
-  }, [searchTerm, normalizedSearchTerm, dietIntent]);
+    const restrictionLabels = (swapEngineMeta.appliedRestrictions ?? []).map((value) => formatRestrictionLabel(value));
+    const metaParts: string[] = [];
+    const filteredRestrictions = restrictionLabels.filter(Boolean);
+    if (filteredRestrictions.length) {
+      metaParts.push(`Filters: ${filteredRestrictions.join(", ")}`);
+    }
+    if (typeof swapEngineMeta.texturePreference === "number") {
+      metaParts.push(`Texture target ${Math.round(swapEngineMeta.texturePreference * 100)}%`);
+    }
+    if (swapEngineMeta.priceRanges && swapEngineMeta.priceRanges.length) {
+      metaParts.push(`Price: ${swapEngineMeta.priceRanges.join(", ")}`);
+    }
+    if (swapEngineMeta.proteinTags && swapEngineMeta.proteinTags.length) {
+      metaParts.push(`Protein: ${swapEngineMeta.proteinTags.join(", ")}`);
+    }
+    if (swapEngineMeta.availabilityTags && swapEngineMeta.availabilityTags.length) {
+      metaParts.push(`Availability: ${swapEngineMeta.availabilityTags.join(", ")}`);
+    }
+
+    return [
+      {
+        id: "plant-search-live",
+        title: swapEngineMeta.originalDish ? `Live swaps for ${swapEngineMeta.originalDish}` : "Plant search recommendations",
+        keywords: swapEngineMeta.originalDish ? [swapEngineMeta.originalDish] : [],
+        description: metaParts.length ? metaParts.join(" • ") : "Smart matches from the plant search engine.",
+        dishes: swapEngineDishes,
+      },
+    ];
+  }, [swapEngineDishes, swapEngineMeta]);
   const processedSwapResults = useMemo(() => {
     if (!swapResults.length) return [];
 
@@ -680,8 +896,9 @@ function SwapPageInner() {
     const mappedAlternatives = keywordAlternatives
       .flatMap((group) => group.items.map((item) => item.name))
       .filter((name) => name.toLowerCase().includes(lower));
-    return [...new Set([...matchingDiet, ...matchingNonVeg, ...dishNames, ...mappedAlternatives])].slice(0, 10);
-  }, [query, keywordAlternatives]);
+    const backendMatches = backendDishNames.filter((name) => name.toLowerCase().includes(lower));
+    return [...new Set([...matchingDiet, ...matchingNonVeg, ...dishNames, ...mappedAlternatives, ...backendMatches])].slice(0, 10);
+  }, [query, keywordAlternatives, backendDishNames]);
 
   useEffect(() => {
     setActiveSuggestionIndex(-1);
@@ -746,18 +963,6 @@ function SwapPageInner() {
     setSelectedDish(null);
   };
 
-  // Map catalog dishes to card format for recommended section
-  const recommended = useMemo(() => DISH_CATALOG.slice(0, 6).map((d) => ({
-    id: d.slug,
-    name: d.name,
-    image: d.image,
-    rating: d.rating ?? 4.8,
-    reviewCount: d.reviews ?? 500,
-    restaurant: d.region,
-    category: d.course,
-    detail: d,
-  })), []);
-
   const topPicksWithDetail = useMemo(
     () =>
       dishes.map((dish) => ({
@@ -785,6 +990,12 @@ function SwapPageInner() {
     }
     return picks.map(({ dish }) => dish).slice(0, 8);
   }, [query, topPicksWithDetail, activeFilters, selectedSort, dietIntent]);
+
+  const toggleRestriction = (value: string) => {
+    setDietaryRestrictions((prev) =>
+      prev.includes(value) ? prev.filter((entry) => entry !== value) : [...prev, value]
+    );
+  };
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
@@ -1131,7 +1342,7 @@ function SwapPageInner() {
               </div>
               <div className="mt-4 w-full rounded-2xl border border-dashed border-black/10 bg-highlight/40 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
-                  VeganSwap filters
+                  Plant search filters
                   {swapEngineLoading && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold text-primary">
                       <span className="material-symbols-outlined text-base">motion_photos_auto</span>
@@ -1140,7 +1351,7 @@ function SwapPageInner() {
                   )}
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {VEGANSWAP_RESTRICTIONS.map((option) => {
+                  {PLANT_SEARCH_RESTRICTIONS.map((option) => {
                     const isActive = dietaryRestrictions.includes(option.id);
                     return (
                       <button
@@ -1215,18 +1426,43 @@ function SwapPageInner() {
                 </ul>
               </div>
             )}
+            {engineHealth && (
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border-2 border-black bg-white/90 px-4 py-3 text-sm font-semibold text-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.25)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Engine status</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary">
+                      <span className="material-symbols-outlined text-base">monitor_heart</span>
+                      {engineHealth.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-lg font-black text-black">{engineHealth.dish_count} dishes indexed</p>
+                  <p className="text-xs text-slate-500">Live from the Plant-Based Transition Engine</p>
+                </div>
+                {spotlightDish && (
+                  <div className="rounded-2xl border-2 border-dashed border-black/30 bg-highlight/60 px-4 py-3 text-sm font-semibold text-slate-700">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Spotlight</p>
+                    <p className="text-lg font-impact uppercase text-black">{spotlightDish.name}</p>
+                    <p className="text-xs text-slate-500">Protein: {spotlightDish.nutrition.protein} · Price: {spotlightDish.price_range}</p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Flavor focus: {(spotlightDish.taste_features?.flavor_base?.primary?.slice(0, 2) ?? []).join(", ") || "Chef curated"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {swapEngineLoading && <span className="text-primary">VeganSwap engine ranking live picks…</span>}
+              {swapEngineLoading && <span className="text-primary">Plant-search engine ranking live picks…</span>}
               {!swapEngineLoading && swapEngineError && (
                 <span className="text-red-600">{swapEngineError}</span>
               )}
               {!swapEngineLoading && !swapEngineError && swapEngineDishes.length > 0 && (
                 <span className="text-primary">
-                  VeganSwap engine ready — {swapEngineDishes.length} smart match{swapEngineDishes.length === 1 ? "" : "es"} ranked.
+                  Plant-search engine ready — {swapEngineDishes.length} smart match{swapEngineDishes.length === 1 ? "" : "es"} ranked.
                 </span>
               )}
               {!swapEngineLoading && !swapEngineError && !swapEngineDishes.length && (
-                <span>VeganSwap engine will activate after your next search.</span>
+                <span>Plant-search engine will activate after your next search.</span>
               )}
             </div>
           </div>
@@ -1336,16 +1572,35 @@ function SwapPageInner() {
         <div className="mx-auto max-w-6xl space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="font-impact text-4xl uppercase text-black">Most Recommended</p>
-              <p className="text-sm font-semibold text-slate-600">Based on popular preferences—no login required.</p>
+              <p className="font-impact text-4xl uppercase text-black">Plant Engine Picks</p>
+              <p className="text-sm font-semibold text-slate-600">Live matches showing protein, price, and match score straight from the backend.</p>
             </div>
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Your plate, your rules</span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+              {plantRecommendations.length ? "Updated from your last search" : "Run a search to populate"}
+            </span>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recommended.map((dish) => (
-              <RecommendedCard key={dish.id} dish={dish} onSelect={() => handleSelectDish(dish.detail)} />
-            ))}
-          </div>
+          {plantRecommendations.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {plantRecommendations.map((recommendation) => (
+                <PlantRecommendationCard
+                  key={recommendation.id}
+                  recommendation={recommendation}
+                  onSelect={() => {
+                    if (recommendation.detail) {
+                      handleSelectDish(recommendation.detail);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border-3 border-dashed border-black/20 bg-white px-6 py-8 text-center shadow-[6px_6px_0px_0px_rgba(0,0,0,0.15)]">
+              <p className="font-impact text-2xl uppercase text-black">Search to unlock recommendations</p>
+              <p className="mt-2 text-sm font-semibold text-slate-600">
+                Use the search box above to get fresh plant-based matches with real-time scores from the transition engine.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1808,110 +2063,74 @@ function DishCard({ dish }: { dish: Dish }) {
   );
 }
 
-type RecommendedCardDish = {
-  id: string;
-  name: string;
-  image: string;
-  rating: number;
-  reviewCount: number;
-  restaurant: string;
-  category: string;
-  detail: DishDetailType;
+const getMatchQualityLabel = (score: number) => {
+  if (score >= 0.95) return "Elite match";
+  if (score >= 0.9) return "High confidence";
+  return "Good starter match";
 };
 
-function RecommendedCard({ dish, onSelect }: { dish: RecommendedCardDish; onSelect: () => void }) {
-  const viewedByLabel = formatViewsLabel(dish.reviewCount || dish.detail.reviews);
-  const ingredients = dish.detail.ingredients?.slice(0, 5) || [];
-  const totalTimeLabel = formatMinutesLabel(dish.detail.totalTime ?? dish.detail.cookTime ?? dish.detail.prepTime);
-  const caloriesLabel = formatCaloriesLabel(dish.detail.calories);
-  const itemsLabel = formatItemsLabel(dish.detail.ingredients?.length);
-  const nutritionMatchLabel = mockNutritionMatchLabel(dish.id, dish.rating);
-  const costSavedLabel = mockCostSavedLabel(dish.id, dish.detail.priceSwap ?? dish.detail.estimatedCost ?? null);
-  const ratingLabel = `${dish.rating.toFixed(1)} rating`;
-  const statPills = [
-    { icon: "schedule", label: totalTimeLabel },
-    { icon: "local_fire_department", label: caloriesLabel },
-    { icon: "verified", label: nutritionMatchLabel },
-    { icon: "savings", label: costSavedLabel },
-    { icon: "visibility", label: viewedByLabel },
-  ];
-  const backStatPills = [
-    { icon: "star", label: ratingLabel },
-    { icon: "inventory_2", label: itemsLabel },
-  ];
+function PlantRecommendationCard({ recommendation, onSelect }: { recommendation: PlantRecommendation; onSelect?: () => void }) {
+  const scoreLabel = `${Math.round(recommendation.score * 100)}% match`;
+  const matchQuality = getMatchQualityLabel(recommendation.score);
+  const reasons = recommendation.reasons.slice(0, 3);
+  const proteinLabel = recommendation.protein ? `${recommendation.protein} protein` : "Protein detail coming soon";
+  const priceLabel = recommendation.priceRange ? recommendation.priceRange : "Price range TBD";
 
   return (
     <button
       type="button"
-      onClick={onSelect}
-      suppressHydrationWarning
-      className="group relative flex h-full min-h-[24rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)] "
+      onClick={recommendation.detail ? onSelect : undefined}
+      className="flex h-full flex-col gap-4 rounded-3xl border-3 border-black bg-white px-5 py-5 text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.5)]"
     >
-      <div className="card-flip-wrapper">
-        <div className="card-flip">
-          <div className="card-face card-face--front bg-white">
-            <div className="relative h-48 w-full overflow-hidden bg-black">
-              <Image
-                src={dish.image}
-                alt={dish.name}
-                fill
-                sizes="320px"
-                className="object-cover transition duration-300 group-hover:scale-105"
-              />
-              <div className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-xs font-bold uppercase text-white">{dish.category}</div>
-              <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase text-white">
-                🌿 Plant-based
-              </div>
-            </div>
-            <div className="flex flex-1 flex-col justify-between px-4 py-3 text-slate-900">
-              <div className="space-y-2">
-                <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
-                <p className="text-sm font-semibold text-slate-600">{dish.restaurant}</p>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
-                {statPills.map((stat) => (
-                  <span
-                    key={`${dish.id}-${stat.icon}`}
-                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1"
-                  >
-                    <span className="material-symbols-outlined text-base">{stat.icon}</span>
-                    {stat.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="card-face card-face--back bg-white p-4 text-left text-slate-800">
-            <p className="font-impact text-xl uppercase text-black">Pantry snapshot</p>
-            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
-              {backStatPills.map((stat) => (
-                <span
-                  key={`${dish.id}-${stat.icon}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1"
-                >
-                  <span className="material-symbols-outlined text-base text-primary">{stat.icon}</span>
-                  {stat.label}
-                </span>
-              ))}
-            </div>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Core ingredients</p>
-            {ingredients.length > 0 ? (
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm font-semibold text-slate-600">
-                {ingredients.map((ingredient) => (
-                  <li key={`${dish.id}-${ingredient.item}`}>{ingredient.item} · {ingredient.quantity}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-slate-500">Ingredient details coming soon.</p>
-            )}
-            {dish.detail.heroSummary && (
-              <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                {dish.detail.heroSummary}
-              </p>
-            )}
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-impact text-2xl uppercase text-black">{recommendation.name}</p>
+          <p className="text-sm font-semibold text-slate-500">{recommendation.availability}</p>
+        </div>
+        <span className="rounded-full bg-primary px-3 py-1 text-xs font-black uppercase text-white">{matchQuality}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-400">Score</p>
+          <p className="text-base font-black text-black">{scoreLabel}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-400">Protein</p>
+          <p className="text-base font-black text-black">{proteinLabel}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-400">Price</p>
+          <p className="text-base font-black text-black">{priceLabel}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-[10px] text-slate-400">Availability</p>
+          <p className="text-base font-black text-black">{recommendation.availability || "—"}</p>
         </div>
       </div>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Match reasons</p>
+        {reasons.length ? (
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-700">
+            {reasons.map((reason) => (
+              <span key={`${recommendation.id}-${reason}`} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
+                <span className="material-symbols-outlined text-sm text-primary">bolt</span>
+                {reason}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-slate-500">Detailed reasoning coming soon.</p>
+        )}
+      </div>
+      {recommendation.detail ? (
+        <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary">
+          Tap to open full dish detail
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500">
+          This recommendation will open in-place once additional detail is synced.
+        </div>
+      )}
     </button>
   );
 }
@@ -1924,6 +2143,8 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
   const slug = dish.slug ?? dish.name ?? "swap-dish";
   const nutritionMatchLabel = mockNutritionMatchLabel(slug, dish.rating);
   const costSavedLabel = mockCostSavedLabel(slug, dish.estimatedCost ?? null);
+  const engineMeta = dish.matchMeta;
+  const liveScoreLabel = typeof engineMeta?.score === "number" ? `${Math.round(engineMeta.score * 100)}% live score` : null;
 
   return (
     <button
@@ -1978,6 +2199,24 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
                 <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                   View Recipe →
                 </span>
+                {engineMeta?.priceRange && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="material-symbols-outlined text-base text-primary">sell</span>
+                    {engineMeta.priceRange}
+                  </span>
+                )}
+                {engineMeta?.protein && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="material-symbols-outlined text-base text-primary">fitness_center</span>
+                    {engineMeta.protein}
+                  </span>
+                )}
+                {liveScoreLabel && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="material-symbols-outlined text-base text-primary">military_tech</span>
+                    {liveScoreLabel}
+                  </span>
+                )}
               </div>
             </div>
           </div>

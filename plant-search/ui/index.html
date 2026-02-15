@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plant-Based Transition Search</title>
+  <style>
+    :root {
+      --bg: #f5f7f4;
+      --card: #ffffff;
+      --accent: #2e7d32;
+      --accent-muted: #81c784;
+      --text: #1b3320;
+      --muted: #6b7c6f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2rem 1rem 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      padding: 1rem 2rem 3rem;
+    }
+
+    aside {
+      background: var(--card);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(27, 51, 32, 0.08);
+      position: sticky;
+      top: 1rem;
+      height: fit-content;
+    }
+
+    aside h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .filter-options button {
+      flex: 1 1 calc(50% - 0.5rem);
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #dfe5df;
+      border-radius: 0.75rem;
+      background: #f7faf7;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+
+    .filter-options button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .search-panel {
+      background: var(--card);
+      border-radius: 1rem;
+      box-shadow: 0 20px 40px rgba(27, 51, 32, 0.08);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-form input[type="text"] {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid #dfe5df;
+      font-size: 1rem;
+    }
+
+    .search-form button {
+      padding: 0.85rem 1.5rem;
+      border-radius: 0.75rem;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .search-form button:hover {
+      background: #256628;
+    }
+
+    .suggestions {
+      position: relative;
+    }
+
+    .suggestions-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #dfe5df;
+      border-radius: 0.75rem;
+      margin-top: 0.25rem;
+      color: #1b3320;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 5;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .suggestions-list button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      color: #1b3320;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .suggestions-list button:hover {
+      background: #189e2f;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .controls select,
+    .controls input {
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid #dfe5df;
+      min-width: 120px;
+    }
+
+    .results-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .result-card {
+      background: var(--card);
+      padding: 1.25rem;
+      border-radius: 1rem;
+      box-shadow: 0 12px 24px rgba(27, 51, 32, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .result-card h3 {
+      font-size: 1.2rem;
+    }
+
+    .badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #edf6ed;
+      color: var(--accent);
+      text-transform: capitalize;
+    }
+
+    .progress {
+      background: #edf2ed;
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-muted));
+      width: 0;
+      transition: width 0.4s ease;
+    }
+
+    .reasons {
+      list-style: none;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .empty-state,
+    .spinner {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+    }
+
+    .spinner::after {
+      content: "";
+      width: 32px;
+      height: 32px;
+      border: 3px solid #dfe5df;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+      margin-top: 1rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+      }
+
+      aside {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Plant-Based Transition Engine</h1>
+    <p>Find high-fidelity vegan matches based on umami, seasoning, and flavor resonance.</p>
+  </header>
+  <div class="layout">
+    <aside>
+      <h2>Filters</h2>
+      <div class="filter-group">
+        <label>Protein</label>
+        <div class="filter-options" data-filter="protein">
+          <button data-value="any" class="active">Any</button>
+          <button data-value="low">Low</button>
+          <button data-value="medium">Medium</button>
+          <button data-value="high">High</button>
+          <button data-value="very-high">Very High</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Price</label>
+        <div class="filter-options" data-filter="price">
+          <button data-value="any" class="active">Any</button>
+          <button data-value="low">Low</button>
+          <button data-value="medium">Medium</button>
+          <button data-value="high">High</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Sort</label>
+        <div class="filter-options" data-filter="sort">
+          <button data-value="score" class="active">Score</button>
+          <button data-value="protein">Protein</button>
+          <button data-value="price">Price</button>
+        </div>
+      </div>
+    </aside>
+    <main>
+      <section class="search-panel">
+        <form class="search-form" id="search-form">
+          <div class="suggestions">
+            <input type="text" id="search-input" placeholder="Search non-vegan dish (e.g. Smoky Chicken Burger)" autocomplete="off" />
+            <div class="suggestions-list" id="suggestions" hidden></div>
+          </div>
+          <input type="number" id="top-n" min="1" max="50" value="10" />
+          <button type="submit">Search</button>
+        </form>
+        <div class="controls">
+          <small>Results adapt instantly when you update filters.</small>
+        </div>
+      </section>
+      <section id="results-container">
+        <div class="empty-state">Start by searching for a non-vegan dish.</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Detect if opened as file:// instead of through server
+    if (window.location.protocol === 'file:') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a1a1a;color:#fff;font-family:system-ui;padding:2rem;text-align:center;">
+          <div style="max-width:600px;background:#2a2a2a;padding:3rem;border-radius:12px;border:2px solid #d32f2f;">
+            <h1 style="color:#ff5252;margin-bottom:1.5rem;font-size:2rem;">⚠️ Server Required</h1>
+            <p style="font-size:1.1rem;line-height:1.6;margin-bottom:2rem;color:#ddd;">
+              This application must be accessed through the FastAPI server, not opened directly as a file.
+            </p>
+            <div style="background:#1a1a1a;padding:1.5rem;border-radius:8px;margin-bottom:2rem;text-align:left;">
+              <h2 style="color:#81c784;margin-bottom:1rem;font-size:1.2rem;">How to fix:</h2>
+              <ol style="line-height:2;color:#ddd;padding-left:1.5rem;">
+                <li>Open PowerShell in <code style="background:#333;padding:0.2rem 0.5rem;border-radius:4px;color:#ffa726;">d:\\face\\plant-search</code></li>
+                <li>Run: <code style="background:#333;padding:0.2rem 0.5rem;border-radius:4px;color:#ffa726;">myenv\\Scripts\\activate</code></li>
+                <li>Run: <code style="background:#333;padding:0.2rem 0.5rem;border-radius:4px;color:#ffa726;">uvicorn api.main:app --reload</code></li>
+                <li>Open: <a href="http://localhost:8000" style="color:#64b5f6;text-decoration:none;">http://localhost:8000</a></li>
+              </ol>
+            </div>
+            <p style="color:#aaa;font-size:0.9rem;">The server should already be running. Try opening <a href="http://localhost:8000" style="color:#64b5f6;">http://localhost:8000</a> now.</p>
+          </div>
+        </div>
+      `;
+      throw new Error('Application must be served through FastAPI server');
+    }
+
+    const API_BASE = window.location.origin;
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const topNInput = document.getElementById('top-n');
+    const resultsContainer = document.getElementById('results-container');
+    const suggestionsBox = document.getElementById('suggestions');
+
+    const filters = {
+      protein: 'any',
+      price: 'any',
+      sort: 'score'
+    };
+
+    let currentResults = [];
+    let suggestionTimer;
+
+    const proteinOrder = ['low', 'medium', 'high', 'very-high'];
+    const priceOrder = ['low', 'medium', 'high'];
+
+    function setLoading(isLoading) {
+      if (isLoading) {
+        resultsContainer.innerHTML = '<div class="spinner">Searching matches</div>';
+      }
+    }
+
+    function updateFilters() {
+      document.querySelectorAll('.filter-options').forEach(group => {
+        group.addEventListener('click', event => {
+          if (event.target.tagName !== 'BUTTON') return;
+          group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          event.target.classList.add('active');
+          const type = group.getAttribute('data-filter');
+          filters[type] = event.target.dataset.value;
+          renderResults();
+        });
+      });
+    }
+
+    function applyFilters(data) {
+      return data.filter(item => {
+        const proteinOk = filters.protein === 'any' || item.protein === filters.protein;
+        const priceOk = filters.price === 'any' || item.price_range === filters.price;
+        return proteinOk && priceOk;
+      });
+    }
+
+    function sortResults(data) {
+      if (filters.sort === 'score') {
+        return data.sort((a, b) => b.score - a.score);
+      }
+      if (filters.sort === 'protein') {
+        return data.sort((a, b) => proteinOrder.indexOf(a.protein) - proteinOrder.indexOf(b.protein));
+      }
+      if (filters.sort === 'price') {
+        return data.sort((a, b) => priceOrder.indexOf(a.price_range) - priceOrder.indexOf(b.price_range));
+      }
+      return data;
+    }
+
+    function renderResults() {
+      if (!currentResults.length) {
+        resultsContainer.innerHTML = '<div class="empty-state">No matches yet. Try another dish.</div>';
+        return;
+      }
+      const filtered = sortResults(applyFilters([...currentResults]));
+      if (!filtered.length) {
+        resultsContainer.innerHTML = '<div class="empty-state">No matches under current filters.</div>';
+        return;
+      }
+      const cards = filtered.map(result => {
+        const progress = Math.min(result.score * 4, 100);
+        const reasons = result.reasons.length ? result.reasons.map(reason => `<li>Matched: ${reason}</li>`).join('') : '<li>High overall affinity</li>';
+        return `
+          <article class="result-card">
+            <div>
+              <h3>${result.name}</h3>
+              <div class="badges">
+                <span class="badge">Protein: ${result.protein}</span>
+                <span class="badge">Price: ${result.price_range}</span>
+              </div>
+            </div>
+            <div>
+              <small>Match score</small>
+              <div class="progress"><span style="width:${progress}%"></span></div>
+            </div>
+            <ul class="reasons">${reasons}</ul>
+          </article>
+        `;
+      }).join('');
+      resultsContainer.innerHTML = `<div class="results-list">${cards}</div>`;
+    }
+
+    async function performSearch(event) {
+      event.preventDefault();
+      const dishName = searchInput.value.trim();
+      if (!dishName) return;
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE}/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dish_name: dishName, top_n: Number(topNInput.value) || 10 })
+        });
+        if (!response.ok) {
+          const message = await response.text();
+          resultsContainer.innerHTML = `<div class="empty-state">Error: ${message || 'Unable to search'}</div>`;
+          return;
+        }
+        currentResults = await response.json();
+        renderResults();
+      } catch (error) {
+        resultsContainer.innerHTML = '<div class="empty-state">Server unreachable. Ensure API is running on localhost:8000.</div>';
+      }
+    }
+
+    async function fetchSuggestions(term) {
+      try {
+        const params = new URLSearchParams({ name: term });
+        const response = await fetch(`${API_BASE}/dishes?${params.toString()}`);
+        if (!response.ok) return;
+        const dishes = await response.json();
+        if (!dishes.length) {
+          suggestionsBox.hidden = true;
+          return;
+        }
+        suggestionsBox.innerHTML = dishes.map(dish => `<button type="button">${dish.name}</button>`).join('');
+        suggestionsBox.hidden = false;
+        suggestionsBox.querySelectorAll('button').forEach(button => {
+          button.addEventListener('click', () => {
+            searchInput.value = button.textContent;
+            suggestionsBox.hidden = true;
+          });
+        });
+      } catch (_) {
+        suggestionsBox.hidden = true;
+      }
+    }
+
+    searchInput.addEventListener('input', () => {
+      const term = searchInput.value.trim();
+      clearTimeout(suggestionTimer);
+      if (term.length < 2) {
+        suggestionsBox.hidden = true;
+        return;
+      }
+      suggestionTimer = setTimeout(() => fetchSuggestions(term), 250);
+    });
+
+    document.addEventListener('click', event => {
+      if (!suggestionsBox.contains(event.target) && event.target !== searchInput) {
+        suggestionsBox.hidden = true;
+      }
+    });
+
+    searchForm.addEventListener('submit', performSearch);
+    updateFilters();
+  </script>
+</body>
+</html>
