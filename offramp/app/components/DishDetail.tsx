@@ -9,10 +9,14 @@ import type { DishDetail as DishDetailType } from "../../lib/dishes";
 const ChatWidget = dynamic(() => import("./ChatWidget").then((m) => m.ChatWidget), { ssr: false });
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["700"] });
 
+type CostSavedStatus = "idle" | "loading" | "error" | "unavailable";
+
 type Props = {
   dish: DishDetailType;
   onCook?: () => void;
   onBack?: () => void;
+  costSaved?: number | null;
+  costSavedStatus?: CostSavedStatus;
 };
 
 type TabKey = "cook" | "buy" | "impact" | "reviews";
@@ -34,30 +38,34 @@ const fallbackReviews: ReviewEntry[] = [
   { name: "Meera L.", rating: 4, text: "Loved the creamy gravy. Added extra curry leaves for crunch.", time: "2 weeks ago" },
 ];
 
-const formatTimeLabel = (value?: string) => value ?? "40m";
+const formatTimeLabel = (value?: string) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
 const formatCaloriesLabel = (value?: string | number) => {
-  if (value === null || value === undefined) return "350 kcal";
-  if (typeof value === "number") return `${value} kcal`;
-  const numeric = value.replace(/[^0-9]/g, "");
-  return numeric ? `${numeric} kcal` : value;
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return `${value} kcal`;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.length) return null;
+    const numeric = trimmed.replace(/[^0-9.]/g, "");
+    return numeric.length ? `${numeric} kcal` : trimmed;
+  }
+  return null;
 };
 const formatMacroLabel = (value?: string | number, unit = "g") => {
-  if (value === null || value === undefined) return `— ${unit}`;
-  if (typeof value === "number") return `${value} ${unit}`;
-  return value;
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return `${value} ${unit}`;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : null;
+  }
+  return null;
 };
-const mockNutritionMatchLabel = (id: string, rating?: number | null) => {
-  const base = 86 + ((id?.length ?? 5) % 9);
-  const adjusted = Math.min(99, Math.max(82, Math.round(base + ((rating ?? 4.5) - 4.5) * 4)));
-  return `${adjusted}% match`;
-};
-const mockCostSavedLabel = (id: string, fallback?: number | null) => {
-  const hash = id
-    ?.split("")
-    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0) ?? 120;
-  const base = fallback ?? 90;
-  const saved = Math.max(60, Math.min(260, Math.round((hash % 110) + base)));
-  return `~₹${saved}`;
+const formatMatchScoreLabel = (score?: number | null) => {
+  if (typeof score !== "number" || Number.isNaN(score)) return null;
+  return `${Math.round(score * 100)}% match`;
 };
 const nutritionIconMap: Record<string, string> = {
   Calories: "local_fire_department",
@@ -74,7 +82,7 @@ const glassStyles = {
   chip: "inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold",
 };
 
-export function DishDetail({ dish, onBack, onCook }: Props) {
+export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = null, costSavedStatus = "idle" }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -86,37 +94,51 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
   const [reviewText, setReviewText] = useState("");
   const [reviewNotice, setReviewNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [ratingStats, setRatingStats] = useState(() => ({
-    average: dish.rating ?? 4.8,
-    count: dish.reviews ?? 124,
+    average: typeof dish.rating === "number" ? dish.rating : 0,
+    count: typeof dish.reviews === "number" ? dish.reviews : 0,
   }));
+
+  const hasRatingStats = ratingStats.count > 0;
 
   const heroSummary = dish.heroSummary ?? dish.whyItWorks;
   const totalTime = formatTimeLabel(dish.totalTime || dish.cookTime || dish.prepTime);
-  const servingsLabel = "Serves 4";
-  const nutritionMatch = mockNutritionMatchLabel(dish.slug ?? dish.name, dish.rating);
-  const costSaved = mockCostSavedLabel(dish.slug ?? dish.name, dish.estimatedCost ?? dish.priceSwap ?? null);
-  const nutrition = [
-    { label: "Calories", value: formatCaloriesLabel(dish.calories) },
-    { label: "Protein", value: formatMacroLabel(dish.protein, "g") },
-    { label: "Fiber", value: formatMacroLabel(dish.fiber, "g") },
-    { label: "Match", value: nutritionMatch },
-    { label: "Cost Saved", value: `${costSaved} saved` },
-  ];
-  const heroChips: StatChip[] = [
-    { icon: "schedule", title: "Minutes", value: totalTime },
-    { icon: "group", title: "Serves", value: servingsLabel },
-    {
+  const nutritionMatch = formatMatchScoreLabel(dish.matchMeta?.score);
+  const caloriesLabel = formatCaloriesLabel(dish.calories);
+  const proteinLabel = formatMacroLabel(dish.protein, "g");
+  const fiberLabel = formatMacroLabel(dish.fiber, "g");
+  const costSavedLabel = typeof costSavedValue === "number" ? `~₹${costSavedValue}` : null;
+  const nutritionEntries = [
+    caloriesLabel && { label: "Calories", value: caloriesLabel },
+    proteinLabel && { label: "Protein", value: proteinLabel },
+    fiberLabel && { label: "Fiber", value: fiberLabel },
+    nutritionMatch && { label: "Match", value: nutritionMatch },
+    costSavedLabel && { label: "Cost Saved", value: `${costSavedLabel} saved` },
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+  const heroChips: StatChip[] = [];
+  if (totalTime) {
+    heroChips.push({ icon: "schedule", title: "Minutes", value: totalTime });
+  }
+  if (hasRatingStats) {
+    heroChips.push({
       icon: "star",
       title: "Rating",
       value: `${ratingStats.average.toFixed(1)} (${new Intl.NumberFormat("en").format(ratingStats.count)})`,
       accent: true,
-    },
-  ];
-  const nutritionChips: StatChip[] = nutrition.map((metric) => ({
+    });
+  }
+  const nutritionChips: StatChip[] = nutritionEntries.map((metric) => ({
     icon: nutritionIconMap[metric.label] ?? "dataset",
     title: metric.label,
     value: metric.value,
   }));
+  const costStatusMessage =
+    costSavedStatus === "loading"
+      ? "Estimating cost savings…"
+      : costSavedStatus === "error"
+        ? "Unable to load cost savings right now."
+        : costSavedStatus === "unavailable"
+          ? "Cost savings will appear when pricing is available."
+          : null;
   const splitMetricValue = (value: string) => {
     const match = value.match(/^([~₹]?\s*[0-9]+(?:\.[0-9]+)?%?)(.*)$/);
     return {
@@ -213,7 +235,6 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
       <div className="flex w-full flex-col overflow-hidden rounded-3xl border border-[#e1d8cd] bg-gradient-to-br from-white via-[#fef9ef] to-[#f4ecdf] shadow-[0_20px_60px_rgba(15,23,15,0.08)] md:w-1/2">
         <div className="flex items-center justify-between border-b border-[#eadfce] px-6 py-4">
           <h3 className="text-2xl font-semibold text-[#122219]">Ingredients</h3>
-          <span className="text-xs font-bold uppercase tracking-[0.35em] text-slate-500">{servingsLabel}</span>
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4 pr-2">
           {buyCatalog.map((ingredient) => (
@@ -399,8 +420,12 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
       </form>
       <div className="rounded-3xl border border-[#e1d8cd] bg-white/95 p-6 shadow-sm md:w-2/3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">{ratingStats.count.toLocaleString()} reviews</p>
-          <p className="text-sm text-slate-600">Rated {ratingStats.average.toFixed(1)} overall</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+            {ratingStats.count ? `${ratingStats.count.toLocaleString()} reviews` : "No reviews yet"}
+          </p>
+          <p className="text-sm text-slate-600">
+            {ratingStats.count ? `Rated ${ratingStats.average.toFixed(1)} overall` : "Be the first to review"}
+          </p>
         </div>
         <div className="mt-4 space-y-4 overflow-y-auto pr-2" style={{ maxHeight: "320px" }}>
           {reviews.map((review) => (
@@ -477,45 +502,54 @@ export function DishDetail({ dish, onBack, onCook }: Props) {
               </h1>
               <p className="mt-2 text-base font-light italic text-white/80 sm:text-xl">{heroSummary}</p>
             </div>
-            <div className="mt-4 flex w-full flex-wrap gap-3">
-              {heroChips.map((stat) => (
-                <div
-                  key={`${stat.title}-${stat.value}`}
-                  className={`${glassStyles.chip} min-w-[130px] justify-center text-white`}
-                >
-                  <span
-                    className={`material-symbols-outlined text-base ${stat.accent ? "text-amber-300" : "text-emerald-200"}`}
-                  >
-                    {stat.icon}
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{stat.title}</p>
-                    <p className="text-sm font-semibold">{stat.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className={`${glassStyles.pill} mt-4 w-full max-w-3xl self-start px-4 py-3`}>
-              <div className="flex w-full flex-col divide-y divide-white/15 sm:flex-row sm:divide-y-0 sm:divide-x">
-                {nutritionChips.map((metric) => (
+            {heroChips.length > 0 && (
+              <div className="mt-4 flex w-full flex-wrap gap-3">
+                {heroChips.map((stat) => (
                   <div
-                    key={`${metric.title}-${metric.value}`}
-                    className="flex flex-1 flex-col items-center gap-1 px-4 py-3 text-center"
+                    key={`${stat.title}-${stat.value}`}
+                    className={`${glassStyles.chip} min-w-[130px] justify-center text-white`}
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{metric.title}</p>
-                    {(() => {
-                      const { primary, suffix } = splitMetricValue(metric.value);
-                      return (
-                        <div className="flex items-baseline gap-1 text-white">
-                          <span className="text-2xl font-semibold">{primary}</span>
-                          {suffix && <span className="text-sm font-medium text-white/70">{suffix}</span>}
-                        </div>
-                      );
-                    })()}
+                    <span
+                      className={`material-symbols-outlined text-base ${stat.accent ? "text-amber-300" : "text-emerald-200"}`}
+                    >
+                      {stat.icon}
+                    </span>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{stat.title}</p>
+                      <p className="text-sm font-semibold">{stat.value}</p>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
+            {(nutritionChips.length > 0 || costStatusMessage) && (
+              <div className={`${glassStyles.pill} mt-4 w-full max-w-3xl self-start px-4 py-3`}>
+                {nutritionChips.length > 0 && (
+                  <div className="flex w-full flex-col divide-y divide-white/15 sm:flex-row sm:divide-y-0 sm:divide-x">
+                    {nutritionChips.map((metric) => (
+                      <div
+                        key={`${metric.title}-${metric.value}`}
+                        className="flex flex-1 flex-col items-center gap-1 px-4 py-3 text-center"
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-white/60">{metric.title}</p>
+                        {(() => {
+                          const { primary, suffix } = splitMetricValue(metric.value);
+                          return (
+                            <div className="flex items-baseline gap-1 text-white">
+                              <span className="text-2xl font-semibold">{primary}</span>
+                              {suffix && <span className="text-sm font-medium text-white/70">{suffix}</span>}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {costStatusMessage && (
+                  <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.35em] text-white/70">{costStatusMessage}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex flex-col gap-3">

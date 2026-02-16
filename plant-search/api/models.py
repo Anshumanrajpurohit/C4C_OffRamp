@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -88,6 +88,9 @@ class DishCreate(DishBase):
 class DishResponse(DishBase):
     id: str
     created_at: datetime
+    # Full raw data payload as imported from the JSON dataset (optional)
+    # This can include UI-facing fields like image, ingredients, steps, etc.
+    data: Optional[Dict[str, Any]] = None
 
 
 class DishSummary(BaseModel):

@@ -14,6 +14,7 @@ import {
   getDish,
   healthCheck,
   searchPlantAlternatives,
+  mapPlantDishResponseToDishDetail,
   type PlantDishResponse,
   type PlantHealthResponse,
   type PlantSearchResult,
@@ -347,45 +348,54 @@ const parsePriceToNumber = (value?: string | number | null): number | null => {
 };
 
 const formatMinutesLabel = (value?: string | null) => {
-  if (!value) return "— min";
+  if (!value) return null;
   const match = value.match(/\d+/);
-  return match ? `${match[0]} min` : value;
+  if (match) return `${match[0]} min`;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 };
 
 const formatCaloriesLabel = (value?: string | number | null) => {
-  if (value === null || value === undefined) return "— kcal";
-  if (typeof value === "number") return `${value} kcal`;
-  const numeric = value.replace(/[^0-9]/g, "");
-  return numeric ? `${numeric} kcal` : `${value}`;
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `${value} kcal`;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.length) return null;
+    const numeric = trimmed.replace(/[^0-9.]/g, "");
+    return numeric.length ? `${numeric} kcal` : trimmed;
+  }
+  return null;
 };
 
 const formatItemsLabel = (count?: number | null) => {
-  if (!count) return "0 items";
+  if (typeof count !== "number" || count <= 0) return null;
   return `${count} ${count === 1 ? "item" : "items"}`;
 };
 
 const formatViewsLabel = (value?: number | null) => {
-  const safe = value ?? 0;
+  if (typeof value !== "number" || value <= 0) return null;
   const abbreviated = new Intl.NumberFormat("en", {
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(safe);
+  }).format(value);
   return `${abbreviated} views`;
 };
 
-const mockNutritionMatchLabel = (id: string, rating?: number | null) => {
-  const base = 86 + ((id?.length ?? 5) % 9);
-  const adjusted = Math.min(99, Math.max(82, Math.round(base + ((rating ?? 4.5) - 4.5) * 4)));
-  return `${adjusted}% match`;
+const formatMatchScoreLabel = (score?: number | null) => {
+  if (typeof score !== "number" || Number.isNaN(score)) return null;
+  return `${Math.round(score * 100)}% match`;
 };
 
-const mockCostSavedLabel = (id: string, fallback?: number | null) => {
-  const hash = id
-    ?.split("")
-    .reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0) ?? 120;
-  const base = fallback ?? 90;
-  const saved = Math.max(60, Math.min(260, Math.round((hash % 110) + base)));
-  return `~₹${saved} saved`;
+const normalizeCostValue = (value?: number | string | null) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value.toString();
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : null;
+  }
+  return null;
 };
 
 function SwapPageInner() {
@@ -395,6 +405,8 @@ function SwapPageInner() {
   const [dietIntent, setDietIntent] = useState<DietMode | null>(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
+  const [costSaved, setCostSaved] = useState<number | null>(null);
+  const [costSavedStatus, setCostSavedStatus] = useState<"idle" | "loading" | "error" | "unavailable">("idle");
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [texturePreference, setTexturePreference] = useState<number | null>(null);
   const [swapEngineDishes, setSwapEngineDishes] = useState<DishDetailType[]>([]);
@@ -954,14 +966,99 @@ function SwapPageInner() {
 
   // Handle dish selection
   const handleSelectDish = (dish: DishDetailType) => {
+    // Show immediate detail using the current object
     setSelectedDish(dish);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // For live plant-search dishes, hydrate with full dataset details
+    if (dish.matchMeta?.source === "plant-search") {
+      getDish(dish.name)
+        .then((full) => {
+          const hydrated = mapPlantDishResponseToDishDetail(full, dish.matchMeta?.originalDish ?? query.trim());
+          hydrated.matchMeta = {
+            ...hydrated.matchMeta,
+            ...dish.matchMeta,
+          };
+          setSelectedDish(hydrated);
+        })
+        .catch((error) => {
+          console.error("Failed to hydrate dish details from plant-search", error);
+        });
+    }
   };
 
   // Handle back from dish detail
   const handleBackFromDetail = () => {
     setSelectedDish(null);
   };
+
+  useEffect(() => {
+    if (!selectedDish) {
+      setCostSaved(null);
+      setCostSavedStatus("idle");
+      return;
+    }
+
+    const originalDishName = selectedDish.matchMeta?.originalDish || selectedDish.replaces?.[0];
+    const originalCost = normalizeCostValue(selectedDish.priceOriginal);
+    const veganCost = normalizeCostValue(selectedDish.priceSwap ?? selectedDish.estimatedCost);
+
+    if (!originalDishName || !originalCost || !veganCost) {
+      setCostSaved(null);
+      setCostSavedStatus("unavailable");
+      return;
+    }
+
+    const controller = new AbortController();
+    setCostSaved(null);
+    setCostSavedStatus("loading");
+
+    (async () => {
+      try {
+        const response = await fetch("/api/cost-savings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalDishName,
+            originalCost,
+            veganDishName: selectedDish.name,
+            veganCost,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Cost savings request failed: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const rawValue =
+          typeof payload.savings === "number"
+            ? payload.savings
+            : Number.parseInt(String(payload.savings ?? "").replace(/[^0-9-]/g, ""), 10);
+
+        if (!Number.isFinite(rawValue)) {
+          setCostSaved(null);
+          setCostSavedStatus("unavailable");
+          return;
+        }
+
+        setCostSaved(rawValue);
+        setCostSavedStatus("idle");
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.error("Failed to calculate cost savings", error);
+        setCostSaved(null);
+        setCostSavedStatus("error");
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [selectedDish]);
 
   const topPicksWithDetail = useMemo(
     () =>
@@ -1030,7 +1127,12 @@ function SwapPageInner() {
   if (selectedDish) {
     return (
       <main className={`${jakarta.className} ${impact.variable} min-h-screen w-full bg-black text-white`}>
-        <DishDetail dish={selectedDish} onBack={handleBackFromDetail} />
+        <DishDetail
+          dish={selectedDish}
+          onBack={handleBackFromDetail}
+          costSaved={costSaved}
+          costSavedStatus={costSavedStatus}
+        />
       </main>
     );
   }
@@ -1992,27 +2094,26 @@ function DishCard({ dish }: { dish: Dish }) {
   const totalTimeLabel = formatMinutesLabel(detail?.totalTime ?? detail?.cookTime ?? detail?.prepTime);
   const caloriesLabel = formatCaloriesLabel(detail?.calories);
   const itemsLabel = formatItemsLabel(detail?.ingredients?.length);
-  const nutritionMatchLabel = mockNutritionMatchLabel(dish.id, dish.rating);
-  const costSavedLabel = mockCostSavedLabel(dish.id, detail?.priceSwap ?? detail?.estimatedCost ?? null);
-  const ratingLabel = `${dish.rating.toFixed(1)} rating`;
+  const nutritionMatchLabel = formatMatchScoreLabel(detail?.matchMeta?.score);
   const statPills = [
-    { icon: "schedule", label: totalTimeLabel },
-    { icon: "local_fire_department", label: caloriesLabel },
-    { icon: "verified", label: nutritionMatchLabel },
-    { icon: "savings", label: costSavedLabel },
-    { icon: "visibility", label: viewedByLabel },
-  ];
+    totalTimeLabel && { icon: "schedule", label: totalTimeLabel },
+    caloriesLabel && { icon: "local_fire_department", label: caloriesLabel },
+    nutritionMatchLabel && { icon: "verified", label: nutritionMatchLabel },
+    viewedByLabel && { icon: "visibility", label: viewedByLabel },
+  ].filter(Boolean) as Array<{ icon: string; label: string }>;
+  const ratingLabel = typeof dish.rating === "number" ? `${dish.rating.toFixed(1)} rating` : null;
   const detailLines = [`${dish.restaurant}`, `${dish.category} spices`];
 
   return (
     <div className="group relative w-72 shrink-0 snap-start overflow-hidden rounded-3xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)]">
-      <div className="relative h-48 w-full overflow-hidden bg-black">
+      <div className="relative h-48 w-full overflow-hidden">
         <Image
-          src={dish.image}
+          src={dish.image || "/assets/placeholder.svg"}
           alt={dish.name}
           fill
-          sizes="288px"
-          className="object-cover transition duration-300 group-hover:scale-105"
+          sizes="320px"
+          className="object-cover"
+          priority={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="absolute inset-0 flex flex-col justify-end px-4 py-3 text-white">
@@ -2021,17 +2122,19 @@ function DishCard({ dish }: { dish: Dish }) {
             <span>{dish.restaurant}</span>
             <span>{dish.category}</span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-white/90">
-            {statPills.map((stat) => (
-              <span
-                key={`${dish.id}-${stat.icon}`}
-                className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur"
-              >
-                <span className="material-symbols-outlined text-sm">{stat.icon}</span>
-                {stat.label}
-              </span>
-            ))}
-          </div>
+          {statPills.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-white/90">
+              {statPills.map((stat) => (
+                <span
+                  key={`${dish.id}-${stat.icon}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 backdrop-blur"
+                >
+                  <span className="material-symbols-outlined text-sm">{stat.icon}</span>
+                  {stat.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-3 border-t-2 border-black/10 bg-white p-4 text-left text-slate-800">
@@ -2046,14 +2149,18 @@ function DishCard({ dish }: { dish: Dish }) {
           ))}
         </ul>
         <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
-            <span className="material-symbols-outlined text-base text-primary">star</span>
-            {ratingLabel}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
-            <span className="material-symbols-outlined text-base text-primary">inventory_2</span>
-            {itemsLabel}
-          </span>
+          {ratingLabel && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+              <span className="material-symbols-outlined text-base text-primary">star</span>
+              {ratingLabel}
+            </span>
+          )}
+          {itemsLabel && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+              <span className="material-symbols-outlined text-base text-primary">inventory_2</span>
+              {itemsLabel}
+            </span>
+          )}
         </div>
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">
           Fresh prep notes are being polished—stay tuned for chef-mode insights.
@@ -2137,13 +2244,13 @@ function PlantRecommendationCard({ recommendation, onSelect }: { recommendation:
 
 // Swap result card for search results
 function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: () => void }) {
-  const viewedBy = (dish.reviews || 1450).toLocaleString();
+  const viewedBy = typeof dish.reviews === "number" ? dish.reviews.toLocaleString() : null;
   const ingredients = dish.ingredients?.slice(0, 5) || [];
   const chefTips = dish.chefTips?.slice(0, 2) || [];
   const slug = dish.slug ?? dish.name ?? "swap-dish";
-  const nutritionMatchLabel = mockNutritionMatchLabel(slug, dish.rating);
-  const costSavedLabel = mockCostSavedLabel(slug, dish.estimatedCost ?? null);
   const engineMeta = dish.matchMeta;
+  const nutritionMatchLabel = formatMatchScoreLabel(engineMeta?.score);
+  const ratingValue = typeof dish.rating === "number" ? dish.rating.toFixed(1) : null;
   const liveScoreLabel = typeof engineMeta?.score === "number" ? `${Math.round(engineMeta.score * 100)}% live score` : null;
 
   return (
@@ -2156,18 +2263,25 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
       <div className="card-flip-wrapper">
         <div className="card-flip">
           <div className="card-face card-face--front bg-white">
-            <div className="relative h-48 w-full overflow-hidden bg-black">
-              <Image
-                src={dish.image}
-                alt={dish.name}
-                fill
-                sizes="320px"
-                className="object-cover transition duration-300 group-hover:scale-105"
-              />
-              <div className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase text-white">
+            <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
+              {/* image container */}
+              <div className="absolute inset-0">
+                <img
+                  src={dish.image || "/assets/placeholder.svg"}
+                  alt={dish.name}
+                  className="h-full w-full object-cover object-center"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-br from-[#030804]/70 via-[#05140d]/35 to-transparent"></div>
+
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#030804]/85 via-transparent to-transparent"></div>
+              </div>
+
+              {/* badges above image */}
+              <div className="absolute left-3 top-3 z-10 rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white">
                 🌿 Plant-based swap
               </div>
-              <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
+              <div className="absolute right-3 bottom-3 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
                 💧 Water saved · 🌍 CO₂ reduced
               </div>
             </div>
@@ -2175,27 +2289,31 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
               <div className="space-y-2">
                 <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
                 <p className="text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
-                <p className="text-xs text-slate-500">
-                  Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
-                </p>
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-bold text-black">
-                  <span className="material-symbols-outlined text-sm">workspace_premium</span>
-                  ⭐ {(dish.rating ?? 4.8).toFixed(1)} texture score
-                </span>
+                {dish.replaces.length > 0 && (
+                  <p className="text-xs text-slate-500">
+                    Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
+                  </p>
+                )}
+                {ratingValue && (
+                  <span className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-bold text-black">
+                    <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                    ⭐ {ratingValue} texture score
+                  </span>
+                )}
               </div>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-slate-700">
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  <span className="material-symbols-outlined text-base text-primary">visibility</span>
-                  Viewed by {viewedBy} people
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  <span className="material-symbols-outlined text-base text-primary">verified</span>
-                  {nutritionMatchLabel}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  <span className="material-symbols-outlined text-base text-primary">savings</span>
-                  {costSavedLabel}
-                </span>
+                {viewedBy && (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="material-symbols-outlined text-base text-primary">visibility</span>
+                    Viewed by {viewedBy} people
+                  </span>
+                )}
+                {nutritionMatchLabel && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="material-symbols-outlined text-base text-primary">verified</span>
+                    {nutritionMatchLabel}
+                  </span>
+                )}
                 <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                   View Recipe →
                 </span>

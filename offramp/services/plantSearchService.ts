@@ -64,6 +64,9 @@ export type PlantDishResponse = {
   texture_features: string[];
   emotion_features: string[];
   created_at: string;
+  // Optional full JSON payload from the dataset (if exposed by backend)
+  // This mirrors the rich dish structure used by the frontend catalog.
+  data?: Record<string, unknown>;
 };
 
 export type PlantHealthResponse = {
@@ -128,6 +131,19 @@ const formatAvailability = (value?: string | null) => {
   return trimmed;
 };
 
+const coerceDiet = (value: unknown): DishDetail["diet"] => {
+  const raw = typeof value === "string" ? value.toLowerCase() : "";
+  if (raw === "vegan") return "vegan";
+  if (raw === "vegetarian" || raw === "veg") return "vegetarian";
+  if (raw === "jain") return "jain";
+  return "vegan";
+};
+
+const ensureArray = <T>(value: unknown, fallback: T[] = []): T[] => {
+  if (!Array.isArray(value)) return fallback;
+  return value as T[];
+};
+
 const mapPlantSearchResultToDish = (result: PlantSearchResult, originalDish: string): DishDetail => {
   const safeName = result.name?.trim() || "Plant-based swap";
   const slug = result.dish_id ? `plant-${result.dish_id}` : `plant-${toSlug(safeName) || Date.now()}`;
@@ -180,6 +196,62 @@ const mapPlantSearchResultToDish = (result: PlantSearchResult, originalDish: str
       reasons: chefNotes,
       dishId: result.dish_id ?? slug,
       originalDish,
+    },
+  };
+};
+
+export const mapPlantDishResponseToDishDetail = (response: PlantDishResponse, originalDish?: string): DishDetail => {
+  const raw = (response.data ?? {}) as Record<string, unknown>;
+  const name = (raw["name"] as string) || response.name || "Plant-based swap";
+  const slugBase = (raw["slug"] as string) || toSlug(name) || response.id;
+  const diet = coerceDiet(raw["diet"]);
+
+  const ingredients = ensureArray<{ item: string; quantity: string }>(raw["ingredients"], []);
+  const steps = ensureArray<{ step: number; instruction: string; time: string }>(raw["steps"], []);
+  const chefTips = ensureArray<string>(raw["chefTips"], []);
+  const categories = ensureArray<string>(raw["categories"], []);
+  const replaces = ensureArray<string>(raw["replaces"], originalDish ? [originalDish] : []);
+
+  const image = (raw["image"] as string) || FALLBACK_IMAGE;
+  const heroSummary = (raw["heroSummary"] as string) || `Match score ${(clampScore(1) * 100).toFixed(0)}%`;
+
+  const rating = typeof raw["rating"] === "number" ? (raw["rating"] as number) : 4.6;
+  const reviews = typeof raw["reviews"] === "number" ? (raw["reviews"] as number) : 180;
+
+  return {
+    slug: slugBase,
+    name,
+    diet,
+    course: (raw["course"] as string) || "Plant-forward main",
+    flavorProfile: (raw["flavorProfile"] as string) || DEFAULT_FLAVOR,
+    state: (raw["state"] as string) || formatAvailability(response.availability),
+    region: (raw["region"] as string) || formatAvailability(response.availability),
+    replaces,
+    ingredients,
+    prepTime: (raw["prepTime"] as string) || "—",
+    cookTime: (raw["cookTime"] as string) || "—",
+    totalTime: (raw["totalTime"] as string) || "—",
+    steps,
+    chefTips,
+    whyItWorks: (raw["whyItWorks"] as string) || (chefTips.join(" • ") || DEFAULT_FLAVOR),
+    image,
+    videoId: raw["videoId"] as string | undefined,
+    categories,
+    rating,
+    reviews,
+    heroSummary,
+    trendingCity: raw["trendingCity"] as string | undefined,
+    calories: (raw["calories"] as number | undefined) ?? undefined,
+    protein: (raw["protein"] as number | undefined) ?? undefined,
+    fiber: (raw["fiber"] as number | undefined) ?? undefined,
+    priceOriginal: (raw["priceOriginal"] as number | undefined) ?? undefined,
+    priceSwap: (raw["priceSwap"] as number | undefined) ?? undefined,
+    estimatedCost: (raw["estimatedCost"] as number | undefined) ?? undefined,
+    matchMeta: {
+      source: "plant-search",
+      priceRange: response.price_range,
+      protein: response.nutrition?.protein,
+      availability: response.availability,
     },
   };
 };

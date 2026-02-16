@@ -104,6 +104,11 @@ def dict_to_dish_response(dish_dict: Dict[str, Any]):
             fat=dish_dict["nutrition"]["fat"],
         ),
     }
+    # If the full JSON payload is present (from the `data` column), surface it
+    # so that frontend clients can access UI-focused fields like images,
+    # ingredients, steps, etc.
+    if "data" in dish_dict:
+        payload["data"] = dish_dict["data"]
     return DishResponse(**payload)
 
 

@@ -133,14 +133,17 @@ async def get_dish(name: str) -> DishResponse:
     """Get a single dish by name from AWS RDS database."""
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id, name, category, price_range, availability,
                        taste_features, texture_features, emotion_features, nutrition,
-                       created_at
+                       created_at, data
                 FROM dishes
                 WHERE LOWER(name) = LOWER(%s)
                 LIMIT 1
-            """, (name,))
+                """,
+                (name,),
+            )
             
             dish = cursor.fetchone()
     
@@ -170,7 +173,8 @@ async def add_dish(request: Request, payload: DishCreate) -> DishResponse:
     # Insert into database
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO dishes (
                     id, name, category, price_range, availability,
                     data, taste_features, texture_features, emotion_features, nutrition,
@@ -179,19 +183,21 @@ async def add_dish(request: Request, payload: DishCreate) -> DishResponse:
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                 RETURNING id, name, category, price_range, availability,
                           taste_features, texture_features, emotion_features, nutrition,
-                          created_at
-            """, (
-                dish_dict["id"],
-                dish_dict["name"],
-                dish_dict["category"],
-                dish_dict["price_range"],
-                dish_dict["availability"],
-                Json(dish_dict["data"]),
-                Json(dish_dict["taste_features"]),
-                Json(dish_dict["texture_features"]),
-                Json(dish_dict["emotion_features"]),
-                Json(dish_dict["nutrition"]),
-            ))
+                          created_at, data
+                """,
+                (
+                    dish_dict["id"],
+                    dish_dict["name"],
+                    dish_dict["category"],
+                    dish_dict["price_range"],
+                    dish_dict["availability"],
+                    Json(dish_dict["data"]),
+                    Json(dish_dict["taste_features"]),
+                    Json(dish_dict["texture_features"]),
+                    Json(dish_dict["emotion_features"]),
+                    Json(dish_dict["nutrition"]),
+                ),
+            )
             
             new_dish = cursor.fetchone()
             conn.commit()
