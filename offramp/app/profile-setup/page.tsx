@@ -155,7 +155,7 @@ export default function ProfileSetupPage() {
     };
     void init();
 
-    const { data: listener, error: listenerError } = supabase.auth.onAuthStateChange(
+    const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
         if (newSession) {
@@ -163,11 +163,6 @@ export default function ProfileSetupPage() {
         }
       }
     );
-
-    if (listenerError) {
-      logSupabaseErrorDetails("profile-setup:onAuthStateChange", listenerError);
-      return () => {};
-    }
 
     return () => {
       listener.subscription.unsubscribe();
@@ -308,15 +303,15 @@ export default function ProfileSetupPage() {
             impact.variable
           )}
         >
-      <nav className="sticky top-0 z-50 bg-highlight/90 backdrop-blur-sm transition-all duration-300 border-b-3 border-black">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm transition-all duration-300">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="group flex items-center gap-1">
             <img
               src="/image.png"
               alt="OffRamp logo"
-              className="h-24 w-24 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
+              className="h-16 w-16 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6 sm:h-24 sm:w-24"
             />
-            <span className="font-impact text-3xl uppercase tracking-wide text-black">OffRamp</span>
+            <span className="font-impact text-2xl uppercase tracking-wide text-black sm:text-3xl">OffRamp</span>
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
             <div className="relative group">
@@ -385,12 +380,12 @@ export default function ProfileSetupPage() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" userHref="/profile-setup" userLabelPrefix="Hi" />
+            <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white md:flex" userHref="/profile-setup" userLabelPrefix="Hi" />
           </div>
         </div>
       </nav>
 
-      <section className="flex-1 py-12 px-6 grid-pattern-subtle">
+      <section className="grid-pattern-subtle flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <div className="max-w-5xl mx-auto">
           <div className="mb-12 fade-in">
             <div className="flex flex-col gap-6 rounded-3xl border-3 border-black bg-white/90 p-6 shadow-progress">

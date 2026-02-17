@@ -6,7 +6,7 @@ import Link from "next/link";
 import whatsappLogo from "@/public/WhatsApp_Logo_green.svg-removebg-preview.png";
 
 const DEFAULT_CLASSES =
-  "hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex";
+  "inline-flex transform items-center gap-2 rounded-full border-2 border-black px-4 py-2 text-xs font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:px-8 sm:text-sm";
 
 type SessionUser = {
   id: string;

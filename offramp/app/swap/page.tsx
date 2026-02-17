@@ -257,12 +257,12 @@ const keywordToCategoryMap: Record<string, string[]> = {
   egg: ["egg"],
 };
 
-const PLANT_SEARCH_RESTRICTIONS = [
-  { id: "gluten_free", label: "Gluten-free" },
-  { id: "nut_free", label: "Nut-free" },
-  { id: "soy_free", label: "Soy-free" },
-  { id: "onion_free", label: "No Onion" },
-  { id: "garlic_free", label: "No Garlic" },
+const ALLERGEN_OPTIONS = [
+  { id: "gluten_free", label: "Gluten" },
+  { id: "nut_free", label: "Nuts" },
+  { id: "soy_free", label: "Soy" },
+  { id: "onion_free", label: "Onion" },
+  { id: "garlic_free", label: "Garlic" },
 ];
 
 const DEFAULT_TEXTURE_TARGET = 0.85;
@@ -332,8 +332,8 @@ const toPlantRecommendation = (result: PlantSearchResult, detail?: DishDetailTyp
   detail,
 });
 
-const formatRestrictionLabel = (value: string) => {
-  const match = PLANT_SEARCH_RESTRICTIONS.find((entry) => entry.id === value);
+const formatAllergenLabel = (value: string) => {
+  const match = ALLERGEN_OPTIONS.find((entry) => entry.id === value);
   if (match) {
     return match.label;
   }
@@ -432,11 +432,14 @@ function SwapPageInner() {
   const [showCode, setShowCode] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [allergenMenuOpen, setAllergenMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+  const allergenMenuRef = useRef<HTMLDivElement>(null);
   const swapRequestIdRef = useRef(0);
 
   const cuisineOptions = ["Tamil", "Telugu", "Kerala", "Hyderabadi", "Punjabi", "Gujarati"];
@@ -509,7 +512,7 @@ function SwapPageInner() {
       return typeof numericProtein === "number" ? numericProtein >= 15 : false;
     };
 
-    const matchesPriceBand = (dish?: DishDetailType, band: "low" | "premium") => {
+    const matchesPriceBand = (dish: DishDetailType | undefined, band: "low" | "premium") => {
       if (!dish) return false;
       const metaPrice = dish.matchMeta?.priceRange?.toLowerCase();
       if (metaPrice) {
@@ -611,7 +614,21 @@ function SwapPageInner() {
   const toggleFilterMenu = () => {
     setFilterMenuOpen((prev) => {
       const next = !prev;
-      if (next) setSortMenuOpen(false);
+      if (next) {
+        setSortMenuOpen(false);
+        setAllergenMenuOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllergenMenu = () => {
+    setAllergenMenuOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setSortMenuOpen(false);
+        setFilterMenuOpen(false);
+      }
       return next;
     });
   };
@@ -638,6 +655,9 @@ function SwapPageInner() {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
         setFilterMenuOpen(false);
       }
+      if (allergenMenuRef.current && !allergenMenuRef.current.contains(event.target as Node)) {
+        setAllergenMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -648,6 +668,7 @@ function SwapPageInner() {
       if (event.key === "Escape") {
         setSortMenuOpen(false);
         setFilterMenuOpen(false);
+        setAllergenMenuOpen(false);
       }
     };
     document.addEventListener("keydown", handleEscape);
@@ -681,7 +702,7 @@ function SwapPageInner() {
           }
         }
       } catch (error) {
-        console.error("Plant search bootstrap failed", error);
+        console.error("Smart Search bootstrap failed", error);
       }
     })();
 
@@ -745,7 +766,7 @@ function SwapPageInner() {
         if (requestId !== undefined && requestId !== swapRequestIdRef.current) {
           return;
         }
-        console.error("Plant search engine error", error);
+        console.error("Smart Search engine error", error);
         setSwapEngineDishes([]);
         setPlantRecommendations([]);
         if (error instanceof PlantSearchError && error.status === 404) {
@@ -808,7 +829,7 @@ function SwapPageInner() {
       return [];
     }
 
-    const restrictionLabels = (swapEngineMeta.appliedRestrictions ?? []).map((value) => formatRestrictionLabel(value));
+    const restrictionLabels = (swapEngineMeta.appliedRestrictions ?? []).map((value) => formatAllergenLabel(value));
     const metaParts: string[] = [];
     const filteredRestrictions = restrictionLabels.filter(Boolean);
     if (filteredRestrictions.length) {
@@ -830,9 +851,9 @@ function SwapPageInner() {
     return [
       {
         id: "plant-search-live",
-        title: swapEngineMeta.originalDish ? `Live swaps for ${swapEngineMeta.originalDish}` : "Plant search recommendations",
+        title: swapEngineMeta.originalDish ? `Live swaps for ${swapEngineMeta.originalDish}` : "Smart Search recommendations",
         keywords: swapEngineMeta.originalDish ? [swapEngineMeta.originalDish] : [],
-        description: metaParts.length ? metaParts.join(" • ") : "Smart matches from the plant search engine.",
+        description: metaParts.length ? metaParts.join(" • ") : "Smart matches from the Smart Search engine.",
         dishes: swapEngineDishes,
       },
     ];
@@ -919,11 +940,13 @@ function SwapPageInner() {
   const rawHasSwapResults = swapResults.length > 0;
   const hasSwapResults = processedSwapResults.length > 0;
   const activeFilterCount = activeFilters.length;
+  const activeAllergenCount = dietaryRestrictions.length;
   const currentSortLabel = selectedSort
     ? sortOptions.find((option) => option.id === selectedSort)?.label ?? "Custom"
     : "Sort";
   const sortButtonLabel = selectedSort ? `Sort: ${currentSortLabel}` : "Sort";
   const filterButtonLabel = activeFilterCount ? `Filter (${activeFilterCount})` : "Filter";
+  const allergenButtonLabel = activeAllergenCount ? `Allergen (${activeAllergenCount})` : "Allergen";
   const noResultsWithFilters = searchTerm && rawHasSwapResults && !hasSwapResults;
 
   // Handle search submission
@@ -1140,12 +1163,12 @@ function SwapPageInner() {
   return (
     <main className={`${jakarta.className} ${impact.variable} min-h-screen bg-highlight text-slate-900`}>
       <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="group flex items-center gap-1">
             <img
               src="/logo.png"
               alt="OffRamp logo"
-              className="w-40 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6 "
+              className="w-28 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6 sm:w-40"
             />
           </div>
           <div className="hidden items-center gap-8 text-sm font-bold uppercase tracking-wider md:flex">
@@ -1196,9 +1219,6 @@ function SwapPageInner() {
             <Link href="/swap" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Food Swap
             </Link>
-            <Link href="/compass" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full" prefetch={false}>
-              Compass
-            </Link>
             <Link href="/coming-soon" className="relative transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full">
               Coming Soon
             </Link>
@@ -1207,19 +1227,46 @@ function SwapPageInner() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-white text-black md:hidden"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+            >
+              <span className="material-symbols-outlined text-xl">{mobileMenuOpen ? "close" : "menu"}</span>
+            </button>
             {isDemo ? (
               <div className="hidden items-center gap-2 rounded-full border-2 border-black bg-white px-6 py-2 text-sm font-black uppercase text-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex">
                 <span className="material-symbols-outlined text-base text-primary">verified</span>
                 Demo
               </div>
             ) : (
-              <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" />
+              <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white md:flex" />
             )}
           </div>
         </div>
+        {mobileMenuOpen && (
+          <div className="border-t-2 border-black bg-white px-4 py-4 md:hidden">
+            <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm font-bold uppercase tracking-wider">
+              <Link href="/#home" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>
+                Home
+              </Link>
+              <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>
+                Food Swap
+              </Link>
+              <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>
+                Coming Soon
+              </Link>
+              <Link href="/#about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>
+                About
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
-      <section className="relative overflow-hidden px-6 pt-16 pb-12">
+      <section className="relative overflow-hidden px-4 pb-10 pt-12 sm:px-6 sm:pb-12 sm:pt-16">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-6">
             <p className="font-impact text-5xl uppercase leading-[0.95] text-black md:text-6xl">Start Your Swap</p>
@@ -1275,7 +1322,7 @@ function SwapPageInner() {
         </div>
       </section>
 
-      <section id="search" className="px-6 pb-6">
+      <section id="search" className="px-4 pb-6 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="relative mb-4">
             <form
@@ -1283,9 +1330,9 @@ function SwapPageInner() {
                 e.preventDefault();
                 handleSearch(query);
               }}
-              className="flex flex-wrap items-center gap-3 rounded-2xl border-3 border-black bg-white px-5 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+              className="flex flex-wrap items-center gap-3 rounded-2xl border-3 border-black bg-white px-4 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:px-5"
             >
-              <div className="flex min-w-[220px] flex-1 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="material-symbols-outlined text-xl text-slate-500">search</span>
                 <input
                   value={query}
@@ -1435,6 +1482,61 @@ function SwapPageInner() {
                     </div>
                   )}
                 </div>
+                <div className="relative" ref={allergenMenuRef}>
+                  <button
+                    type="button"
+                    onClick={toggleAllergenMenu}
+                    aria-haspopup="menu"
+                    aria-expanded={allergenMenuOpen}
+                    className={`flex items-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-bold uppercase transition transform ${
+                      activeAllergenCount ? "bg-accent text-white" : "bg-white text-black"
+                    } hover:-translate-y-[1px] hover:bg-accent hover:text-white`}
+                  >
+                    {allergenButtonLabel}
+                    <span
+                      className={`material-symbols-outlined text-base transition ${allergenMenuOpen ? "rotate-180" : ""}`}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+                  {allergenMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    >
+                      {ALLERGEN_OPTIONS.map((option) => {
+                        const isActive = dietaryRestrictions.includes(option.id);
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            role="menuitemcheckbox"
+                            aria-checked={isActive}
+                            onClick={() => toggleRestriction(option.id)}
+                            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
+                              isActive ? "text-primary" : "text-slate-700"
+                            }`}
+                          >
+                            {option.label}
+                            {isActive && <span className="material-symbols-outlined text-base">check</span>}
+                          </button>
+                        );
+                      })}
+                      {dietaryRestrictions.length > 0 && (
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-center border-t border-black/10 px-4 py-2 text-xs font-bold uppercase text-slate-500 transition hover:text-black"
+                          onClick={() => {
+                            setDietaryRestrictions([]);
+                            setAllergenMenuOpen(false);
+                          }}
+                        >
+                          Clear allergens
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="submit"
                   className="rounded-xl border-2 border-black bg-black px-4 py-2 text-sm font-bold uppercase text-white transition hover:bg-accent"
@@ -1444,33 +1546,12 @@ function SwapPageInner() {
               </div>
               <div className="mt-4 w-full rounded-2xl border border-dashed border-black/10 bg-highlight/40 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
-                  Plant search filters
+                  Smart Search tuning
                   {swapEngineLoading && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold text-primary">
                       <span className="material-symbols-outlined text-base">motion_photos_auto</span>
                       syncing
                     </span>
-                  )}
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {PLANT_SEARCH_RESTRICTIONS.map((option) => {
-                    const isActive = dietaryRestrictions.includes(option.id);
-                    return (
-                      <button
-                        type="button"
-                        key={option.id}
-                        onClick={() => toggleRestriction(option.id)}
-                        className={`inline-flex items-center gap-1 rounded-full border-2 border-black px-3 py-1 text-xs font-black uppercase transition ${
-                          isActive ? "bg-primary text-white" : "bg-white text-black hover:bg-highlight"
-                        }`}
-                      >
-                        {option.label}
-                        {isActive && <span className="material-symbols-outlined text-sm">check</span>}
-                      </button>
-                    );
-                  })}
-                  {!dietaryRestrictions.length && (
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">None selected</span>
                   )}
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-700">
@@ -1526,31 +1607,6 @@ function SwapPageInner() {
                     );
                   })}
                 </ul>
-              </div>
-            )}
-            {engineHealth && (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border-2 border-black bg-white/90 px-4 py-3 text-sm font-semibold text-slate-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.25)]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Engine status</span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary">
-                      <span className="material-symbols-outlined text-base">monitor_heart</span>
-                      {engineHealth.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-lg font-black text-black">{engineHealth.dish_count} dishes indexed</p>
-                  <p className="text-xs text-slate-500">Live from the Plant-Based Transition Engine</p>
-                </div>
-                {spotlightDish && (
-                  <div className="rounded-2xl border-2 border-dashed border-black/30 bg-highlight/60 px-4 py-3 text-sm font-semibold text-slate-700">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Spotlight</p>
-                    <p className="text-lg font-impact uppercase text-black">{spotlightDish.name}</p>
-                    <p className="text-xs text-slate-500">Protein: {spotlightDish.nutrition.protein} · Price: {spotlightDish.price_range}</p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Flavor focus: {(spotlightDish.taste_features?.flavor_base?.primary?.slice(0, 2) ?? []).join(", ") || "Chef curated"}
-                    </p>
-                  </div>
-                )}
               </div>
             )}
             <div className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -1628,7 +1684,7 @@ function SwapPageInner() {
             {/* Ethical Micro-Feedback */}
             <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 px-6 py-4 text-center">
               <p className="text-sm font-medium text-primary">
-                🌱 Small swaps like these reduce environmental impact without changing what you love to eat.
+                Small swaps like these reduce environmental impact without changing what you love to eat.
               </p>
             </div>
           </div>
@@ -2015,7 +2071,7 @@ function SwapPageInner() {
         </section>
       )}
 
-      <section className="px-6 pb-16">
+      <section className="px-4 pb-12 sm:px-6 sm:pb-16">
         <div className="mx-auto max-w-6xl animate-slide-up">
           <div className="mb-4 flex items-center justify-between">
             <p className="font-impact text-3xl uppercase text-black">Top Picks Right Now</p>
@@ -2031,17 +2087,17 @@ function SwapPageInner() {
         </div>
       </section>
 
-      <footer className="border-t-3 border-black bg-white px-6 py-16">
+      <footer className="border-t-3 border-black bg-white px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 md:flex-row">
           <div className="group flex items-center gap-1">
             <img
               src="/image.png"
               alt="OffRamp logo"
-              className="h-[120px] w-[120px] rounded-full object-contain transition-transform duration-300 group-hover:rotate-6"
+              className="h-20 w-20 rounded-full object-contain transition-transform duration-300 group-hover:rotate-6 sm:h-[120px] sm:w-[120px]"
             />
-            <span className="font-impact text-4xl uppercase">OffRamp</span>
+            <span className="font-impact text-3xl uppercase sm:text-4xl">OffRamp</span>
           </div>
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
+          <div className="flex flex-wrap justify-center gap-4 text-xs font-black uppercase tracking-[0.18em] sm:gap-8 sm:text-sm sm:tracking-widest">
             <a className="transition-colors duration-300 hover:scale-110 hover:text-accent" href="#">
               Privacy
             </a>
@@ -2105,7 +2161,7 @@ function DishCard({ dish }: { dish: Dish }) {
   const detailLines = [`${dish.restaurant}`, `${dish.category} spices`];
 
   return (
-    <div className="group relative w-72 shrink-0 snap-start overflow-hidden rounded-3xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)]">
+    <div className="group relative w-[min(18rem,82vw)] shrink-0 snap-start overflow-hidden rounded-3xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.55)] sm:w-72">
       <div className="relative h-48 w-full overflow-hidden">
         <Image
           src={dish.image || "/assets/placeholder.svg"}
@@ -2182,6 +2238,7 @@ function PlantRecommendationCard({ recommendation, onSelect }: { recommendation:
   const reasons = recommendation.reasons.slice(0, 3);
   const proteinLabel = recommendation.protein ? `${recommendation.protein} protein` : "Protein detail coming soon";
   const priceLabel = recommendation.priceRange ? recommendation.priceRange : "Price range TBD";
+  const imageSrc = recommendation.detail?.image || "/assets/placeholder.svg";
 
   return (
     <button
@@ -2189,6 +2246,20 @@ function PlantRecommendationCard({ recommendation, onSelect }: { recommendation:
       onClick={recommendation.detail ? onSelect : undefined}
       className="flex h-full flex-col gap-4 rounded-3xl border-3 border-black bg-white px-5 py-5 text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.5)]"
     >
+      <div className="relative -mx-1 overflow-hidden rounded-2xl border-2 border-black/10">
+        <img
+          src={imageSrc}
+          alt={recommendation.name}
+          className="h-40 w-full object-cover"
+          onError={(event) => {
+            const target = event.currentTarget;
+            if (target.dataset.fallbackApplied === "true") return;
+            target.dataset.fallbackApplied = "true";
+            target.src = "/assets/placeholder.svg";
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <p className="font-impact text-2xl uppercase text-black">{recommendation.name}</p>
@@ -2263,13 +2334,19 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
       <div className="card-flip-wrapper">
         <div className="card-flip">
           <div className="card-face card-face--front bg-white">
-            <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
+            <div className="relative h-60 w-full overflow-hidden rounded-t-xl">
               {/* image container */}
               <div className="absolute inset-0">
                 <img
                   src={dish.image || "/assets/placeholder.svg"}
                   alt={dish.name}
                   className="h-full w-full object-cover object-center"
+                  onError={(event) => {
+                    const target = event.currentTarget;
+                    if (target.dataset.fallbackApplied === "true") return;
+                    target.dataset.fallbackApplied = "true";
+                    target.src = "/assets/placeholder.svg";
+                  }}
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-br from-[#030804]/70 via-[#05140d]/35 to-transparent"></div>
@@ -2278,63 +2355,73 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
               </div>
 
               {/* badges above image */}
-              <div className="absolute left-3 top-3 z-10 rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white">
-                🌿 Plant-based swap
+              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white">
+                <span className="material-symbols-outlined text-sm">eco</span>
+                Plant-based swap
               </div>
-              <div className="absolute right-3 bottom-3 z-10 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
-                💧 Water saved · 🌍 CO₂ reduced
+              <div className="absolute right-3 bottom-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
+                <span className="material-symbols-outlined text-xs">water_drop</span>
+                Water saved · CO2 reduced
               </div>
             </div>
-            <div className="flex flex-1 flex-col justify-between px-4 py-3 text-slate-900">
-              <div className="space-y-2">
-                <p className="font-impact text-2xl uppercase text-black">{dish.name}</p>
-                <p className="text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
-                {dish.replaces.length > 0 && (
-                  <p className="text-xs text-slate-500">
-                    Replaces: {dish.replaces.slice(0, 2).join(", ")}{dish.replaces.length > 2 ? "..." : ""}
-                  </p>
-                )}
-                {ratingValue && (
-                  <span className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-bold text-black">
-                    <span className="material-symbols-outlined text-sm">workspace_premium</span>
-                    ⭐ {ratingValue} texture score
-                  </span>
-                )}
+            <div className="flex flex-1 flex-col gap-3 px-4 py-3 text-slate-900">
+              <div className="space-y-1">
+                <p className="truncate font-impact text-2xl uppercase text-black">{dish.name}</p>
+                <p className="truncate text-sm font-semibold text-slate-600">{dish.region} · {dish.course}</p>
               </div>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-slate-700">
-                {viewedBy && (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                    <span className="material-symbols-outlined text-base text-primary">visibility</span>
-                    Viewed by {viewedBy} people
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Replaces</p>
+                <p className="truncate text-xs font-semibold text-slate-700">
+                  {dish.replaces.length > 0
+                    ? `${dish.replaces.slice(0, 2).join(", ")}${dish.replaces.length > 2 ? "..." : ""}`
+                    : "Direct plant-based recommendation"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600">
+                {ratingValue && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                    <span className="material-symbols-outlined text-base text-primary">workspace_premium</span>
+                    {ratingValue}
                   </span>
                 )}
                 {nutritionMatchLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                     <span className="material-symbols-outlined text-base text-primary">verified</span>
                     {nutritionMatchLabel}
                   </span>
                 )}
-                <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                  View Recipe →
-                </span>
                 {engineMeta?.priceRange && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                     <span className="material-symbols-outlined text-base text-primary">sell</span>
                     {engineMeta.priceRange}
                   </span>
                 )}
                 {engineMeta?.protein && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                     <span className="material-symbols-outlined text-base text-primary">fitness_center</span>
                     {engineMeta.protein}
                   </span>
                 )}
                 {liveScoreLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                     <span className="material-symbols-outlined text-base text-primary">military_tech</span>
                     {liveScoreLabel}
                   </span>
                 )}
+                {viewedBy && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                    <span className="material-symbols-outlined text-base text-primary">visibility</span>
+                    {viewedBy} views
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-auto flex justify-end">
+                <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                  View Recipe →
+                </span>
               </div>
             </div>
           </div>

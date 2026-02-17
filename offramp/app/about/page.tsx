@@ -70,7 +70,7 @@ const socialLinks = [
   },
   {
     label: "Instagram",
-    href: "https://instagram.com",
+    href: "https://www.instagram.com/offramp03",
     wrapperClass: "bg-[#FF6B35] text-white rotate-2",
     iconBackground: "bg-white text-black",
     icon: "photo_camera",

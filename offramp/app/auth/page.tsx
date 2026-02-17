@@ -81,7 +81,7 @@ export default function AuthPage() {
   const fallbackCircleImage = dishRoll.src;
 
   return (
-    <div className="relative h-screen overflow-hidden text-slate-900">
+    <div className="relative min-h-screen overflow-x-hidden text-slate-900">
       <div className="pointer-events-none absolute inset-0">
         <picture className="block h-full w-full">
           <source srcSet={backgroundImage} />
@@ -94,8 +94,8 @@ export default function AuthPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-emerald-900/40 to-black/65 backdrop-blur-sm" />
       </div>
 
-      <div className="relative z-10 flex h-screen items-center justify-center px-4 sm:px-6 lg:px-12">
-        <div className="relative w-full max-w-6xl overflow-hidden rounded-[48px] border border-white/15 bg-white/10 p-6 shadow-[0_50px_150px_rgba(0,0,0,0.55)] backdrop-blur-[50px]">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-12">
+        <div className="relative w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-white/10 p-4 shadow-[0_50px_150px_rgba(0,0,0,0.55)] backdrop-blur-[50px] sm:rounded-[48px] sm:p-6">
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_55%)] opacity-40"
             aria-hidden="true"
@@ -246,7 +246,7 @@ export default function AuthPage() {
                     <span className="h-px flex-1 bg-slate-200" />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <button
                       type="button"
                       className="rounded-xl border-2 border-black bg-white py-2 text-xs font-bold uppercase text-black transition hover:bg-black hover:text-white"
@@ -399,7 +399,7 @@ export default function AuthPage() {
                     <span className="h-px flex-1 bg-slate-200" />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <button
                       type="button"
                       className="rounded-xl border-2 border-black bg-white py-2 text-xs font-bold uppercase text-black transition hover:bg-black hover:text-white"

@@ -146,20 +146,20 @@ export default function Home() {
     <main id="home" className={`${jakarta.className} ${impact.variable} bg-highlight text-slate-900`}>
       <GlobalNav enableHashNavigation />
 
-      <section className="relative overflow-hidden px-6 pt-12 md:pt-16 lg:pt-20 pb-32">
-        <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
+      <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-6 md:pt-16 lg:pt-20 lg:pb-32">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="relative z-10 space-y-8 text-center">
-            <h1 className="animate-slide-up delay-100 font-impact text-6xl uppercase leading-[0.9] text-black md:text-8xl">
+            <h1 className="animate-slide-up delay-100 font-impact text-5xl uppercase leading-[0.9] text-black sm:text-6xl md:text-8xl">
                LOVE THE FOOD
               <br />
               <span className="text-accent">SWAP THE REST.</span>
             </h1>
-            <p className="mx-auto max-w-lg animate-slide-up delay-200 text-xl font-medium leading-relaxed text-slate-700">
+            <p className="mx-auto max-w-lg animate-slide-up delay-200 text-base font-medium leading-relaxed text-slate-700 sm:text-xl">
               Helping people change what they eat without changing who they are, 
               through  AI-guided food transitions through familiar flavors. Built for scale. Designed for taste
             </p>
             <div className="animate-slide-up delay-300 flex flex-col items-center gap-2 pt-2">
-              <PrimaryCTAButton as={Link} href="/swap" className="w-[30rem] h-100">
+              <PrimaryCTAButton as={Link} href="/swap" className="w-full max-w-md">
                 Start Your Swap
               </PrimaryCTAButton>
             </div>

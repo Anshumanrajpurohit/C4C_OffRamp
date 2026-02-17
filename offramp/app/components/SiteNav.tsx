@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LogoMark } from "@/app/components/LogoMark";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 export default function SiteNav() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <nav className="sticky top-0 z-50 bg-highlight/90 text-[#0b1c21] backdrop-blur-sm transition-all duration-300">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
         <LogoMark
           href="/#home"
           textClassName="text-3xl text-[#0b1c21]"
@@ -68,12 +71,6 @@ export default function SiteNav() {
             Food Swap
           </Link>
           <Link
-            href="/compass"
-            className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-          >
-            Compass
-          </Link>
-          <Link
             href="/coming-soon"
             className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
           >
@@ -87,9 +84,32 @@ export default function SiteNav() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white sm:flex" />
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-white text-black md:hidden"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+          >
+            <span className="material-symbols-outlined text-xl">{mobileMenuOpen ? "close" : "menu"}</span>
+          </button>
+          <NavAuthButton className="hidden transform items-center gap-2 rounded-full border-2 border-black px-8 py-2 text-sm font-bold uppercase transition-all duration-300 hover:scale-105 hover:bg-black hover:text-white md:flex" />
         </div>
       </div>
+      {mobileMenuOpen && (
+        <div className="border-t-2 border-black bg-white px-4 py-4 md:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm font-bold uppercase tracking-wider">
+            <Link href="/#home" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link href="/#how-it-works" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>How it Works</Link>
+            <Link href="/#features" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+            <Link href="/#impact" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Impact</Link>
+            <Link href="/#institutions" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Institutions</Link>
+            <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Food Swap</Link>
+            <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Coming Soon</Link>
+            <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>About</Link>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

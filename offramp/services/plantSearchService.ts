@@ -3,12 +3,27 @@ import type { DishDetail } from "@/lib/dishes";
 const FALLBACK_IMAGE = "/assets/tempeh-coastal-curry.svg";
 const DEFAULT_FLAVOR = "Chef-crafted spice pairing";
 
+const normalizeImageValue = (value: unknown) => {
+  if (typeof value !== "string") return FALLBACK_IMAGE;
+  const trimmed = value.trim();
+  if (!trimmed) return FALLBACK_IMAGE;
+  if (trimmed.startsWith("/")) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      return encodeURI(trimmed);
+    } catch {
+      return FALLBACK_IMAGE;
+    }
+  }
+  return FALLBACK_IMAGE;
+};
+
 const resolveBaseUrl = () => {
   const baseUrl =
     process.env.NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL?.trim() ||
     process.env.PLANT_SEARCH_API_BASE_URL?.trim();
   if (!baseUrl) {
-    throw new PlantSearchError("Plant search base URL is not configured. Set NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL.");
+    throw new PlantSearchError("Smart Search base URL is not configured. Set NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL.");
   }
   return baseUrl.replace(/\/$/, "");
 };
@@ -202,6 +217,7 @@ const mapPlantSearchResultToDish = (result: PlantSearchResult, originalDish: str
 
 export const mapPlantDishResponseToDishDetail = (response: PlantDishResponse, originalDish?: string): DishDetail => {
   const raw = (response.data ?? {}) as Record<string, unknown>;
+  const responseRecord = response as unknown as Record<string, unknown>;
   const name = (raw["name"] as string) || response.name || "Plant-based swap";
   const slugBase = (raw["slug"] as string) || toSlug(name) || response.id;
   const diet = coerceDiet(raw["diet"]);
@@ -212,7 +228,7 @@ export const mapPlantDishResponseToDishDetail = (response: PlantDishResponse, or
   const categories = ensureArray<string>(raw["categories"], []);
   const replaces = ensureArray<string>(raw["replaces"], originalDish ? [originalDish] : []);
 
-  const image = (raw["image"] as string) || FALLBACK_IMAGE;
+  const image = normalizeImageValue(raw["image"] ?? responseRecord["image"]);
   const heroSummary = (raw["heroSummary"] as string) || `Match score ${(clampScore(1) * 100).toFixed(0)}%`;
 
   const rating = typeof raw["rating"] === "number" ? (raw["rating"] as number) : 4.6;
@@ -286,7 +302,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
       typeof (payload as { error?: string } | null)?.error === "string"
         ? (payload as { error?: string }).error
         : response.statusText;
-    throw new PlantSearchError(message || "Plant search request failed", response.status);
+    throw new PlantSearchError(message || "Smart Search request failed", response.status);
   }
   return (payload as T) ?? ({} as T);
 };
@@ -308,9 +324,38 @@ export const searchPlantAlternatives = async ({ dishName, limit = 9, signal }: S
 
   const payload = await handleResponse<PlantSearchResult[]>(response);
   debugLog("/search", payload);
+  const detailedDishes = await Promise.allSettled(
+    payload.map(async (item) => {
+      const detail = await getDish(item.name, signal);
+      const hydrated = mapPlantDishResponseToDishDetail(detail, dishName);
+      return {
+        ...hydrated,
+        matchMeta: {
+          ...hydrated.matchMeta,
+          source: "plant-search" as const,
+          priceRange: item.price_range || hydrated.matchMeta?.priceRange,
+          protein: item.protein || hydrated.matchMeta?.protein,
+          availability: item.availability || hydrated.matchMeta?.availability,
+          score: clampScore(item.score),
+          reasons: sanitizeReasons(item.reasons),
+          dishId: item.dish_id ?? hydrated.slug,
+          originalDish: dishName,
+        },
+      } satisfies DishDetail;
+    })
+  );
+
+  const dishes = payload.map((item, index) => {
+    const resolved = detailedDishes[index];
+    if (resolved.status === "fulfilled") {
+      return resolved.value;
+    }
+    return mapPlantSearchResultToDish(item, dishName);
+  });
+
   return {
     raw: payload,
-    dishes: payload.map((item) => mapPlantSearchResultToDish(item, dishName)),
+    dishes,
   };
 };
 
