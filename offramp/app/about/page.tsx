@@ -144,7 +144,7 @@ export default function AboutPage() {
             <div className="relative">
               <div className="absolute -inset-4 rounded-3xl bg-black" aria-hidden />
               <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_gNNoIiU9c3UAlWFgfKA7RvHYuUQ0ZMDz-wbzR7ZUMRAr2pntpKS3bNXIA8WHRcDfrDSqNICMZ2BTWqE7mVByHNUfs0OtbQzLEwYoRdDBLVWBKtQAsVSac8dE2MAQuhYTE48s3pD8hp8kU9XrnjdKH8YILaB9z7OwIkRKd-u-CSIfX6uPk48hfthch1114KJasoftKVsgOne6MNE33ylQSOGxoimrgysUFQdkgOz2AXmfbxhFt6k0HFNul1lvBt7RnyDTdoGux4gZ"
+                src="/About.png"
                 alt="Behavioral chefs working together in a kitchen"
                 className="relative h-96 w-full rounded-3xl border-2 border-black object-cover"
               />
