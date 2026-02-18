@@ -167,85 +167,6 @@ const dishes: Dish[] = [
 ];
 
 const SEARCH_KEYWORDS = ["chicken", "mutton", "fish", "prawn", "egg", "beef", "lamb", "biryani", "kebab", "tikka"];
-const jainKeywords = ["jain", "satvik", "no onion", "no garlic"];
-
-type DietMode = "veg" | "vegan" | "jain";
-
-const DIET_SUGGESTIONS: string[] = [
-  "veg",
-  "vegetarian",
-  "pure veg",
-  "vegan",
-  "plant based",
-  "dairy free",
-  "jain",
-  "satvik",
-  "no onion",
-  "no garlic",
-];
-
-const getDietModeFromSort = (sortId: string | null): DietMode | null => {
-  if (sortId === "veg" || sortId === "vegan" || sortId === "jain") return sortId;
-  return null;
-};
-
-const stripDietTokens = (input: string) => {
-  const original = input ?? "";
-  const lower = original.toLowerCase();
-
-  const hasJain =
-    /\bjain\b/.test(lower) ||
-    /\bsatvik\b/.test(lower) ||
-    /\bsattvic\b/.test(lower) ||
-    /no\s+onion/.test(lower) ||
-    /without\s+onion/.test(lower) ||
-    /no\s+garlic/.test(lower) ||
-    /without\s+garlic/.test(lower);
-
-  const hasVegan =
-    /\bvegan\b/.test(lower) ||
-    /plant\s*based/.test(lower) ||
-    /dairy\s*free/.test(lower) ||
-    /no\s+dairy/.test(lower);
-
-  const hasVeg = /\bveg\b/.test(lower) || /\bvegetarian\b/.test(lower) || /pure\s+veg/.test(lower);
-
-  const mode: DietMode | null = hasJain ? "jain" : hasVegan ? "vegan" : hasVeg ? "veg" : null;
-
-  let cleaned = original;
-  const replacements: Array<[RegExp, string]> = [
-    [/\bjain\b/gi, " "],
-    [/\bsatvik\b/gi, " "],
-    [/\bsattvic\b/gi, " "],
-    [/\bvegan\b/gi, " "],
-    [/plant\s*based/gi, " "],
-    [/dairy\s*free/gi, " "],
-    [/no\s+dairy/gi, " "],
-    [/\bvegetarian\b/gi, " "],
-    [/pure\s+veg/gi, " "],
-    [/\bveg\b/gi, " "],
-    [/no\s+onion/gi, " "],
-    [/without\s+onion/gi, " "],
-    [/no\s+garlic/gi, " "],
-    [/without\s+garlic/gi, " "],
-  ];
-
-  for (const [pattern, next] of replacements) {
-    cleaned = cleaned.replace(pattern, next);
-  }
-
-  cleaned = cleaned.replace(/\s+/g, " ").trim();
-
-  return { cleaned, mode };
-};
-
-const matchesDietMode = (dish: DishDetailType, mode: DietMode) => {
-  if (mode === "vegan") return dish.diet === "vegan";
-  if (mode === "veg") return dish.diet === "vegetarian" || dish.diet === "jain";
-
-  const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
-  return dish.diet === "jain" || jainKeywords.some((kw) => haystack.includes(kw));
-};
 
 const keywordToCategoryMap: Record<string, string[]> = {
   chicken: ["chicken"],
@@ -409,7 +330,6 @@ function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [normalizedSearchTerm, setNormalizedSearchTerm] = useState("");
-  const [dietIntent, setDietIntent] = useState<DietMode | null>(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedDish, setSelectedDish] = useState<DishDetailType | null>(null);
   const [costSaved, setCostSaved] = useState<number | null>(null);
@@ -479,11 +399,7 @@ function SwapPageInner() {
   }, []);
 
   const sortOptions = useMemo<SortOption[]>(() => {
-    const base: SortOption[] = [
-      { id: "veg", label: "Veg", description: "Prioritize vegetarian transitions" },
-      { id: "vegan", label: "Vegan", description: "Show vegan dishes first" },
-      { id: "jain", label: "Jain", description: "Highlight Jain-friendly swaps" },
-    ];
+    const base: SortOption[] = [];
     plantForwardCategories.forEach((tag) => {
       base.push({ id: `tag-${tag}`, label: tag.replace(/-/g, " "), description: "Match detected veg-first category" });
     });
@@ -567,22 +483,6 @@ function SwapPageInner() {
 
   const getSortPriority = (dish?: DishDetailType) => {
     if (!dish || !selectedSort) return 0;
-    if (selectedSort === "veg") {
-      if (dish.diet === "vegetarian" || dish.diet === "jain") return 2;
-      if (dish.diet === "vegan") return 1;
-      return 0;
-    }
-    if (selectedSort === "vegan") {
-      return dish.diet === "vegan" ? 2 : 0;
-    }
-    if (selectedSort === "jain") {
-      const haystack = `${dish.whyItWorks ?? ""} ${dish.heroSummary ?? ""} ${dish.flavorProfile ?? ""}`.toLowerCase();
-      const qualifies =
-        dish.diet === "jain" ||
-        jainKeywords.some((kw) => haystack.includes(kw)) ||
-        dish.region.toLowerCase().includes("gujarat");
-      return qualifies ? 2 : 0;
-    }
     if (selectedSort.startsWith("tag-")) {
       const tag = selectedSort.replace("tag-", "");
       return (dish.categories || []).includes(tag) ? 2 : 0;
@@ -811,9 +711,8 @@ function SwapPageInner() {
   useEffect(() => {
     const normalized = normalizedSearchTerm.trim();
     const requestTerm = normalized || searchTerm.trim();
-    const isDietOnlyQuery = !normalized && !!dietIntent;
 
-    if (!requestTerm || isDietOnlyQuery) {
+    if (!requestTerm) {
       setSwapEngineDishes([]);
       setSwapEngineLoading(false);
       setSwapEngineError(null);
@@ -844,7 +743,6 @@ function SwapPageInner() {
     normalizedSearchTerm,
     dietaryRestrictions,
     texturePreference,
-    dietIntent,
     fetchPlantSearchResults,
   ]);
 
@@ -885,14 +783,9 @@ function SwapPageInner() {
   const processedSwapResults = useMemo(() => {
     if (!swapResults.length) return [];
 
-    const dietMode = getDietModeFromSort(selectedSort) ?? dietIntent;
-
     return swapResults
       .map((group) => {
         let dishes = [...group.dishes];
-        if (dietMode) {
-          dishes = dishes.filter((dish) => matchesDietMode(dish, dietMode));
-        }
         if (selectedSort) {
           dishes = [...dishes].sort((a, b) => compareDishesBySort(a, b));
         }
@@ -902,7 +795,7 @@ function SwapPageInner() {
         return { ...group, dishes };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta, dietIntent]);
+  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta]);
 
   const keywordAlternatives = useMemo(() => {
     const buildKey = (value: string) => value.trim().toLowerCase();
@@ -947,14 +840,13 @@ function SwapPageInner() {
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
     const lower = query.trim().toLowerCase();
-    const matchingDiet = DIET_SUGGESTIONS.filter((kw) => kw.includes(lower) || lower.includes(kw));
     const matchingNonVeg = SEARCH_KEYWORDS.filter((kw) => kw.includes(lower) || lower.includes(kw));
     const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
     const mappedAlternatives = keywordAlternatives
       .flatMap((group) => group.items.map((item) => item.name))
       .filter((name) => name.toLowerCase().includes(lower));
     const backendMatches = backendDishNames.filter((name) => name.toLowerCase().includes(lower));
-    return [...new Set([...matchingDiet, ...matchingNonVeg, ...dishNames, ...mappedAlternatives, ...backendMatches])].slice(0, 10);
+    return [...new Set([...matchingNonVeg, ...dishNames, ...mappedAlternatives, ...backendMatches])].slice(0, 10);
   }, [query, keywordAlternatives, backendDishNames]);
 
   useEffect(() => {
@@ -975,13 +867,8 @@ function SwapPageInner() {
 
   // Handle search submission
   const handleSearch = (term: string) => {
-    const { cleaned, mode } = stripDietTokens(term);
     setSearchTerm(term);
-    setNormalizedSearchTerm(cleaned);
-    setDietIntent(mode);
-    if (mode) {
-      setSelectedSort((prev) => (prev === mode ? prev : mode));
-    }
+    setNormalizedSearchTerm(term.trim());
   };
 
   const handleSuggestionSelect = (value: string) => {
@@ -1122,10 +1009,6 @@ function SwapPageInner() {
     if (term) {
       picks = picks.filter(({ dish }) => dish.name.toLowerCase().includes(term));
     }
-    const dietMode = getDietModeFromSort(selectedSort) ?? dietIntent;
-    if (dietMode) {
-      picks = picks.filter(({ detail }) => (detail ? matchesDietMode(detail, dietMode) : false));
-    }
     if (activeFilters.length) {
       picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
     }
@@ -1133,7 +1016,7 @@ function SwapPageInner() {
       picks = [...picks].sort((a, b) => compareDishesBySort(a.detail, b.detail));
     }
     return picks.map(({ dish }) => dish).slice(0, 8);
-  }, [query, topPicksWithDetail, activeFilters, selectedSort, dietIntent]);
+  }, [query, topPicksWithDetail, activeFilters, selectedSort]);
 
   const toggleRestriction = (value: string) => {
     setDietaryRestrictions((prev) =>
@@ -1372,7 +1255,6 @@ function SwapPageInner() {
                       setQuery("");
                       setSearchTerm("");
                       setNormalizedSearchTerm("");
-                      setDietIntent(null);
                     }}
                     className="text-slate-500 transition hover:text-black"
                     aria-label="Clear search"

@@ -64,6 +64,11 @@ create table if not exists public.users (
 
 alter table public.users enable row level security;
 
+-- Preference form: diet transition fields (From -> To)
+alter table public.users
+  add column if not exists transition_from_diet text,
+  add column if not exists transition_to_diet text;
+
 create policy "Only service role can read"
   on public.users for select
   using (auth.role() = 'service_role');

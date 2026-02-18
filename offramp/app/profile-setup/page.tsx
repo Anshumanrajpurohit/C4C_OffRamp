@@ -12,6 +12,7 @@ import {
   fetchUserPreferences,
   saveBudgetPreference,
   saveCuisinePreferences,
+  saveDietTransitionPreferences,
   saveUserAllergies,
 } from "@/lib/profilePreferences";
 
@@ -40,6 +41,25 @@ const allergies = ["Peanuts", "Tree Nuts", "Soy", "Milk", "Eggs", "Sesame"];
 const upcomingRegions = ["West India", "Central India", "Global Fusion"];
 const upcomingCuisines = ["Bengali", "Goan", "Indo-Chinese", "Konkan"];
 const upcomingAllergies = ["Gluten", "Shellfish", "Mustard"];
+
+const dietTransitionOptions = [
+  "Non-veg/Non-vegan",
+  "Vegetarian",
+  "Vegan",
+  "Jain",
+  "Eggetarian",
+  "Pescatarian",
+  "Flexitarian",
+  "Satvik",
+  "Keto",
+  "Paleo",
+  "Mediterranean",
+  "Gluten-free",
+  "Low-carb",
+  "High-protein",
+] as const;
+
+const toDietTransitionOptions = dietTransitionOptions.filter((diet) => diet !== "Non-veg/Non-vegan");
 
 const budgetLevels: Record<BudgetLevel, { label: string; description: string; icon: string }> = {
   1: {
@@ -122,6 +142,8 @@ export default function ProfileSetupPage() {
   const [region, setRegion] = useState("");
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [transitionFromDiet, setTransitionFromDiet] = useState("");
+  const [transitionToDiet, setTransitionToDiet] = useState("");
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(DEFAULT_BUDGET_LEVEL);
   const [isCompleting, setIsCompleting] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -193,6 +215,8 @@ export default function ProfileSetupPage() {
       setRegion(preferences.region ?? "");
       setSelectedCuisines(preferences.cuisines ?? []);
       setSelectedAllergies(preferences.allergies ?? []);
+      setTransitionFromDiet(preferences.transitionFromDiet ?? "");
+      setTransitionToDiet(preferences.transitionToDiet ?? "");
       setBudgetLevel(preferences.budgetLevel ?? DEFAULT_BUDGET_LEVEL);
     } catch (error) {
       logSupabaseErrorDetails("profile-setup:loadProfileData", error);
@@ -245,7 +269,10 @@ export default function ProfileSetupPage() {
       if (currentStep === 1) {
         await saveCuisinePreferences(supabase, userId, region, selectedCuisines);
       } else if (currentStep === 2) {
-        await saveUserAllergies(supabase, userId, selectedAllergies);
+        await Promise.all([
+          saveUserAllergies(supabase, userId, selectedAllergies),
+          saveDietTransitionPreferences(supabase, userId, transitionFromDiet, transitionToDiet),
+        ]);
       } else if (currentStep === 3) {
         await saveBudgetPreference(supabase, userId, budgetLevel);
       }
@@ -443,13 +470,24 @@ export default function ProfileSetupPage() {
                 {prevStep && (
                   <div className="form-step slide-out absolute inset-0 pointer-events-none" data-step={prevStep}>
                     {prevStep === 1 && <CuisinesStep region={region} setRegion={setRegion} selectedCuisines={selectedCuisines} toggleCuisine={toggleCuisine} />}
-                    {prevStep === 2 && <ConstraintsStep selectedAllergies={selectedAllergies} toggleAllergy={toggleAllergy} />}
+                    {prevStep === 2 && (
+                      <ConstraintsStep
+                        selectedAllergies={selectedAllergies}
+                        toggleAllergy={toggleAllergy}
+                        transitionFromDiet={transitionFromDiet}
+                        transitionToDiet={transitionToDiet}
+                        setTransitionFromDiet={setTransitionFromDiet}
+                        setTransitionToDiet={setTransitionToDiet}
+                      />
+                    )}
                     {prevStep === 3 && <BudgetStep budgetLevel={budgetLevel} setBudgetLevel={setBudgetLevel} budget={budget} />}
                     {prevStep === 4 && (
                       <ReviewStep
                         region={region}
                         selectedCuisines={selectedCuisines}
                         selectedAllergies={selectedAllergies}
+                        transitionFromDiet={transitionFromDiet}
+                        transitionToDiet={transitionToDiet}
                         budget={budget}
                         onEditStep={handleEditStep}
                         isCompleting={isCompleting}
@@ -468,7 +506,14 @@ export default function ProfileSetupPage() {
                     />
                   )}
                   {currentStep === 2 && (
-                    <ConstraintsStep selectedAllergies={selectedAllergies} toggleAllergy={toggleAllergy} />
+                    <ConstraintsStep
+                      selectedAllergies={selectedAllergies}
+                      toggleAllergy={toggleAllergy}
+                      transitionFromDiet={transitionFromDiet}
+                      transitionToDiet={transitionToDiet}
+                      setTransitionFromDiet={setTransitionFromDiet}
+                      setTransitionToDiet={setTransitionToDiet}
+                    />
                   )}
                   {currentStep === 3 && (
                     <BudgetStep budgetLevel={budgetLevel} setBudgetLevel={setBudgetLevel} budget={budget} />
@@ -478,6 +523,8 @@ export default function ProfileSetupPage() {
                       region={region}
                       selectedCuisines={selectedCuisines}
                       selectedAllergies={selectedAllergies}
+                      transitionFromDiet={transitionFromDiet}
+                      transitionToDiet={transitionToDiet}
                       budget={budget}
                       onEditStep={handleEditStep}
                       isCompleting={isCompleting}
@@ -867,9 +914,20 @@ function CuisinesStep({ region, setRegion, selectedCuisines, toggleCuisine }: Cu
 type ConstraintsStepProps = {
   selectedAllergies: string[];
   toggleAllergy: (name: string) => void;
+  transitionFromDiet: string;
+  transitionToDiet: string;
+  setTransitionFromDiet: (value: string) => void;
+  setTransitionToDiet: (value: string) => void;
 };
 
-function ConstraintsStep({ selectedAllergies, toggleAllergy }: ConstraintsStepProps) {
+function ConstraintsStep({
+  selectedAllergies,
+  toggleAllergy,
+  transitionFromDiet,
+  transitionToDiet,
+  setTransitionFromDiet,
+  setTransitionToDiet,
+}: ConstraintsStepProps) {
   return (
     <div className="space-y-10">
       <header className="space-y-2">
@@ -919,6 +977,60 @@ function ConstraintsStep({ selectedAllergies, toggleAllergy }: ConstraintsStepPr
                 <span className="font-semibold">{item}</span>
               </span>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/40 p-5">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined card-icon bg-primary text-white">shuffle</span>
+            <div>
+              <h3 className="font-impact text-2xl text-black uppercase">Diet Transition</h3>
+              <p className="text-sm font-semibold uppercase text-slate-400">From &amp; To</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">From</label>
+              <div className="relative mt-2">
+                <select
+                  className="form-select"
+                  value={transitionFromDiet}
+                  onChange={(event) => setTransitionFromDiet(event.target.value)}
+                >
+                  <option value="">Select diet...</option>
+                  {dietTransitionOptions.map((diet) => (
+                    <option key={diet} value={diet}>
+                      {diet}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-2xl text-slate-400">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">To</label>
+              <div className="relative mt-2">
+                <select
+                  className="form-select"
+                  value={transitionToDiet}
+                  onChange={(event) => setTransitionToDiet(event.target.value)}
+                >
+                  <option value="">Select target diet...</option>
+                  {toDietTransitionOptions.map((diet) => (
+                    <option key={diet} value={diet}>
+                      {diet}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-2xl text-slate-400">
+                  expand_more
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1011,12 +1123,23 @@ type ReviewStepProps = {
   region: string;
   selectedCuisines: string[];
   selectedAllergies: string[];
+  transitionFromDiet: string;
+  transitionToDiet: string;
   budget: { label: string; description: string; icon: string };
   onEditStep: (step: number) => Promise<void> | void;
   isCompleting: boolean;
 };
 
-function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, onEditStep, isCompleting }: ReviewStepProps) {
+function ReviewStep({
+  region,
+  selectedCuisines,
+  selectedAllergies,
+  transitionFromDiet,
+  transitionToDiet,
+  budget,
+  onEditStep,
+  isCompleting,
+}: ReviewStepProps) {
   const regionLabel = useMemo(() => {
     const options: Record<string, string> = {
       "south-india": "South India",
@@ -1073,6 +1196,9 @@ function ReviewStep({ region, selectedCuisines, selectedAllergies, budget, onEdi
           </div>
           <p className="mt-4 text-base font-semibold text-slate-600" id="reviewAllergies">
             {selectedAllergies.length ? selectedAllergies.join(", ") : "No allergies selected"}
+          </p>
+          <p className="mt-4 text-base font-semibold text-slate-600">
+            Transition: {transitionFromDiet || "Not set"} → {transitionToDiet || "Not set"}
           </p>
         </div>
 

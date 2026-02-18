@@ -7,6 +7,8 @@ export type UserPreferences = {
   budgetLevel: BudgetLevel | null;
   cuisines: string[];
   allergies: string[];
+  transitionFromDiet: string | null;
+  transitionToDiet: string | null;
 };
 
 type LookupTable = "cuisines" | "allergies";
@@ -21,7 +23,12 @@ type LookupRow = {
 
 type JunctionRow = Record<string, IdValue | null>;
 type BudgetLevelDbValue = "low" | "medium" | "high";
-type UserRow = { region: string | null; budget_level: BudgetLevelDbValue | number | null };
+type UserRow = {
+  region: string | null;
+  budget_level: BudgetLevelDbValue | number | null;
+  transition_from_diet: string | null;
+  transition_to_diet: string | null;
+};
 
 const isBudgetLevelValue = (value: unknown): value is BudgetLevel => value === 1 || value === 2 || value === 3;
 const FALLBACK_BUDGET_LEVEL: BudgetLevel = 1;
@@ -65,6 +72,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   budgetLevel: null,
   cuisines: [],
   allergies: [],
+  transitionFromDiet: null,
+  transitionToDiet: null,
 };
 
 type SupabaseErrorLike = Error & {
@@ -183,7 +192,7 @@ export async function fetchUserPreferences(
 ): Promise<UserPreferences> {
   const { data: userRow, error: userError } = await client
     .from("users")
-    .select("region, budget_level")
+    .select("region, budget_level, transition_from_diet, transition_to_diet")
     .eq("id", userId)
     .maybeSingle<UserRow>();
   throwOnSupabaseError("fetchUserPreferences:user", userError);
@@ -211,6 +220,8 @@ export async function fetchUserPreferences(
     budgetLevel: deriveBudgetLevelFromDb(userRow.budget_level),
     cuisines,
     allergies,
+    transitionFromDiet: userRow.transition_from_diet ?? null,
+    transitionToDiet: userRow.transition_to_diet ?? null,
   };
 }
 
@@ -326,4 +337,30 @@ export async function saveBudgetPreference(
     .update({ budget_level: dbValue })
     .eq("id", userId);
   throwOnSupabaseError("saveBudgetPreference:update", error);
+}
+
+export async function saveDietTransitionPreferences(
+  client: SupabaseClient,
+  userId: string,
+  transitionFromDiet: string | null,
+  transitionToDiet: string | null,
+): Promise<void> {
+  const normalize = (value: string | null) => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : null;
+  };
+
+  const normalizedFrom = normalize(transitionFromDiet);
+  const normalizedTo = normalize(transitionToDiet);
+
+  const { data: _dietTransitionData, error } = await client
+    .from("users")
+    .update({
+      transition_from_diet: normalizedFrom,
+      transition_to_diet: normalizedTo,
+    })
+    .eq("id", userId);
+
+  throwOnSupabaseError("saveDietTransitionPreferences:update", error);
 }
