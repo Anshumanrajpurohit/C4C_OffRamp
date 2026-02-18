@@ -197,22 +197,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    if (registeredUser) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: registeredUser.id,
-          full_name: payload.fullName,
-          avatar_url: null,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (profileError) {
-        console.error("Profile upsert error", profileError);
-        return NextResponse.json({ error: profileError.message }, { status: 500 });
-      }
-    }
-
     return NextResponse.json({
       message: activeSession ? "Account created" : "Account created. Please sign in to continue.",
       sessionReady: Boolean(activeSession),
