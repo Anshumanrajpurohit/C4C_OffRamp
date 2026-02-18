@@ -398,6 +398,13 @@ const normalizeCostValue = (value?: number | string | null) => {
   return null;
 };
 
+const shouldReportSmartSearchError = (error: unknown) => {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return false;
+  }
+  return !(error instanceof PlantSearchError);
+};
+
 function SwapPageInner() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -677,37 +684,52 @@ function SwapPageInner() {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     (async () => {
-      try {
-        const [health, dishes] = await Promise.all([
-          healthCheck(),
-          getAllDishes({ category: "vegan" }),
-        ]);
+      const [healthResult, dishesResult] = await Promise.allSettled([
+        healthCheck(controller.signal),
+        getAllDishes({ category: "vegan", signal: controller.signal }),
+      ]);
 
-        if (!isMounted) return;
+      if (!isMounted) return;
 
-        setEngineHealth(health);
-        setBackendDishNames(dishes.map((dish) => dish.name));
+      if (healthResult.status === "fulfilled") {
+        setEngineHealth(healthResult.value);
+      } else {
+        setEngineHealth(null);
+        if (shouldReportSmartSearchError(healthResult.reason)) {
+          console.error("Smart Search health check failed", healthResult.reason);
+        }
+      }
 
-        const spotlightCandidate = dishes.find((dish) => dish.category === "vegan");
+      if (dishesResult.status === "fulfilled") {
+        setBackendDishNames(dishesResult.value.map((dish) => dish.name));
+
+        const spotlightCandidate = dishesResult.value.find((dish) => dish.category === "vegan");
         if (spotlightCandidate) {
           try {
-            const detail = await getDish(spotlightCandidate.name);
+            const detail = await getDish(spotlightCandidate.name, controller.signal);
             if (isMounted) {
               setSpotlightDish(detail);
             }
           } catch (error) {
-            console.error("Failed to fetch spotlight dish", error);
+            if (shouldReportSmartSearchError(error)) {
+              console.error("Failed to fetch spotlight dish", error);
+            }
           }
         }
-      } catch (error) {
-        console.error("Smart Search bootstrap failed", error);
+      } else {
+        setBackendDishNames([]);
+        if (shouldReportSmartSearchError(dishesResult.reason)) {
+          console.error("Smart Search bootstrap failed", dishesResult.reason);
+        }
       }
     })();
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, []);
 
@@ -766,7 +788,9 @@ function SwapPageInner() {
         if (requestId !== undefined && requestId !== swapRequestIdRef.current) {
           return;
         }
-        console.error("Smart Search engine error", error);
+        if (shouldReportSmartSearchError(error)) {
+          console.error("Smart Search engine error", error);
+        }
         setSwapEngineDishes([]);
         setPlantRecommendations([]);
         if (error instanceof PlantSearchError && error.status === 404) {
@@ -2241,16 +2265,16 @@ function PlantRecommendationCard({ recommendation, onSelect }: { recommendation:
   const imageSrc = recommendation.detail?.image || "/assets/placeholder.svg";
 
   return (
-    <button
+ <button
       type="button"
       onClick={recommendation.detail ? onSelect : undefined}
       className="flex h-full flex-col gap-4 rounded-3xl border-3 border-black bg-white px-5 py-5 text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.4)] transition duration-300 hover:-translate-y-1 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.5)]"
     >
-      <div className="relative -mx-1 overflow-hidden rounded-2xl border-2 border-black/10">
+      <div className="relative -mx-1 h-50 overflow-hidden rounded-2xl border-2 border-black/10 sm:h-50">
         <img
           src={imageSrc}
           alt={recommendation.name}
-          className="h-40 w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain object-center"
           onError={(event) => {
             const target = event.currentTarget;
             if (target.dataset.fallbackApplied === "true") return;
@@ -2329,18 +2353,17 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
       type="button"
       onClick={onSelect}
       suppressHydrationWarning
-      className="group relative flex h-full min-h-[26rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
+      className="group relative flex h-full min-h-[28rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
     >
       <div className="card-flip-wrapper">
         <div className="card-flip">
           <div className="card-face card-face--front bg-white">
             <div className="relative h-60 w-full overflow-hidden rounded-t-xl">
-              {/* image container */}
               <div className="absolute inset-0">
                 <img
                   src={dish.image || "/assets/placeholder.svg"}
                   alt={dish.name}
-                  className="h-full w-full object-cover object-center"
+                  className="h-full w-full object-contain object-center"
                   onError={(event) => {
                     const target = event.currentTarget;
                     if (target.dataset.fallbackApplied === "true") return;

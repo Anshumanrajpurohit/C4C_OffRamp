@@ -284,6 +284,27 @@ const buildUrl = (path: string, query?: Record<string, string | undefined>) => {
   return url.toString();
 };
 
+const fetchFromPlantSearch = async (endpoint: string, init?: RequestInit) => {
+  try {
+    return await fetch(endpoint, { cache: "no-store", ...init });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
+    let target = endpoint;
+    try {
+      target = new URL(endpoint).origin;
+    } catch {
+      // Keep the raw endpoint string for debugging if URL parsing fails.
+    }
+
+    throw new PlantSearchError(
+      `Unable to reach Smart Search API at ${target}. Check NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL and ensure the backend is running.`
+    );
+  }
+};
+
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (response.status === 204) {
     return {} as T;
@@ -309,11 +330,10 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 
 export const searchPlantAlternatives = async ({ dishName, limit = 9, signal }: SearchOptions): Promise<SearchAlternativesResponse> => {
   const endpoint = buildUrl("/search");
-  const response = await fetch(endpoint, {
+  const response = await fetchFromPlantSearch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ dish_name: dishName, top_n: limit }),
-    cache: "no-store",
     signal,
   });
 
@@ -367,7 +387,7 @@ export const getAllDishes = async ({ category, protein, priceRange, name, signal
     name,
   });
 
-  const response = await fetch(endpoint, { cache: "no-store", signal });
+  const response = await fetchFromPlantSearch(endpoint, { signal });
   const payload = await handleResponse<PlantDishSummary[]>(response);
   debugLog("/dishes", payload);
   return payload;
@@ -376,7 +396,7 @@ export const getAllDishes = async ({ category, protein, priceRange, name, signal
 export const getDish = async (name: string, signal?: AbortSignal) => {
   const safeName = encodeURIComponent(name.trim());
   const endpoint = buildUrl(`/dish/${safeName}`);
-  const response = await fetch(endpoint, { cache: "no-store", signal });
+  const response = await fetchFromPlantSearch(endpoint, { signal });
 
   if (response.status === 404) {
     throw new PlantSearchError(`Dish ${name} not found`, 404);
@@ -389,7 +409,7 @@ export const getDish = async (name: string, signal?: AbortSignal) => {
 
 export const healthCheck = async (signal?: AbortSignal) => {
   const endpoint = buildUrl("/health");
-  const response = await fetch(endpoint, { cache: "no-store", signal });
+  const response = await fetchFromPlantSearch(endpoint, { signal });
   const payload = await handleResponse<PlantHealthResponse>(response);
   debugLog("/health", payload);
   return payload;

@@ -33,7 +33,7 @@ export default function AuthPage() {
 
     if (isSignup) {
       payload.fullName = name.trim();
-      if (phone.trim()) payload.phone = phone.trim();
+      payload.phone = phone.trim();
       if (city.trim()) payload.city = city.trim();
       if (region.trim()) payload.region = region.trim();
     }
@@ -63,6 +63,11 @@ export default function AuthPage() {
       setStatusType("success");
       setStatus(result?.message || (isSignup ? "Account created successfully" : "Logged in"));
 
+      if (isSignup && result?.sessionReady === false) {
+        setIsSignup(false);
+        return;
+      }
+
       setTimeout(() => {
         router.push(isSignup ? "/profile-setup" : "/swap");
       }, 300);
@@ -81,7 +86,7 @@ export default function AuthPage() {
   const fallbackCircleImage = dishRoll.src;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden text-slate-900">
+    <div className="relative min-h-screen overflow-x-hidden text-slate-900 overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <picture className="block h-full w-full">
           <source srcSet={backgroundImage} />
@@ -119,7 +124,7 @@ export default function AuthPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Comfort-first swaps</p>
                 <p className="mt-3 text-4xl font-impact uppercase leading-tight">Pick your entry point</p>
                 <p className="mt-3 max-w-sm text-sm text-white/80">
-                  The rotating plate mirrors the reference layout. Tap the card on the right to flip between login and register without losing flow.
+                  One decision away from doing it differently.  
                 </p>
               </div>
             </section>
@@ -134,7 +139,6 @@ export default function AuthPage() {
                       className="h-24 w-24 rounded-full object-contain"
                     />
                     <div className="leading-tight">
-                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">OffRamp</p>
                       <p className="text-lg font-impact uppercase text-black">{isSignup ? "Register" : "Login"}</p>
                     </div>
                   </div>
@@ -343,11 +347,12 @@ export default function AuthPage() {
                     </label>
 
                     <label className="text-sm font-bold text-black">
-                      Phone (optional)
+                      Contact number
                       <div className="mt-2 flex items-center gap-2 rounded-xl border-2 border-black bg-white px-3 py-2">
                         <span className="material-symbols-outlined text-lg text-slate-500">call</span>
                         <input
                           type="tel"
+                          required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="+1 555 123 4567"

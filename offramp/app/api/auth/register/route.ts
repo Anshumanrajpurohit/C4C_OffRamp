@@ -20,7 +20,7 @@ type RegisterPayload = {
   email: string;
   password: string;
   fullName: string;
-  phone?: string;
+  phone: string;
   region?: string;
   city?: string;
 };
@@ -45,7 +45,7 @@ function parsePayload(body: unknown): RegisterPayload | null {
         : typeof name === "string"
           ? name.trim()
           : "",
-    phone: typeof phone === "string" ? phone.trim() : undefined,
+    phone: typeof phone === "string" ? phone.trim() : "",
     region: typeof region === "string" ? region.trim() : undefined,
     city: typeof city === "string" ? city.trim() : undefined,
   };
@@ -66,8 +66,15 @@ function validatePayload(payload: RegisterPayload) {
     errors.push("Full name must be at least 2 characters");
   }
 
-  if (payload.phone && payload.phone.length < 7) {
+  if (!payload.phone) {
+    errors.push("Phone number is required");
+  } else if (payload.phone.length < 7) {
     errors.push("Phone number looks incorrect");
+  } else {
+    const normalizedPhone = payload.phone.replace(/[^\d]/g, "");
+    if (normalizedPhone.length < 7) {
+      errors.push("Phone number looks incorrect");
+    }
   }
 
   if (payload.city && payload.city.length < 2) {
@@ -105,7 +112,7 @@ export async function POST(req: Request) {
 
     const supabase = await createSupabaseServerClient();
     const adminClient = getSupabaseAdminClient();
-    const cleanPhone = payload.phone ? payload.phone.replace(/[^+\d\-()\s]/g, "") : null;
+    const cleanPhone = payload.phone.replace(/[^+\d\-()\s]/g, "");
     const normalizedCity = payload.city && payload.city.length > 0 ? payload.city : "Bangalore";
     const normalizedRegion = payload.region && payload.region.length > 0 ? payload.region : null;
 
@@ -148,7 +155,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status });
     }
 
-    const supabaseUserId = data.user?.id ?? crypto.randomUUID();
+    let activeSession = data.session ?? null;
+    const registeredUser = data.user ?? null;
+
+    if (registeredUser && !activeSession) {
+      const { error: confirmError } = await adminClient.auth.admin.updateUserById(registeredUser.id, {
+        email_confirm: true,
+      });
+
+      if (confirmError) {
+        console.error("Email confirm fallback error", confirmError);
+      } else {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: payload.email,
+          password: payload.password,
+        });
+
+        if (signInError) {
+          console.error("Post-register sign-in fallback error", signInError);
+        } else {
+          activeSession = signInData.session ?? null;
+        }
+      }
+    }
+
+    const supabaseUserId = registeredUser?.id ?? crypto.randomUUID();
 
     const { error: insertError } = await adminClient.from("users").insert({
       id: supabaseUserId,
@@ -166,11 +197,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    if (data.user && data.session) {
+    if (registeredUser) {
       const { error: profileError } = await supabase
         .from("profiles")
         .upsert({
-          id: data.user.id,
+          id: registeredUser.id,
           full_name: payload.fullName,
           avatar_url: null,
           updated_at: new Date().toISOString(),
@@ -183,11 +214,12 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      message: data.session ? "Account created" : "Check your email to confirm sign-up",
-      user: data.user
+      message: activeSession ? "Account created" : "Account created. Please sign in to continue.",
+      sessionReady: Boolean(activeSession),
+      user: registeredUser
         ? {
-            id: data.user.id,
-            email: data.user.email,
+            id: registeredUser.id,
+            email: registeredUser.email,
             full_name: payload.fullName,
           }
         : null,
