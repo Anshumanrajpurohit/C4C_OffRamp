@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import json
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Deque, Dict, Iterator, List, Optional
+from urllib.parse import quote_plus
+from typing import Any, Deque, Dict, Iterator, List, Optional, Tuple
 from collections import defaultdict, deque
 
 from flask import Flask, Response, jsonify, request
 
 from .config import get_meta_verify_token
 from .meta import MetaWhatsAppClient, MetaWhatsAppError
+from .nearby import NearbySearchError, fetch_nearby_restaurants
 from .openrouter import OpenRouterClient, OpenRouterError
 from .vision import DishVision, DishVisionError, DishVisionResult
 
@@ -140,9 +144,12 @@ class UserContext:
     last_interaction: datetime = field(default_factory=datetime.utcnow)
     wizard_last_photo_id: Optional[str] = None
     wizard_last_dish: Optional[str] = None
-    wizard_is_plant: Optional[bool] = None
+    wizard_veg_status: Optional[str] = None
     wizard_confidence: float = 0.0
-    wizard_notes: str = ""
+    wizard_recommendation_type: Optional[str] = None
+    wizard_recommendations: List[Dict[str, str]] = field(default_factory=list)
+    wizard_evidence: List[str] = field(default_factory=list)
+    wizard_cuisine: str = ""
 
 
 @dataclass
@@ -156,6 +163,7 @@ class IncomingMessage:
     sender: str
     type: str
     text: str = ""
+    message_id: Optional[str] = None
     button_id: Optional[str] = None
     button_title: Optional[str] = None
     media_id: Optional[str] = None
@@ -171,6 +179,20 @@ def create_app() -> Flask:
     whatsapp = MetaWhatsAppClient()
     vision = DishVision()
     contexts: Dict[str, UserContext] = defaultdict(UserContext)
+    processed_message_ids: Deque[str] = deque(maxlen=2000)
+    processed_message_index: set[str] = set()
+
+    def _mark_processed(message_id: str) -> None:
+        if not message_id:
+            return
+        if message_id in processed_message_index:
+            return
+        if len(processed_message_ids) == processed_message_ids.maxlen:
+            oldest = processed_message_ids[0]
+            processed_message_index.discard(oldest)
+        processed_message_ids.append(message_id)
+        processed_message_index.add(message_id)
+
     stats = {
         "start_time": datetime.utcnow().isoformat() + "Z",
         "messages_processed": 0,
@@ -194,6 +216,12 @@ def create_app() -> Flask:
         payload = request.get_json(silent=True) or {}
 
         for incoming in _iterate_incoming_messages(payload):
+            if incoming.message_id and incoming.message_id in processed_message_index:
+                logger.info("Skipping duplicate webhook message id=%s", incoming.message_id)
+                continue
+            if incoming.message_id:
+                _mark_processed(incoming.message_id)
+
             stats["messages_processed"] += 1
             stats["active_users"].add(incoming.sender)
             context = contexts[incoming.sender]
@@ -223,15 +251,15 @@ def create_app() -> Flask:
             if not responses:
                 responses = [_fallback_message(context)]
 
-            # Rewrite every outgoing message via LLM so replies stay AI-generated and follow the latest rules.
-            rewritten: List[OutgoingMessage] = []
-            for response in responses:
-                try:
-                    rewritten.append(_ai_rewrite_response(client, context, response))
-                except Exception:  # fall back silently on rewrite failure
-                    rewritten.append(response)
+            if _should_ai_rewrite(context):
+                rewritten: List[OutgoingMessage] = []
+                for response in responses:
+                    try:
+                        rewritten.append(_ai_rewrite_response(client, context, response))
+                    except Exception:  # fall back silently on rewrite failure
+                        rewritten.append(response)
 
-            responses = rewritten
+                responses = rewritten
 
             for response in responses:
                 _deliver_response(whatsapp, incoming.sender, response)
@@ -278,38 +306,331 @@ NEGATIVE_KEYWORDS = {
     "adult",
 }
 
-NON_VEG_TERMS = {
+
+SWAP_ALLOWED_TARGETS = {"veg", "vegan", "jain"}
+SWAP_ALLOWED_SOURCE_TYPES = {"non_veg", "veg", "vegan", "jain", "uncertain"}
+SWAP_NON_VEG_TERMS = {
     "chicken",
     "mutton",
-    "fish",
-    "prawn",
-    "egg",
-    "meat",
-    "biryani",
-    "kebab",
-    "butter chicken",
-    "keema",
     "lamb",
     "beef",
     "pork",
+    "fish",
+    "seafood",
+    "prawn",
+    "shrimp",
+    "crab",
+    "egg",
+    "eggs",
+    "bacon",
+    "ham",
+    "turkey",
+    "salami",
+}
+SWAP_DAIRY_HONEY_TERMS = {
+    "milk",
+    "cream",
+    "butter",
+    "ghee",
+    "paneer",
+    "cheese",
+    "curd",
+    "yogurt",
+    "yoghurt",
+    "honey",
+    "lassi",
+    "khoa",
+    "khoya",
+    "whey",
+}
+SWAP_JAIN_FORBIDDEN_TERMS = {
+    "onion",
+    "garlic",
+    "potato",
+    "potatoes",
+    "carrot",
+    "carrots",
+    "beetroot",
+    "beet",
+    "radish",
+    "sweet potato",
+    "root vegetable",
+    "roots",
+    "yam",
+    "turnip",
 }
 
-PLANT_TERMS = {
-    "chickpea",
-    "veg",
-    "vegetable",
-    "paneer",
-    "tofu",
-    "soy",
-    "soya",
-    "jackfruit",
-    "mushroom",
-    "lentil",
-    "dal",
-    "rajma",
-    "chole",
-    "kurma",
-}
+
+def _should_ai_rewrite(context: UserContext) -> bool:
+    return context.flow not in {
+        STATE_REPLACE_REFINING,
+        STATE_FIND_WAIT_AREA,
+        STATE_FIND_WAIT_RULE,
+        STATE_FIND_RESULTS,
+        STATE_DISH_WIZARD_WAIT_IMAGE,
+        STATE_DISH_WIZARD_REVIEW,
+        STATE_DISH_WIZARD_TYPE_NAME,
+    }
+
+
+def _requires_jain_rules(context: UserContext, extra_instruction: str | None) -> bool:
+    instruction = (extra_instruction or "").strip().lower()
+    return "jain" in instruction or "jain" in context.preferences.restrictions
+
+
+def _resolve_swap_target(context: UserContext, extra_instruction: str | None) -> str:
+    diet = (context.preferences.diet or "").strip().lower()
+    target = "vegan" if diet == "vegan" else "veg"
+    if _requires_jain_rules(context, extra_instruction) and target != "vegan":
+        return "jain"
+    return target
+
+
+def _swap_build_messages(
+    context: UserContext,
+    dish_name: str,
+    target: str,
+    require_jain_rules: bool,
+    extra_instruction: str | None = None,
+    feedback: str = "",
+) -> List[Dict[str, str]]:
+    prefs = context.preferences
+    preference_lines: List[str] = []
+    if prefs.taste:
+        preference_lines.append(f"Taste preference: {prefs.taste}")
+    if prefs.budget:
+        preference_lines.append(f"Budget preference: {prefs.budget}")
+    if prefs.area:
+        preference_lines.append(f"City/Area context: {prefs.area}")
+    if prefs.allergies:
+        preference_lines.append("Allergies to avoid where possible: " + ", ".join(sorted(prefs.allergies)))
+    if prefs.restrictions:
+        preference_lines.append("Restrictions: " + ", ".join(sorted(prefs.restrictions)))
+    if extra_instruction:
+        preference_lines.append(f"Special instruction: {extra_instruction.strip()}")
+
+    hints = "\n".join(preference_lines) if preference_lines else "No extra preferences."
+
+    prompt = (
+        "You are OFFRAMP. Output STRICT JSON only.\n"
+        "Task: Given an input dish and target diet, provide exactly 3 culturally similar swap dishes.\n"
+        "Diet rules:\n"
+        "- VEG: no meat/fish/seafood/egg. Dairy allowed.\n"
+        "- VEGAN: no animal products (no meat/fish/seafood/egg/dairy/honey).\n"
+        "- JAIN: vegetarian and no onion, garlic, potato, carrot, beetroot, radish, sweet potato, or root vegetables.\n"
+        "Schema (exact keys only):\n"
+        "{\n"
+        '  "input_dish":"string",\n'
+        '  "detected_source_type":"non_veg|veg|vegan|jain|uncertain",\n'
+        '  "target":"veg|vegan|jain",\n'
+        '  "swaps":[\n'
+        '    {"name":"string","why":"short reason"},\n'
+        '    {"name":"string","why":"short reason"},\n'
+        '    {"name":"string","why":"short reason"}\n'
+        "  ]\n"
+        "}\n"
+        "No markdown, no prose, no extra keys.\n\n"
+        f"Input dish: {dish_name.strip()}\n"
+        f"Target diet: {target}\n"
+        f"Preferences:\n{hints}\n"
+        f"Jain restrictions required: {'yes' if require_jain_rules else 'no'}\n"
+        "Keep dish names natural for Indian users and avoid repeating the input dish name.\n"
+    )
+
+    if feedback:
+        prompt += f"\nValidation feedback from previous attempt: {feedback}\nRegenerate corrected JSON."
+
+    return [{"role": "user", "content": prompt}]
+
+
+def _swap_extract_json_object(text: str) -> Dict[str, Any]:
+    content = (text or "").strip()
+    if not content:
+        raise ValueError("Empty model response")
+
+    try:
+        loaded = json.loads(content)
+        if isinstance(loaded, dict):
+            return loaded
+    except json.JSONDecodeError:
+        pass
+
+    match = re.search(r"\{.*\}", content, flags=re.DOTALL)
+    if not match:
+        raise ValueError("Could not locate JSON object in model response")
+
+    parsed = json.loads(match.group(0))
+    if not isinstance(parsed, dict):
+        raise ValueError("Model response JSON was not an object")
+    return parsed
+
+
+def _swap_contains_any(text: str, terms: set[str]) -> bool:
+    normalized = f" {text.lower()} "
+    for term in terms:
+        pattern = rf"(?<![a-z]){re.escape(term.lower())}(?![a-z])"
+        if re.search(pattern, normalized):
+            return True
+    return False
+
+
+def _swap_validate_result(
+    result: Dict[str, Any],
+    dish_name: str,
+    target: str,
+    require_jain_rules: bool,
+) -> Tuple[bool, str]:
+    if not isinstance(result, dict):
+        return False, "Result is not a JSON object"
+
+    required_top = {"input_dish", "detected_source_type", "target", "swaps"}
+    if set(result.keys()) != required_top:
+        return False, "Top-level keys must exactly match required schema"
+
+    input_dish = str(result.get("input_dish", "")).strip()
+    if not input_dish:
+        return False, "input_dish must be a non-empty string"
+
+    source_type = str(result.get("detected_source_type", "")).strip()
+    if source_type not in SWAP_ALLOWED_SOURCE_TYPES:
+        return False, "detected_source_type is invalid"
+
+    if result.get("target") != target:
+        return False, "target field must exactly match requested target"
+
+    swaps = result.get("swaps")
+    if not isinstance(swaps, list) or len(swaps) != 3:
+        return False, "swaps must be a list with exactly 3 items"
+
+    seen_names: set[str] = set()
+    input_name = dish_name.strip().lower()
+    for i, item in enumerate(swaps, start=1):
+        if not isinstance(item, dict):
+            return False, f"swap #{i} must be an object"
+        if set(item.keys()) != {"name", "why"}:
+            return False, f"swap #{i} must contain only name and why"
+
+        name = str(item.get("name", "")).strip()
+        why = str(item.get("why", "")).strip()
+        if not name:
+            return False, f"swap #{i} name must be non-empty string"
+        if not why:
+            return False, f"swap #{i} why must be non-empty string"
+
+        lower_name = name.lower()
+        if lower_name in seen_names:
+            return False, "swap names must be unique"
+        seen_names.add(lower_name)
+
+        if lower_name == input_name:
+            return False, f"swap #{i} must differ from input dish"
+
+        if target == "veg":
+            blocked_terms = SWAP_NON_VEG_TERMS
+            if require_jain_rules:
+                blocked_terms = blocked_terms | SWAP_JAIN_FORBIDDEN_TERMS
+            if _swap_contains_any(name, blocked_terms):
+                return False, f"swap #{i} violates veg rules"
+        elif target == "vegan":
+            blocked_terms = SWAP_NON_VEG_TERMS | SWAP_DAIRY_HONEY_TERMS
+            if require_jain_rules:
+                blocked_terms = blocked_terms | SWAP_JAIN_FORBIDDEN_TERMS
+            if _swap_contains_any(name, blocked_terms):
+                return False, f"swap #{i} violates vegan rules"
+        elif target == "jain":
+            if _swap_contains_any(name, SWAP_NON_VEG_TERMS | SWAP_JAIN_FORBIDDEN_TERMS):
+                return False, f"swap #{i} violates jain rules"
+        else:
+            return False, "Invalid target"
+
+    return True, "ok"
+
+
+def _swap_fallback_result(dish_name: str, target: str, require_jain_rules: bool) -> Dict[str, Any]:
+    if target == "jain" or (target == "veg" and require_jain_rules):
+        swaps = [
+            {"name": "Jain Vegetable Pulao", "why": "Keeps familiar masala aroma while staying Jain-safe."},
+            {"name": "Jain Moong Dal Khichdi", "why": "Comforting texture and gentle spice profile."},
+            {"name": "Jain Paneer Tikka", "why": "Protein-rich and smoky, with no onion or garlic."},
+        ]
+    elif target == "vegan" and require_jain_rules:
+        swaps = [
+            {"name": "Jain Tofu Tikka", "why": "Smoky protein-rich bites without dairy, onion, or garlic."},
+            {"name": "Jain Vegetable Pulao", "why": "Familiar rice masala profile while staying vegan and Jain-safe."},
+            {"name": "Coconut Moong Dal Khichdi", "why": "Comforting texture with mild spices and no root vegetables."},
+        ]
+    elif target == "vegan":
+        swaps = [
+            {"name": "Soya Chunk Masala", "why": "High-protein bite and strong masala absorption."},
+            {"name": "Jackfruit Pepper Fry", "why": "Fibrous texture with familiar Indian spice depth."},
+            {"name": "Tofu Curry", "why": "Carries gravy well and stays fully plant-based."},
+        ]
+    else:
+        swaps = [
+            {"name": "Paneer Bhurji", "why": "Familiar masala style and satisfying texture."},
+            {"name": "Mushroom Pepper Fry", "why": "Savory bite with strong spice compatibility."},
+            {"name": "Soya Keema", "why": "Protein-dense and close to keema-style mouthfeel."},
+        ]
+
+    return {
+        "input_dish": dish_name.strip(),
+        "detected_source_type": "uncertain",
+        "target": target,
+        "swaps": swaps,
+    }
+
+
+def _swap_generate_result(
+    context: UserContext,
+    client: OpenRouterClient,
+    dish_name: str,
+    extra_instruction: str | None = None,
+) -> Dict[str, Any]:
+    target = _resolve_swap_target(context, extra_instruction)
+    require_jain_rules = _requires_jain_rules(context, extra_instruction)
+    if target not in SWAP_ALLOWED_TARGETS:
+        target = "veg"
+
+    feedback = ""
+    last_error = "unknown validation failure"
+    for attempt in range(2):
+        messages = _swap_build_messages(
+            context=context,
+            dish_name=dish_name,
+            target=target,
+            require_jain_rules=require_jain_rules,
+            extra_instruction=extra_instruction,
+            feedback=feedback,
+        )
+
+        try:
+            raw = client.complete(messages)
+            parsed = _swap_extract_json_object(raw)
+        except (OpenRouterError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+            last_error = str(error)
+            feedback = f"Could not parse JSON: {last_error}"
+            logger.warning("Swap generation parsing failed for %s (attempt %s): %s", dish_name, attempt + 1, error)
+            continue
+
+        valid, reason = _swap_validate_result(parsed, dish_name, target, require_jain_rules)
+        if valid:
+            return parsed
+
+        last_error = reason
+        feedback = reason
+        logger.info("Swap validation failed for %s (attempt %s): %s", dish_name, attempt + 1, reason)
+
+    logger.warning("Using fallback swaps for %s after retry: %s", dish_name, last_error)
+    return _swap_fallback_result(dish_name, target, require_jain_rules)
+
+
+def _swap_format_text(swaps: List[Dict[str, str]]) -> str:
+    lines: List[str] = []
+    for index, item in enumerate(swaps[:3], start=1):
+        name = str(item.get("name", "")).strip() or "Plant-based option"
+        why = str(item.get("why", "")).strip() or "Close match for this cuisine."
+        lines.append(f"{index}. {name}\n- {why}")
+    return "\n\n".join(lines)
 
 
 def _handle_text_message(
@@ -475,9 +796,12 @@ def _handle_button_press(
         context.flow = STATE_IDLE
         context.step = 0
         context.wizard_last_dish = None
-        context.wizard_is_plant = None
+        context.wizard_veg_status = None
         context.wizard_confidence = 0.0
-        context.wizard_notes = ""
+        context.wizard_recommendation_type = None
+        context.wizard_recommendations = []
+        context.wizard_evidence = []
+        context.wizard_cuisine = ""
         return [OutgoingMessage(text="Dish wizard closed. Want anything else?", buttons=FALLBACK_BUTTONS)]
     if button_id == BTN_DISH_FIND_NEARBY:
         dish = context.wizard_last_dish or context.pending.get("focus_dish")
@@ -517,24 +841,63 @@ def _handle_button_press(
         return _show_restaurant_results(context)
 
     if button_id == BTN_CALL_RESTAURANT:
+        results = context.pending.get("restaurant_results")
+        options = results if isinstance(results, list) else []
+        call_lines: List[str] = []
+        for idx, item in enumerate(options[:5], start=1):
+            if not isinstance(item, dict):
+                continue
+            phone = str(item.get("phone") or "").strip()
+            name = str(item.get("name") or f"Option {idx}").strip()
+            if phone:
+                call_lines.append(f"{idx}. {name}: {phone}")
+
+        if call_lines:
+            return [
+                OutgoingMessage(
+                    text=(
+                        "Call these first and confirm vegan/Jain prep plus cross-contamination:\n\n"
+                        + "\n".join(call_lines)
+                    ),
+                    buttons=[
+                        {"id": BTN_OPEN_MAPS, "title": "Open Maps"},
+                        {"id": BTN_NEW_SEARCH, "title": "New search"},
+                    ],
+                )
+            ]
+
         return [
             OutgoingMessage(
-                text="📞 Quick tip: call the place before visiting and double-check Jain/vegan handling. Want me to find another option?",
+                text=(
+                    "I do not have direct phone numbers for these listings yet.\n"
+                    "Tap Open Maps and call from listing details."
+                ),
                 buttons=[
-                    {"id": BTN_FIND_NEARBY, "title": "🔁 New search"},
-                    {"id": BTN_MORE_FILTERS, "title": "🔍 More filters"},
+                    {"id": BTN_OPEN_MAPS, "title": "Open Maps"},
+                    {"id": BTN_NEW_SEARCH, "title": "New search"},
                 ],
             )
         ]
     if button_id == BTN_OPEN_MAPS:
-        area = context.preferences.area or "your area"
-        maps_url = f"https://www.google.com/maps/search/plant-based+restaurants+{area.replace(' ', '+')}"
+        maps_url = ""
+        results = context.pending.get("restaurant_results")
+        if isinstance(results, list):
+            for item in results:
+                if not isinstance(item, dict):
+                    continue
+                candidate = str(item.get("maps_url") or "").strip()
+                if candidate:
+                    maps_url = candidate
+                    break
+        if not maps_url:
+            area = (context.preferences.area or "").strip() or "your area"
+            maps_url = _build_default_maps_url(area, context.preferences.diet, context.preferences.restrictions)
         return [
             OutgoingMessage(
-                text=f"🗺️ Open this in Maps:\n{maps_url}\n\nPing me after you check, I’ll keep options ready.",
+                text=f"Open this in Maps:\n{maps_url}\n\nPing me after you check and I can refine options.",
                 buttons=[
-                    {"id": BTN_MORE_FILTERS, "title": "🔍 More filters"},
-                    {"id": BTN_NEW_SEARCH, "title": "🔁 New search"},
+                    {"id": BTN_MORE_FILTERS, "title": "More filters"},
+                    {"id": BTN_NEW_SEARCH, "title": "New search"},
                 ],
             )
         ]
@@ -545,7 +908,7 @@ def _handle_button_press(
                 buttons=[
                     {"id": BTN_FILTER_BUDGET, "title": "💸 Budget"},
                     {"id": BTN_FILTER_TASTE, "title": "🌶️ Flavour"},
-                    {"id": BTN_NEW_SEARCH, "title": "🔁 New search"},
+                    {"id": BTN_NEW_SEARCH, "title": "New search"},
                 ],
             )
         ]
@@ -738,49 +1101,17 @@ def _regenerate_swap(
     if not context.last_dish:
         return _start_replace_flow(context)
 
-    instruction_lines = [
-        "Dish: " + context.last_dish,
-        "City: Bangalore",
-    ]
-
-    prefs = context.preferences
-    if prefs.diet:
-        instruction_lines.append(f"Diet: {prefs.diet}")
-    if prefs.restrictions:
-        instruction_lines.append("Restrictions: " + ", ".join(sorted(prefs.restrictions)))
-    if prefs.taste:
-        instruction_lines.append(f"Taste: {prefs.taste}")
-    if prefs.budget:
-        instruction_lines.append(f"Budget: {prefs.budget}")
-    if prefs.allergies:
-        instruction_lines.append("Allergies: " + ", ".join(sorted(prefs.allergies)))
-    if extra_instruction:
-        instruction_lines.append(f"Special: {extra_instruction}")
-
-    prompt = (
-        "You are OFFRAMP, an Indian plant-forward food assistant."
-        " Suggest exactly two plant-based alternatives to the dish above."
-        " Reply in under 80 words with this exact format:\n\n"
-        "1️⃣ Dish name  \n– short benefit or reason  \n– second benefit focusing on familiarity or texture\n\n"
-        "2️⃣ Dish name  \n– short benefit or reason  \n– second benefit focusing on local appeal\n\n"
-        "Keep tone warm, Indian, no moralising. Mention local ingredients when easy."
+    swap_result = _swap_generate_result(
+        context=context,
+        client=client,
+        dish_name=context.last_dish,
+        extra_instruction=extra_instruction,
     )
-
-    user_payload = {"role": "user", "content": "\n".join(instruction_lines) + "\n\n" + prompt}
-    messages: List[dict[str, str]] = list(context.llm_history) + [user_payload]
-
-    try:
-        swap_text = client.complete(messages)
-    except (OpenRouterError, RuntimeError) as error:
-        logger.exception("Swap generation failed for %s: %s", context.last_dish, error)
-        swap_text = (
-            "Here are close plant-based swaps 🌱👇\n\n"
-            "1️⃣ Soya Chunk Biryani  \n– High protein, familiar bite  \n– Absorbs masala like chicken\n\n"
-            "2️⃣ Jackfruit Biryani  \n– Fibrous, meat-like texture  \n– Loved across South India"
-        )
-    else:
-        context.llm_history.append(user_payload)
-        context.llm_history.append({"role": "assistant", "content": swap_text})
+    target = str(swap_result.get("target", "veg")).strip().lower() or "veg"
+    swaps = swap_result.get("swaps")
+    if not isinstance(swaps, list):
+        swaps = []
+    swap_text = _swap_format_text([item for item in swaps if isinstance(item, dict)])
 
     context.last_swap_summary = swap_text
     buttons = [
@@ -791,7 +1122,12 @@ def _regenerate_swap(
         {"id": BTN_REPLACE_THIS_WORKS, "title": "👍 This works"},
     ]
 
-    text = f"Here are close plant-based swaps 🌱👇\n\n{swap_text.strip()}\n\nWant to refine this?"
+    target_label = {"veg": "vegetarian", "vegan": "vegan", "jain": "jain-safe"}.get(target, "plant-based")
+    text = (
+        f"Here are close {target_label} swaps:\n\n"
+        f"{swap_text.strip()}\n\n"
+        "Want to refine this?"
+    )
     return [OutgoingMessage(text=text, buttons=buttons)]
 
 
@@ -801,9 +1137,12 @@ def _start_dish_wizard(context: UserContext) -> List[OutgoingMessage]:
     context.pending.clear()
     context.wizard_last_photo_id = None
     context.wizard_last_dish = None
-    context.wizard_is_plant = None
+    context.wizard_veg_status = None
     context.wizard_confidence = 0.0
-    context.wizard_notes = ""
+    context.wizard_recommendation_type = None
+    context.wizard_recommendations = []
+    context.wizard_evidence = []
+    context.wizard_cuisine = ""
     return [
         OutgoingMessage(
             text=(
@@ -826,6 +1165,7 @@ def _process_wizard_image(
     vision: DishVision,
     incoming: IncomingMessage,
 ) -> List[OutgoingMessage]:
+    _ = client  # unused in this flow
     context.wizard_last_photo_id = incoming.media_id
     hint = incoming.text.strip() if incoming.text else ""
 
@@ -839,40 +1179,30 @@ def _process_wizard_image(
     vision_result: Optional[DishVisionResult] = None
     if image_bytes:
         try:
-            vision_result = vision.analyze(image_bytes)
+            filename = f"{incoming.media_id or 'dish'}.jpg"
+            vision_result = vision.analyze(image_bytes, filename=filename)
         except DishVisionError as error:
             logger.exception("Vision analysis error for %s: %s", incoming.media_id, error)
 
-    if vision_result and vision_result.confidence >= 0.4:
-        dish_name = vision_result.name or (hint or "this dish")
-        context.wizard_last_dish = dish_name
-        context.wizard_is_plant = vision_result.is_plant
-        context.wizard_confidence = vision_result.confidence
-        context.wizard_notes = vision_result.notes
-        context.flow = STATE_DISH_WIZARD_REVIEW
-        context.pending["focus_dish"] = dish_name
+    if vision_result is None and hint:
+        try:
+            vision_result = vision.analyze_hint(hint)
+        except DishVisionError as error:
+            logger.exception("Hint analysis error: %s", error)
 
-        if vision_result.is_plant:
-            return _dish_wizard_plant_response(context)
-
-        return _dish_wizard_non_veg_response(context)
-
-    classification = _classify_dish_hint(hint)
-    if classification is None:
+    if vision_result is None:
         return _dish_wizard_low_confidence(context)
 
-    dish_name, is_plant, confidence = classification
-    context.wizard_last_dish = dish_name
-    context.wizard_is_plant = is_plant
-    context.wizard_confidence = confidence
-    context.wizard_notes = ""
-    context.flow = STATE_DISH_WIZARD_REVIEW
-    context.pending["focus_dish"] = dish_name
+    if vision_result.confidence < 0.3 and vision_result.veg_status == "uncertain":
+        context.wizard_last_dish = vision_result.dish_name or hint or "this dish"
+        return _dish_wizard_low_confidence(context)
 
-    if is_plant:
-        return _dish_wizard_plant_response(context)
+    _apply_wizard_result(context, vision_result, fallback_name=hint or "this dish")
 
-    return _dish_wizard_non_veg_response(context)
+    if context.wizard_veg_status == "non_veg":
+        return _dish_wizard_non_veg_response(context)
+
+    return _dish_wizard_plant_response(context)
 
 
 def _process_manual_dish_input(
@@ -880,36 +1210,76 @@ def _process_manual_dish_input(
     client: OpenRouterClient,
     dish_text: str,
 ) -> List[OutgoingMessage]:
-    classification = _classify_dish_hint(dish_text)
-    if classification is None:
-        context.wizard_notes = ""
-        context.wizard_last_dish = dish_text.strip() or "this dish"
+    _ = client  # unused in this flow
+    hint = dish_text.strip()
+    if not hint:
         return _dish_wizard_low_confidence(context)
 
-    dish_name, is_plant, confidence = classification
+    try:
+        vision_result = DishVision().analyze_hint(hint)
+    except DishVisionError as error:
+        logger.exception("Manual dish analysis failed for %s: %s", hint, error)
+        vision_result = None
+
+    if vision_result is None:
+        context.wizard_last_dish = hint
+        return _dish_wizard_low_confidence(context)
+
+    if vision_result.confidence < 0.3 and vision_result.veg_status == "uncertain":
+        context.wizard_last_dish = vision_result.dish_name or hint
+        return _dish_wizard_low_confidence(context)
+
+    _apply_wizard_result(context, vision_result, fallback_name=hint)
+
+    if context.wizard_veg_status == "non_veg":
+        return _dish_wizard_non_veg_response(context)
+
+    return _dish_wizard_plant_response(context)
+
+
+def _apply_wizard_result(
+    context: UserContext,
+    result: DishVisionResult,
+    fallback_name: str,
+) -> None:
+    dish_name = (result.dish_name or fallback_name or "this dish").strip()
     context.wizard_last_dish = dish_name
-    context.wizard_is_plant = is_plant
-    context.wizard_confidence = confidence
-    context.wizard_notes = ""
+    context.wizard_veg_status = (result.veg_status or "uncertain").strip().lower()
+    context.wizard_confidence = float(result.confidence or 0.0)
+    context.wizard_recommendation_type = (result.recommendation_type or "similar_veg").strip().lower()
+    context.wizard_recommendations = list(result.recommendations or [])
+    context.wizard_evidence = list(result.evidence or [])
+    context.wizard_cuisine = (result.cuisine or "").strip()
     context.flow = STATE_DISH_WIZARD_REVIEW
+    context.step = 2
     context.pending["focus_dish"] = dish_name
 
-    if is_plant:
-        return _dish_wizard_plant_response(context)
 
-    return _dish_wizard_non_veg_response(context)
+def _format_wizard_recommendations(recommendations: List[Dict[str, str]]) -> str:
+    options = recommendations[:3]
+    if not options:
+        return (
+            "1. Paneer Tikka\n- Similar spice profile and texture.\n\n"
+            "2. Chana Masala\n- Familiar masala depth with plant protein."
+        )
+
+    lines: List[str] = []
+    for index, item in enumerate(options, start=1):
+        name = str(item.get("name", "")).strip() or "Plant-based option"
+        why = str(item.get("why", "")).strip() or "Close match."
+        lines.append(f"{index}. {name}\n- {why}")
+    return "\n\n".join(lines)
 
 
 def _dish_wizard_non_veg_response(context: UserContext) -> List[OutgoingMessage]:
     dish = context.wizard_last_dish or "that dish"
-    notes_line = f"Notes: {context.wizard_notes}\n\n" if context.wizard_notes else ""
+    confidence = int(round(context.wizard_confidence * 100))
+    preview = _format_wizard_recommendations(context.wizard_recommendations[:2])
     text = (
-        f"Looks like 🍗 *{dish.title()}*.\n\n"
-        "This dish contains:\n"
-        "• Meat-based protein\n"
-        "• Animal fat\n"
-        "• High water & carbon footprint\n\n"
-        f"{notes_line}Want plant-based alternatives that feel similar?"
+        f"I detected *{dish.title()}* as likely non-veg ({confidence}% confidence).\n\n"
+        "Top plant-based replacements:\n"
+        f"{preview}\n\n"
+        "Want full swaps, compare view, or allergen checks?"
     )
     buttons = [
         {"id": BTN_DISH_SHOW_SWAPS, "title": "🌱 Vegan swaps"},
@@ -923,10 +1293,10 @@ def _dish_wizard_non_veg_response(context: UserContext) -> List[OutgoingMessage]
 
 def _dish_wizard_show_swaps(context: UserContext) -> List[OutgoingMessage]:
     dish = context.wizard_last_dish or "that dish"
+    heading = "replacement" if context.wizard_recommendation_type == "replacement" else "similar veg"
     text = (
-        "Here are close plant-based alternatives 🌱👇\n\n"
-        "1️⃣ Soya Chunk Biryani  \n– Similar protein bite  \n– Absorbs spices like chicken\n\n"
-        "2️⃣ Jackfruit Biryani  \n– Fibrous, meat-like texture  \n– South Indian favourite"
+        f"Best {heading} options for {dish.title()}:\n\n"
+        f"{_format_wizard_recommendations(context.wizard_recommendations)}"
     )
     buttons = [
         {"id": BTN_DISH_FIND_NEARBY, "title": "📍 Nearby"},
@@ -940,15 +1310,20 @@ def _dish_wizard_show_swaps(context: UserContext) -> List[OutgoingMessage]:
 
 def _dish_wizard_compare(context: UserContext) -> List[OutgoingMessage]:
     dish = context.wizard_last_dish or "the original"
-    text = (
-        f"Compared to {dish.title()} 👇\n\n"
-        "🌱 Plant-based version:\n"
-        "• Lower saturated fat\n"
-        "• No animal harm\n"
-        "• Significantly less water usage\n"
-        "• Easier digestion for many people\n\n"
-        "This is approximate, not medical advice."
-    )
+    if context.wizard_veg_status == "non_veg":
+        text = (
+            f"Quick compare for {dish.title()}:\n\n"
+            "Plant-based swaps usually have:\n"
+            "- Lower saturated fat\n"
+            "- No meat or seafood ingredients\n"
+            "- Lower environmental impact\n\n"
+            "Nutrition varies by recipe and cooking method."
+        )
+    else:
+        text = (
+            f"{dish.title()} already appears plant-forward.\n\n"
+            "You can still use similar dishes to vary protein, fiber, and flavor in the same cuisine style."
+        )
     buttons = [
         {"id": BTN_DISH_SHOW_SWAPS, "title": "🌱 Show swaps"},
         {"id": BTN_DISH_TRY_PHOTO, "title": "🔁 Another photo"},
@@ -958,12 +1333,21 @@ def _dish_wizard_compare(context: UserContext) -> List[OutgoingMessage]:
 
 
 def _dish_wizard_allergens(context: UserContext) -> List[OutgoingMessage]:
+    allergens: List[str] = []
+    names = " ".join(str(item.get("name", "")).lower() for item in context.wizard_recommendations)
+    if any(token in names for token in {"tofu", "soy", "soya", "tempeh"}):
+        allergens.append("- Soy")
+    if any(token in names for token in {"paneer", "cheese", "curd"}):
+        allergens.append("- Dairy")
+    if any(token in names for token in {"seitan", "wheat", "noodle", "bread"}):
+        allergens.append("- Gluten")
+    if not allergens:
+        allergens = ["- Spices", "- Nuts (restaurant dependent)", "- Ingredient substitutions"]
+
     text = (
-        "Possible allergens to watch for ⚠️\n"
-        "• Soy (soya chunks)\n"
-        "• Gluten (depending on masala)\n"
-        "• Nuts (restaurant-specific)\n\n"
-        "Always confirm with the kitchen."
+        "Possible allergens to verify:\n"
+        f"{chr(10).join(allergens)}\n\n"
+        "Always confirm ingredient handling and cross-contamination with the kitchen."
     )
     buttons = [
         {"id": BTN_DISH_SHOW_SWAPS, "title": "🌱 Show swaps"},
@@ -975,18 +1359,14 @@ def _dish_wizard_allergens(context: UserContext) -> List[OutgoingMessage]:
 
 def _dish_wizard_plant_response(context: UserContext) -> List[OutgoingMessage]:
     dish = context.wizard_last_dish or "this dish"
-    notes_line = f"Notes: {context.wizard_notes}\n\n" if context.wizard_notes else ""
+    status = context.wizard_veg_status or "uncertain"
+    confidence = int(round(context.wizard_confidence * 100))
+    lead = "looks plant-based" if status == "veg" else "is possibly plant-based"
+    evidence = context.wizard_evidence[0] if context.wizard_evidence else ""
+    evidence_line = f"\nEvidence: {evidence}" if evidence else ""
     text = (
-        f"This looks like 🌱 *{dish.title()}*.\n\n"
-        "Good choice 🙌\nHere’s a quick breakdown 👇\n\n"
-        "🌿 Benefits:\n"
-        "• Plant protein source\n"
-        "• High fiber → good digestion\n"
-        "• No animal products\n\n"
-        "⚠️ Possible allergens:\n"
-        "• Legumes / pulses\n"
-        "• Spices (varies by recipe)\n\n"
-        f"{notes_line}Want more info?"
+        f"{dish.title()} {lead} ({confidence}% confidence).{evidence_line}\n\n"
+        "Want nutrients, similar dishes, or nearby options?"
     )
     buttons = [
         {"id": BTN_DISH_NUTRIENTS, "title": "🧠 Nutrients"},
@@ -1000,12 +1380,11 @@ def _dish_wizard_plant_response(context: UserContext) -> List[OutgoingMessage]:
 
 def _dish_wizard_nutrients(context: UserContext) -> List[OutgoingMessage]:
     text = (
-        "Approx nutrients per serving 🍽️\n"
-        "• Protein: Moderate\n"
-        "• Fiber: High\n"
-        "• Fat: Low–medium (depends on oil)\n"
-        "• Iron & folate: Present\n\n"
-        "Great for regular meals."
+        "General nutrient view (estimate):\n"
+        "- Protein: moderate to high\n"
+        "- Fiber: moderate to high\n"
+        "- Saturated fat: usually lower than meat dishes\n\n"
+        "Exact values depend on ingredients and oil quantity."
     )
     buttons = [
         {"id": BTN_DISH_SIMILAR, "title": "🥗 Similar dishes"},
@@ -1016,14 +1395,7 @@ def _dish_wizard_nutrients(context: UserContext) -> List[OutgoingMessage]:
 
 
 def _dish_wizard_similar(context: UserContext) -> List[OutgoingMessage]:
-    text = (
-        "If you like this, you might enjoy 👇\n"
-        "• Rajma Masala\n"
-        "• Chole\n"
-        "• Veg Kurma\n"
-        "• Tofu Curry\n\n"
-        "Want recipes or nearby places?"
-    )
+    text = "You may also like:\n\n" + _format_wizard_recommendations(context.wizard_recommendations)
     buttons = [
         {"id": BTN_DISH_FIND_NEARBY, "title": "📍 Nearby"},
         {"id": BTN_DISH_UPLOAD_ANOTHER, "title": "🔁 Another photo"},
@@ -1035,10 +1407,15 @@ def _dish_wizard_similar(context: UserContext) -> List[OutgoingMessage]:
 def _dish_wizard_low_confidence(context: UserContext) -> List[OutgoingMessage]:
     context.flow = STATE_DISH_WIZARD_WAIT_IMAGE
     context.step = 1
-    context.wizard_notes = ""
+    context.wizard_veg_status = None
+    context.wizard_confidence = 0.0
+    context.wizard_recommendation_type = None
+    context.wizard_recommendations = []
+    context.wizard_evidence = []
+    context.wizard_cuisine = ""
     text = (
-        "I’m not 100% sure about this dish 😅\n"
-        "Could you:\n• Upload a clearer photo, or\n• Tell me the dish name?"
+        "I am not fully sure about this dish.\n"
+        "Please upload a clearer photo, or type the dish name."
     )
     buttons = [
         {"id": BTN_DISH_UPLOAD_AGAIN, "title": "📸 Upload again"},
@@ -1063,28 +1440,6 @@ def _celebrate_swap_success(context: UserContext) -> List[OutgoingMessage]:
     context.flow = STATE_IDLE
     context.step = 0
     return [OutgoingMessage(text=text, buttons=buttons)]
-
-
-def _classify_dish_hint(hint: str | None) -> Optional[tuple[str, bool, float]]:
-    if not hint:
-        return None
-    lowered = hint.lower()
-
-    plant_cues = {"veg", "vegan", "plant", "chickpea"}
-    if any(token in lowered for token in plant_cues) or any(term in lowered for term in PLANT_TERMS):
-        dish_name = hint.strip() or "plant-based dish"
-        return dish_name, True, 0.6
-
-    if "non-veg" in lowered or "non veg" in lowered:
-        dish_name = hint.strip() or "non-veg dish"
-        return dish_name, False, 0.6
-
-    for term in NON_VEG_TERMS:
-        if term in lowered:
-            dish_name = hint.strip() or term
-            return dish_name, False, 0.6
-
-    return None
 
 
 def _ai_rewrite_response(
@@ -1112,17 +1467,149 @@ def _ai_rewrite_response(
     return OutgoingMessage(text=ai_reply.strip(), buttons=message.buttons)
 
 
+def _build_default_maps_url(area: str, diet: Optional[str], restrictions: set[str]) -> str:
+    restriction_set = {x.strip().lower() for x in restrictions}
+    diet_value = (diet or "").strip().lower()
+    if diet_value == "vegan":
+        query = f"vegan restaurants near {area}"
+    elif "jain" in restriction_set:
+        query = f"jain vegetarian restaurants near {area}"
+    else:
+        query = f"vegetarian restaurants near {area}"
+    return f"https://www.google.com/maps/search/?api=1&query={quote_plus(query)}"
+
+
+def _restaurant_search_signature(context: UserContext) -> Tuple[str, str, str, str]:
+    area = (context.preferences.area or "").strip().lower()
+    diet = (context.preferences.diet or "").strip().lower()
+    budget = (context.preferences.budget or "").strip().lower()
+    restrictions = ",".join(sorted(x.strip().lower() for x in context.preferences.restrictions if x.strip()))
+    return (area, diet, budget, restrictions)
+
+
+def _fallback_restaurant_results(area: str) -> List[Dict[str, Any]]:
+    return [
+        {
+            "name": "Green Leaf Cafe",
+            "rating": None,
+            "address": area,
+            "phone": None,
+            "website": None,
+            "maps_url": _build_default_maps_url(area, "vegetarian", set()),
+        },
+        {
+            "name": "Terra Vegan Kitchen",
+            "rating": None,
+            "address": area,
+            "phone": None,
+            "website": None,
+            "maps_url": _build_default_maps_url(area, "vegan", set()),
+        },
+        {
+            "name": "Sattvik Bistro",
+            "rating": None,
+            "address": area,
+            "phone": None,
+            "website": None,
+            "maps_url": _build_default_maps_url(area, "vegetarian", set()),
+        },
+        {
+            "name": "Jain Delight House",
+            "rating": None,
+            "address": area,
+            "phone": None,
+            "website": None,
+            "maps_url": _build_default_maps_url(area, "vegetarian", {"jain"}),
+        },
+        {
+            "name": "Urban Veg Table",
+            "rating": None,
+            "address": area,
+            "phone": None,
+            "website": None,
+            "maps_url": _build_default_maps_url(area, "vegetarian", set()),
+        },
+    ]
+
+
+def _merge_restaurant_results(
+    primary: List[Dict[str, Any]],
+    fallback: List[Dict[str, Any]],
+    limit: int,
+) -> List[Dict[str, Any]]:
+    merged: List[Dict[str, Any]] = []
+    seen: set[Tuple[str, str]] = set()
+
+    for item in primary + fallback:
+        if not isinstance(item, dict):
+            continue
+        key = (
+            str(item.get("name") or "").strip().lower(),
+            str(item.get("address") or "").strip().lower(),
+        )
+        if not key[0]:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+        if len(merged) >= limit:
+            break
+
+    return merged
+
+
+def _format_restaurant_results_text(
+    area: str,
+    results: List[Dict[str, Any]],
+    focus_dish: Optional[str],
+    source_note: Optional[str] = None,
+) -> str:
+    lines: List[str] = [f"Here are options near {area}:"]
+    if focus_dish:
+        lines.append(f"Keeping {focus_dish} in mind.")
+    if source_note:
+        lines.append(source_note)
+    lines.append("")
+
+    for idx, item in enumerate(results[:5], start=1):
+        name = str(item.get("name") or f"Option {idx}").strip()
+        rating = item.get("rating")
+        rating_text = ""
+        if isinstance(rating, (int, float)):
+            rating_text = f" ({float(rating):.1f}★)"
+        address = str(item.get("address") or "Address not listed").strip()
+        lines.append(f"{idx}. {name}{rating_text}")
+        lines.append(f"- {address}")
+
+    lines.append("")
+    lines.append("Use Open Maps for directions, then call to confirm dietary handling.")
+    return "\n".join(lines)
+
+
 def _start_find_food_flow(context: UserContext, carry_dish: Optional[str] = None) -> List[OutgoingMessage]:
     context.flow = STATE_FIND_WAIT_AREA
     context.step = 1
+    existing_focus = context.pending.get("focus_dish")
     context.pending.clear()
     if carry_dish:
         context.pending["focus_dish"] = carry_dish
-    return [OutgoingMessage(text="Got it 📍\nWhich area are you in?")]
+    elif isinstance(existing_focus, str) and existing_focus.strip():
+        context.pending["focus_dish"] = existing_focus.strip()
+    return [OutgoingMessage(text="Got it. Which area are you in?")]
 
 
 def _process_area_submission(context: UserContext, area: str) -> List[OutgoingMessage]:
-    context.preferences.area = area.strip()
+    cleaned_area = area.strip()
+    if not cleaned_area:
+        context.flow = STATE_FIND_WAIT_AREA
+        context.step = 1
+        return [OutgoingMessage(text="Please share your area or pincode so I can find nearby options.")]
+
+    context.preferences.area = cleaned_area
+    context.pending.pop("restaurant_results", None)
+    context.pending.pop("restaurant_signature", None)
+    context.pending.pop("restaurant_results_live", None)
     context.flow = STATE_FIND_WAIT_RULE
     context.step = 2
     return [
@@ -1140,38 +1627,69 @@ def _process_area_submission(context: UserContext, area: str) -> List[OutgoingMe
 
 
 def _show_restaurant_results(context: UserContext) -> List[OutgoingMessage]:
-    area = context.preferences.area or "your area"
+    area = (context.preferences.area or "").strip()
+    if not area:
+        context.flow = STATE_FIND_WAIT_AREA
+        context.step = 1
+        return [OutgoingMessage(text="I need your area first. Tell me your area or pincode.")]
 
-    tags = []
-    if "jain" in context.preferences.restrictions:
-        tags.append("✅ Jain-friendly")
-    if context.preferences.diet == "vegan":
-        tags.append("🌱 100% plant-based")
-    elif context.preferences.diet == "vegetarian":
-        tags.append("🟢 Pure veg focus")
+    target_count = 5
+    signature = _restaurant_search_signature(context)
+    cached_signature = context.pending.get("restaurant_signature")
+    cached_results = context.pending.get("restaurant_results")
+    cached_live = bool(context.pending.get("restaurant_results_live"))
+    source_note: Optional[str] = None
+    if (
+        cached_signature == signature
+        and isinstance(cached_results, list)
+        and len(cached_results) >= target_count
+        and cached_live
+    ):
+        results = cached_results
+    else:
+        live_count = 0
+        try:
+            results = fetch_nearby_restaurants(
+                area,
+                diet=context.preferences.diet,
+                restrictions=context.preferences.restrictions,
+                budget=context.preferences.budget,
+                limit=target_count,
+            )
+            live_count = len(results)
+        except NearbySearchError as error:
+            logger.warning("Nearby search failed for area=%s: %s", area, error)
+            results = []
+            source_note = "Live lookup is unavailable right now. Showing safe fallback options."
 
-    tag_line = "\n".join(tags) if tags else "🍽️ Community-loved spots"
+        fallback_results = _fallback_restaurant_results(area)
+        if not results:
+            results = fallback_results
+            if not source_note:
+                source_note = "Could not find enough live listings for this area. Showing fallback options."
+        elif len(results) < target_count:
+            results = _merge_restaurant_results(results, fallback_results, limit=target_count)
+            source_note = "Showing best live matches plus safe fallback options."
+
+        results = results[:target_count]
+        context.pending["restaurant_results"] = results
+        context.pending["restaurant_signature"] = signature
+        context.pending["restaurant_results_live"] = live_count > 0
 
     focus = context.pending.get("focus_dish")
-    focus_line = f"Keeping {focus} in mind.\n" if focus else ""
-
-    text = (
-        f"Here are options near {area} 👇\n\n"
-        f"🍽️ Green Leaf Café\n{tag_line}\n⚠️ Confirm during ordering\n\n"
-        "🍽️ Terra Vegan\n🌱 Popular Bangalore kitchen\n\n"
-        "Want to narrow this?"
-    )
+    focus_dish = focus if isinstance(focus, str) else None
+    text = _format_restaurant_results_text(area, results, focus_dish, source_note=source_note)
 
     context.flow = STATE_FIND_RESULTS
     context.step = 3
     return [
         OutgoingMessage(
-            text=focus_line + text,
+            text=text,
             buttons=[
-                {"id": BTN_CALL_RESTAURANT, "title": "📞 Call restaurant"},
-                {"id": BTN_OPEN_MAPS, "title": "🗺️ Open Maps"},
-                {"id": BTN_MORE_FILTERS, "title": "🔍 More filters"},
-                {"id": BTN_NEW_SEARCH, "title": "🔁 New search"},
+                {"id": BTN_CALL_RESTAURANT, "title": "Call restaurant"},
+                {"id": BTN_OPEN_MAPS, "title": "Open Maps"},
+                {"id": BTN_MORE_FILTERS, "title": "More filters"},
+                {"id": BTN_NEW_SEARCH, "title": "New search"},
             ],
         )
     ]
@@ -1426,7 +1944,12 @@ def _iterate_incoming_messages(payload: dict) -> Iterator[IncomingMessage]:
                 if msg_type == "text":
                     text = (message.get("text", {}).get("body") or "").strip()
                     if text:
-                        yield IncomingMessage(sender=sender, type="text", text=text)
+                        yield IncomingMessage(
+                            sender=sender,
+                            type="text",
+                            text=text,
+                            message_id=message.get("id"),
+                        )
                 elif msg_type == "interactive":
                     interactive = message.get("interactive", {})
                     if interactive.get("type") == "button_reply":
@@ -1435,6 +1958,7 @@ def _iterate_incoming_messages(payload: dict) -> Iterator[IncomingMessage]:
                             sender=sender,
                             type="button",
                             text=button.get("title", ""),
+                            message_id=message.get("id"),
                             button_id=button.get("id"),
                             button_title=button.get("title"),
                         )
@@ -1444,6 +1968,7 @@ def _iterate_incoming_messages(payload: dict) -> Iterator[IncomingMessage]:
                             sender=sender,
                             type="button",
                             text=reply.get("title", ""),
+                            message_id=message.get("id"),
                             button_id=reply.get("id"),
                             button_title=reply.get("title"),
                         )
@@ -1455,6 +1980,7 @@ def _iterate_incoming_messages(payload: dict) -> Iterator[IncomingMessage]:
                         sender=sender,
                         type="image",
                         text=caption,
+                        message_id=message.get("id"),
                         media_id=media_id,
                         media_type="image",
                     )
