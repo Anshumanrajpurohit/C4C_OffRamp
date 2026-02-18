@@ -589,7 +589,7 @@ function SwapPageInner() {
     (async () => {
       const [healthResult, dishesResult] = await Promise.allSettled([
         healthCheck(controller.signal),
-        getAllDishes({ category: "vegan", signal: controller.signal }),
+        getAllDishes({ signal: controller.signal }),
       ]);
 
       if (!isMounted) return;
@@ -604,7 +604,14 @@ function SwapPageInner() {
       }
 
       if (dishesResult.status === "fulfilled") {
-        setBackendDishNames(dishesResult.value.map((dish) => dish.name));
+        const uniqueDishNames = Array.from(
+          new Set(
+            dishesResult.value
+              .map((dish) => dish.name?.trim())
+              .filter((name): name is string => Boolean(name))
+          )
+        );
+        setBackendDishNames(uniqueDishNames);
 
         const spotlightCandidate = dishesResult.value.find((dish) => dish.category === "vegan");
         if (spotlightCandidate) {
@@ -864,6 +871,8 @@ function SwapPageInner() {
   const filterButtonLabel = activeFilterCount ? `Filter (${activeFilterCount})` : "Filter";
   const allergenButtonLabel = activeAllergenCount ? `Allergen (${activeAllergenCount})` : "Allergen";
   const noResultsWithFilters = searchTerm && rawHasSwapResults && !hasSwapResults;
+  const shouldShowSuggestions =
+    suggestions.length > 0 && (!searchTerm.trim() || query.trim() !== searchTerm.trim());
 
   // Handle search submission
   const handleSearch = (term: string) => {
@@ -878,7 +887,7 @@ function SwapPageInner() {
   };
 
   const handleSearchInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (!suggestions.length) return;
+    if (!shouldShowSuggestions) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveSuggestionIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
@@ -1490,7 +1499,7 @@ function SwapPageInner() {
                 </div>
               </div>
             </form>
-            {suggestions.length > 0 && !searchTerm && (
+            {shouldShowSuggestions && (
               <div className="absolute left-0 right-0 z-20 mt-2 rounded-2xl border-3 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <ul className="divide-y divide-black/10">
                   {suggestions.map((sugg, index) => {
