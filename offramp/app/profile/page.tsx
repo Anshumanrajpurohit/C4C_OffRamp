@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { GlobalNav } from "@/app/components/GlobalNav";
 import { DISH_CATALOG } from "@/lib/dishes";
+import ProfileMain from "@/app/components/profile/ProfileMain";
 
 type SessionUser = {
   id: string;
@@ -85,55 +87,43 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSidebar, setActiveSidebar] = useState<string>(SIDEBAR_ITEMS[0].id);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
+    setMounted(true);
+  }, []);
 
-    const loadDashboard = async () => {
-      try {
-        const sessionResponse = await fetch("/api/auth/session", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        const sessionPayload = await sessionResponse.json();
+  useEffect(() => {
+    if (!mounted) return;
+    const checkSession = async () => {
+      const res = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "include"
+      });
 
-        if (!sessionPayload?.user) {
-          router.replace("/auth");
-          return;
-        }
-
-        if (!isMounted) return;
-        setUser(sessionPayload.user);
-
-        const profileResponse = await fetch("/api/profile", {
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        if (profileResponse.status === 401) {
-          router.replace("/auth");
-          return;
-        }
-
-        if (!isMounted) return;
-
-        if (profileResponse.ok) {
-          const payload = await profileResponse.json();
-          if (isMounted) setProfile(payload.profile ?? null);
-        }
-      } catch (error) {
-        console.error("Failed to load profile dashboard", error);
+      if (res.status !== 200) {
         router.replace("/auth");
-      } finally {
-        if (isMounted) setIsLoading(false);
+        return;
       }
+
+      const data = await res.json();
+
+      setUser(data.user);
+
+      const { data: preferences } = await supabase
+        .from("user_preferences")
+        .select("*")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (preferences) {
+        setProfile(preferences);
+      }
+
+      setIsLoading(false);
     };
 
-    loadDashboard();
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+    checkSession();
+  }, [router, mounted]);
 
   const preferences = useMemo(() => {
     const dietList = toList(
@@ -220,6 +210,9 @@ export default function ProfilePage() {
     }
   };
 
+  if (!mounted) {
+    return null;
+  }
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f4f6fb] text-[#0f1c21]">
@@ -230,6 +223,7 @@ export default function ProfilePage() {
 
   const renderProfileOverview = () => (
     <div className="space-y-6">
+      {/* User Info and Profile Header (original content) */}
       <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/60 lg:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-6">
@@ -275,7 +269,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/profile-setup")}
+                onClick={() => router.push("/preferences")}
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
               >
                 <span className="material-symbols-outlined text-sm">tune</span>
@@ -285,7 +279,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-
       <div className="grid gap-4 md:grid-cols-3">
         {quickFacts.map((card) => (
           <div key={card.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
@@ -297,47 +290,49 @@ export default function ProfilePage() {
           </div>
         ))}
       </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
-          { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
-          { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
-        ].map((metric) => (
-          <div key={metric.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-              <span>{metric.label}</span>
-              <span className="text-emerald-600">{metric.trend}</span>
+      {/* Dashboard and Weekly Plan sections */}
+      <div className="space-y-6">
+        <ProfileMain />
+        <div className="grid gap-4 md:grid-cols-3">
+          {([
+            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
+            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
+            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
+          ]).map((metric) => (
+            <div key={metric.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
+              <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+                <span>{metric.label}</span>
+                <span className="text-emerald-600">{metric.trend}</span>
+              </div>
+              <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
             </div>
-            <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/70">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-500">Recent swaps</p>
-            <p className="text-lg font-bold text-slate-900">Latest activity from your campus</p>
-          </div>
-          <button className="rounded-full border-2 border-slate-900/20 px-6 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5">
-            View all
-          </button>
-        </div>
-        <ul className="mt-5 space-y-3">
-          {swapEntries.map((swap) => (
-            <li key={`${swap.from}-${swap.to}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{swap.to}</p>
-                <p className="text-xs text-slate-500">Swapped for {swap.from}</p>
-              </div>
-              <div className="text-right text-xs text-slate-400">
-                <p>{swap.time}</p>
-                <p className="text-emerald-600">{swap.savings}</p>
-              </div>
-            </li>
           ))}
-        </ul>
+        </div>
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/70">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-500">Recent swaps</p>
+              <p className="text-lg font-bold text-slate-900">Latest activity from your campus</p>
+            </div>
+            <button className="rounded-full border-2 border-slate-900/20 px-6 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5">
+              View all
+            </button>
+          </div>
+          <ul className="mt-5 space-y-3">
+            {swapEntries.map((swap) => (
+              <li key={`${swap.from}-${swap.to}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{swap.to}</p>
+                  <p className="text-xs text-slate-500">Swapped for {swap.from}</p>
+                </div>
+                <div className="text-right text-xs text-slate-400">
+                  <p>{swap.time}</p>
+                  <p className="text-emerald-600">{swap.savings}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -353,11 +348,11 @@ export default function ProfilePage() {
           <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold text-slate-500">Live sync</span>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
+          {([
             { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
             { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
             { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
-          ].map((metric) => (
+          ]).map((metric) => (
             <div key={metric.label} className="rounded-3xl border border-slate-100 bg-slate-50 px-5 py-4">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
                 <span>{metric.label}</span>
@@ -411,7 +406,7 @@ export default function ProfilePage() {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/profile-setup")}
+            onClick={() => router.push("/preferences")}
             className="rounded-full border-2 border-slate-200 bg-slate-50 px-5 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5"
           >
             Update

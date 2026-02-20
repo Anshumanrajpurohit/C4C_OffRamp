@@ -69,7 +69,11 @@ export default function AuthPage() {
       }
 
       setTimeout(() => {
-        router.push(isSignup ? "/profile-setup" : "/swap");
+        if (isSignup) {
+          router.push("/profile-setup");
+        } else if (result?.success) {
+          router.push("/profile");
+        }
       }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";

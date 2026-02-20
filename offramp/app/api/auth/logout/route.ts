@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../../../lib/supabaseServer";
-
-export const runtime = "nodejs";
+import { cookies } from "next/headers";
 
 export async function POST() {
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
   return NextResponse.json({ message: "Logged out" });
 }

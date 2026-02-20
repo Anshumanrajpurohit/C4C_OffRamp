@@ -1,54 +1,42 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
+import { supabase } from "@/lib/supabase/client";
 
-export const runtime = "nodejs";
+const SECRET = process.env.AUTH_SECRET!;
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session")?.value;
 
-    if (error) {
-      if (error.message?.toLowerCase().includes("session")) {
-        return NextResponse.json({ user: null }, { status: 200 });
-      }
-
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (!token) {
+      return NextResponse.json(
+        { error: "No session" },
+        { status: 401 }
+      );
     }
 
-    if (!user) {
-      return NextResponse.json({ user: null }, { status: 200 });
-    }
+    const decoded = jwt.verify(token, SECRET) as { userId: string };
 
-    const adminClient = getSupabaseAdminClient();
-    const { data: profile, error: profileError } = await adminClient
+    const { data: user, error } = await supabase
       .from("users")
-      .select("id, full_name, email, phone, region, city, budget_level")
-      .eq("id", user.id)
-      .maybeSingle();
+      .select("id, email, full_name, city, region, budget_level")
+      .eq("id", decoded.userId)
+      .single();
 
-    if (profileError && profileError.code !== "PGRST116") {
-      console.error("Session profile lookup error", profileError);
-      return NextResponse.json({ error: "Unable to load profile" }, { status: 500 });
+    if (error || !user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 401 }
+      );
     }
 
-    const responseUser = {
-      id: user.id,
-      email: user.email,
-      full_name: profile?.full_name ?? user.user_metadata?.full_name ?? "",
-      phone: profile?.phone ?? null,
-      region: profile?.region ?? null,
-      city: profile?.city ?? null,
-      budget_level: profile?.budget_level ?? null,
-    };
-
-    return NextResponse.json({ user: responseUser }, { status: 200 });
-  } catch (error) {
-    console.error("Session handler failure", error);
-    return NextResponse.json({ error: "Unable to determine session" }, { status: 500 });
+    return NextResponse.json({ user });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Invalid session" },
+      { status: 401 }
+    );
   }
 }

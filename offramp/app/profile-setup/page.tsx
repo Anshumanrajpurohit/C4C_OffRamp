@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import ProfileOnboardingStep, { ProfileOnboardingForm } from "@/app/components/profile/ProfileOnboardingStep";
 import {
   BudgetLevel,
   fetchUserPreferences,
@@ -135,9 +136,28 @@ const logSupabaseErrorDetails = (context: string, error: unknown) => {
 };
 
 export default function ProfileSetupPage() {
+    // Stepper state
+    const STEPS = [
+      "cuisines",
+      "constraints",
+      "budget",
+      "review",
+      "transition-plan"
+    ];
+    const [currentStepIdx, setCurrentStepIdx] = useState(0);
+    const currentStep = STEPS[currentStepIdx];
+
+    // Onboarding form state
+    const [onboardingForm, setOnboardingForm] = useState<ProfileOnboardingForm>({
+      baselineMeals: 7,
+      targetGoal: "",
+      transitionWeeks: 12,
+      preferredCuisine: "",
+      effortLevel: "",
+      reminderTime: "09:00",
+    });
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const [currentStep, setCurrentStep] = useState(1);
   const [prevStep, setPrevStep] = useState<number | null>(null);
   const [region, setRegion] = useState("");
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
@@ -150,7 +170,7 @@ export default function ProfileSetupPage() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [isSavingStep, setIsSavingStep] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
-  const totalSteps = 4;
+  const totalSteps = STEPS.length;
 
   const budget = useMemo(() => budgetLevels[budgetLevel], [budgetLevel]);
 
@@ -193,7 +213,7 @@ export default function ProfileSetupPage() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentStep]);
+  }, [currentStepIdx]);
 
   const resolveUserId = useCallback(async () => {
     const { data, error } = await supabase.auth.getUser();
@@ -243,21 +263,19 @@ export default function ProfileSetupPage() {
     );
   };
 
-  const goToStep = (step: number) => {
-    if (step < 1 || step > totalSteps || step === currentStep) return;
-    setPrevStep(currentStep);
-    setCurrentStep(step);
+  const goToStep = (stepIdx: number) => {
+    if (stepIdx < 0 || stepIdx >= totalSteps || stepIdx === currentStepIdx) return;
+    setPrevStep(currentStepIdx);
+    setCurrentStepIdx(stepIdx);
     setTimeout(() => setPrevStep(null), 300);
   };
 
   const nextStep = async () => {
-    if (currentStep === totalSteps) {
-      completeSetup();
+    if (currentStepIdx === totalSteps - 1) {
+      // Onboarding step handled by ProfileOnboardingStep
       return;
     }
-
     if (isSavingStep || isProfileLoading) return;
-
     setIsSavingStep(true);
     try {
       const userId = await resolveUserId();
@@ -265,23 +283,20 @@ export default function ProfileSetupPage() {
         alert("Please sign in to save your preferences.");
         return;
       }
-
-      if (currentStep === 1) {
+      if (currentStep === "cuisines") {
         await saveCuisinePreferences(supabase, userId, region, selectedCuisines);
-      } else if (currentStep === 2) {
+      } else if (currentStep === "constraints") {
         await Promise.all([
           saveUserAllergies(supabase, userId, selectedAllergies),
           saveDietTransitionPreferences(supabase, userId, transitionFromDiet, transitionToDiet),
         ]);
-      } else if (currentStep === 3) {
+      } else if (currentStep === "budget") {
         await saveBudgetPreference(supabase, userId, budgetLevel);
       }
-
-      if (currentStep + 1 === totalSteps) {
+      if (currentStepIdx + 1 === totalSteps - 1) {
         await loadProfileData();
       }
-
-      goToStep(currentStep + 1);
+      goToStep(currentStepIdx + 1);
     } catch (error) {
       logSupabaseErrorDetails("profile-setup:nextStep", error);
       alert("We couldn't save your preferences. Please try again.");
@@ -291,8 +306,8 @@ export default function ProfileSetupPage() {
   };
 
   const previousStep = () => {
-    if (currentStep === 1) return;
-    goToStep(currentStep - 1);
+    if (currentStepIdx === 0) return;
+    goToStep(currentStepIdx - 1);
   };
 
   const handleEditStep = async (step: number) => {
@@ -311,25 +326,25 @@ export default function ProfileSetupPage() {
   };
 
   const stepLabelStyles = (step: number) => {
-    if (step === currentStep) return { circle: "bg-accent text-white", text: "text-accent", faded: false };
-    if (step < currentStep) return { circle: "bg-primary text-white", text: "text-primary", faded: false };
+    if (step === currentStepIdx) return { circle: "bg-accent text-white", text: "text-accent", faded: false };
+    if (step < currentStepIdx) return { circle: "bg-primary text-white", text: "text-primary", faded: false };
     return { circle: "bg-white text-slate-400", text: "text-slate-400", faded: true };
   };
 
   return (
-    <>
+    <main
+      className={cn(
+        "profile-setup min-h-screen flex flex-col bg-highlight text-slate-900",
+        jakarta.className,
+        impact.variable
+      )}
+    >
       {checkingSession ? (
         <div className="min-h-screen flex items-center justify-center bg-highlight text-slate-800">
           <p className="font-bold">Checking session...</p>
         </div>
       ) : !session ? null : (
-        <main
-          className={cn(
-            "profile-setup min-h-screen flex flex-col bg-highlight text-slate-900",
-            jakarta.className,
-            impact.variable
-          )}
-        >
+        <div>
       <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm transition-all duration-300">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="group flex items-center gap-1">
@@ -418,33 +433,27 @@ export default function ProfileSetupPage() {
             <div className="flex flex-col gap-6 rounded-3xl border-3 border-black bg-white/90 p-6 shadow-progress">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Step {currentStep} of {totalSteps}</p>
-                  <h1 className="font-impact text-4xl text-black">{[
-                    "Cuisines",
-                    "Constraints",
-                    "Budget",
-                    "Review",
-                  ][currentStep - 1]}</h1>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-bold text-slate-500">{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
-                  <div className="h-2 w-40 rounded-full bg-slate-200">
-                    <div
-                      className="h-full rounded-full bg-accent transition-all duration-300"
-                      style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                    />
-                  </div>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Step {currentStepIdx + 1} of {totalSteps}</p>
+                  <h1 className="font-impact text-4xl text-black">
+                    {({ cuisines: "Cuisines", constraints: "Constraints", budget: "Budget", review: "Review", "transition-plan": "Transition Plan" })[currentStep]}
+                  </h1>
+                  <div
+                    className="h-full rounded-full bg-accent transition-all duration-300"
+                    style={{ width: `${((currentStepIdx + 1) / totalSteps) * 100}%` }}
+                  />
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-4">
-                {[
-                  { step: 1, label: "Cuisines" },
-                  { step: 2, label: "Constraints" },
-                  { step: 3, label: "Budget" },
-                  { step: 4, label: "Review" },
-                ].map(({ step, label }) => {
-                  const isActive = step === currentStep;
-                  const isComplete = step < currentStep;
+                {STEPS.map((step, idx) => {
+                  const isActive = idx === currentStepIdx;
+                  const isComplete = idx < currentStepIdx;
+                  const label = {
+                    cuisines: "Cuisines",
+                    constraints: "Constraints",
+                    budget: "Budget",
+                    review: "Review",
+                    "transition-plan": "Transition Plan"
+                  }[step];
                   return (
                     <div
                       key={step}
@@ -455,7 +464,7 @@ export default function ProfileSetupPage() {
                         !isActive && !isComplete && "border-slate-200 text-slate-400"
                       )}
                     >
-                      <p className="text-xs font-bold tracking-[0.2em]">Step {step}</p>
+                      <p className="text-xs font-bold tracking-[0.2em]">Step {idx + 1}</p>
                       <p className="font-impact text-xl">{label}</p>
                     </div>
                   );
@@ -466,7 +475,7 @@ export default function ProfileSetupPage() {
 
           <div className="bg-white rounded-[32px] border-3 border-black shadow-form p-8 md:p-12 fade-in delay-100 relative overflow-hidden">
             {(prevStep || currentStep) && (
-              <>
+              <div>
                 {prevStep && (
                   <div className="form-step slide-out absolute inset-0 pointer-events-none" data-step={prevStep}>
                     {prevStep === 1 && <CuisinesStep region={region} setRegion={setRegion} selectedCuisines={selectedCuisines} toggleCuisine={toggleCuisine} />}
@@ -497,7 +506,7 @@ export default function ProfileSetupPage() {
                 )}
 
                 <div className="form-step active" data-step={currentStep}>
-                  {currentStep === 1 && (
+                  {currentStep === "cuisines" && (
                     <CuisinesStep
                       region={region}
                       setRegion={setRegion}
@@ -505,7 +514,7 @@ export default function ProfileSetupPage() {
                       toggleCuisine={toggleCuisine}
                     />
                   )}
-                  {currentStep === 2 && (
+                  {currentStep === "constraints" && (
                     <ConstraintsStep
                       selectedAllergies={selectedAllergies}
                       toggleAllergy={toggleAllergy}
@@ -515,10 +524,10 @@ export default function ProfileSetupPage() {
                       setTransitionToDiet={setTransitionToDiet}
                     />
                   )}
-                  {currentStep === 3 && (
+                  {currentStep === "budget" && (
                     <BudgetStep budgetLevel={budgetLevel} setBudgetLevel={setBudgetLevel} budget={budget} />
                   )}
-                  {currentStep === 4 && (
+                  {currentStep === "review" && (
                     <ReviewStep
                       region={region}
                       selectedCuisines={selectedCuisines}
@@ -530,8 +539,15 @@ export default function ProfileSetupPage() {
                       isCompleting={isCompleting}
                     />
                   )}
+                  {currentStep === "transition-plan" && (
+                    <ProfileOnboardingStep
+                      formData={onboardingForm}
+                      setFormData={setOnboardingForm}
+                      onComplete={() => router.push("/profile")}
+                    />
+                  )}
                 </div>
-              </>
+              </div>
             )}
           </div>
 
@@ -540,7 +556,7 @@ export default function ProfileSetupPage() {
               id="backBtn"
               className={cn(
                 "w-full sm:w-auto rounded-2xl border border-slate-200 bg-white px-10 py-4 font-semibold text-slate-600 transition-all hover:border-black hover:text-black",
-                currentStep === 1 ? "hidden" : ""
+                currentStepIdx === 0 ? "hidden" : ""
               )}
               onClick={previousStep}
             >
@@ -553,7 +569,7 @@ export default function ProfileSetupPage() {
                 id="skipBtn"
                 className={cn(
                   "w-full sm:w-auto rounded-2xl border border-slate-300 px-12 py-4 font-semibold text-slate-500 transition-all hover:border-black hover:text-black",
-                  currentStep === totalSteps ? "hidden" : ""
+                  currentStepIdx === totalSteps - 1 ? "hidden" : ""
                 )}
                 onClick={() => void nextStep()}
               >
@@ -564,14 +580,10 @@ export default function ProfileSetupPage() {
                 className="w-full sm:w-auto rounded-2xl border-2 border-black bg-accent px-16 py-4 font-impact text-xl uppercase tracking-wide text-white shadow-strong transition-all hover:-translate-y-0.5 hover:bg-black"
                 onClick={() => void nextStep()}
               >
-                {currentStep === totalSteps ? (
-                  <>
-                    <span className="material-symbols-outlined">check</span> Complete Setup
-                  </>
+                {currentStepIdx === totalSteps - 1 ? (
+                  <span><span className="material-symbols-outlined">check</span> Complete Setup</span>
                 ) : (
-                  <>
-                    Next <span className="material-symbols-outlined">chevron_right</span>
-                  </>
+                  <span>Next <span className="material-symbols-outlined">chevron_right</span></span>
                 )}
               </button>
             </div>
@@ -799,9 +811,9 @@ export default function ProfileSetupPage() {
         @keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-50px); } }
       `}</style>
-        </main>
+        </div>
       )}
-    </>
+    </main>
   );
 }
 
