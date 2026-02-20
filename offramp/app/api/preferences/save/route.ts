@@ -6,6 +6,22 @@ import {
   generateSwapDays,
 } from "@/services/transitionService";
 
+const DEFAULT_PREFERENCE_CATEGORY = "target_goal";
+
+function toOptionalText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function toOptionalPositiveInt(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  const integer = Math.trunc(parsed);
+  return integer > 0 ? integer : null;
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -28,35 +44,78 @@ export async function POST(req: Request) {
       preferred_cuisine,
       effort_level,
       reminder_time,
+      preference_name,
+      preference_category,
     } = body;
 
-    // ── 1. Upsert user preferences ────────────────────────────────────────────
-    const { error: prefError } = await admin
-      .from("user_preferences")
+    const preferenceName = toOptionalText(preference_name) ?? toOptionalText(target_goal);
+    const preferenceCategory =
+      toOptionalText(preference_category) ?? DEFAULT_PREFERENCE_CATEGORY;
+    const transitionWeeks = toOptionalPositiveInt(transition_period_weeks);
+    const baselineMeals = toOptionalPositiveInt(baseline_nonveg_meals);
+
+    if (!preferenceName) {
+      return NextResponse.json(
+        { error: "Missing preference_name (or target_goal)." },
+        { status: 400 }
+      );
+    }
+
+    // 1) Ensure dietary preference exists and always get a valid id.
+    const { data: dietaryPreference, error: dietaryError } = await admin
+      .from("dietary_preferences")
       .upsert(
         {
-          user_id: user.id,
-          target_goal,
-          transition_period_weeks: Number(transition_period_weeks),
-          baseline_nonveg_meals: Number(baseline_nonveg_meals),
-          preferred_cuisine,
-          effort_level,
-          reminder_time,
+          name: preferenceName,
+          category: preferenceCategory,
         },
-        { onConflict: "user_id" }
+        { onConflict: "name" }
+      )
+      .select("id")
+      .single();
+
+    if (dietaryError || !dietaryPreference?.id) {
+      return NextResponse.json(
+        { error: dietaryError?.message ?? "Failed to resolve preference_id." },
+        { status: 500 }
       );
+    }
+
+    // Keep one active preference record per user for this flow.
+    const { error: cleanupError } = await admin
+      .from("user_preferences")
+      .delete()
+      .eq("user_id", user.id)
+      .neq("preference_id", dietaryPreference.id);
+
+    if (cleanupError) {
+      return NextResponse.json({ error: cleanupError.message }, { status: 500 });
+    }
+
+    // 2) Upsert user preferences using guaranteed non-null preference_id.
+    const { error: prefError } = await admin.from("user_preferences").upsert(
+      {
+        user_id: user.id,
+        preference_id: dietaryPreference.id,
+        baseline_nonveg_meals: baselineMeals,
+        target_goal: toOptionalText(target_goal),
+        transition_period_weeks: transitionWeeks,
+        preferred_cuisine: toOptionalText(preferred_cuisine),
+        effort_level: toOptionalText(effort_level),
+        reminder_time: toOptionalText(reminder_time),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,preference_id" }
+    );
 
     if (prefError) {
       return NextResponse.json({ error: prefError.message }, { status: 500 });
     }
 
-    // ── 2. Generate and insert weekly plan ────────────────────────────────────
-    const plan = calculateWeeklyTransition(
-      Number(baseline_nonveg_meals),
-      Number(transition_period_weeks)
-    );
+    // 3) Generate and insert weekly plan.
+    const plan = calculateWeeklyTransition(baselineMeals ?? 1, transitionWeeks ?? 12);
 
-    // Remove old plan rows for this user before re-inserting
+    // Remove old plan rows for this user before re-inserting.
     await admin.from("weekly_plans").delete().eq("user_id", user.id);
 
     const planRows = plan.map((p) => ({
@@ -66,15 +125,13 @@ export async function POST(req: Request) {
       swap_days: generateSwapDays(p.meals_to_replace),
     }));
 
-    const { error: planError } = await admin
-      .from("weekly_plans")
-      .insert(planRows);
+    const { error: planError } = await admin.from("weekly_plans").insert(planRows);
 
     if (planError) {
       return NextResponse.json({ error: planError.message }, { status: 500 });
     }
 
-    // ── 3. Initialize progress record (upsert so it won't duplicate) ──────────
+    // 4) Initialize progress record (upsert so it does not duplicate).
     const { error: progressError } = await admin
       .from("user_progress")
       .upsert(
@@ -87,10 +144,7 @@ export async function POST(req: Request) {
       );
 
     if (progressError) {
-      return NextResponse.json(
-        { error: progressError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: progressError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, plan });

@@ -2,15 +2,34 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 
 const SECRET = process.env.AUTH_SECRET!;
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) {
+    if (!SECRET) {
+      return NextResponse.json(
+        { error: "Authentication is not configured" },
+        { status: 500 }
+      );
+    }
+
+    if (typeof email !== "string" || typeof password !== "string") {
+      return NextResponse.json(
+        { error: "Email and password required" },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+    const adminClient = getSupabaseAdminClient();
+
+    if (!normalizedEmail || !normalizedPassword) {
       return NextResponse.json(
         { error: "Email and password required" },
         { status: 400 }
@@ -18,10 +37,10 @@ export async function POST(req: Request) {
     }
 
     // Fetch user from database
-    const { data: user, error } = await supabase
+    const { data: user, error } = await adminClient
       .from("users")
       .select("id, email, full_name, password_hash, city, region, budget_level")
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .single();
 
     if (error || !user) {
@@ -33,7 +52,7 @@ export async function POST(req: Request) {
 
     // Compare bcrypt password
     const passwordMatch = await bcrypt.compare(
-      password,
+      normalizedPassword,
       user.password_hash
     );
 
@@ -55,7 +74,7 @@ export async function POST(req: Request) {
     const cookieStore = await cookies();
     cookieStore.set("session", token, {
       httpOnly: true,
-      secure: false,
+      secure: IS_PRODUCTION,
       path: "/",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7

@@ -9,16 +9,32 @@
  * Secure this with CRON_SECRET in production.
  */
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { getTodayDayName } from "@/services/transitionService";
 
 export async function GET(req: NextRequest) {
-  // Lightweight security: shared secret header
+  const configuredSecret = process.env.CRON_SECRET;
+  if (!configuredSecret) {
+    return NextResponse.json(
+      { error: "Cron endpoint is not configured" },
+      { status: 503 },
+    );
+  }
+
+  // Shared secret header
   const secret = req.headers.get("x-cron-secret");
-  if (
-    process.env.CRON_SECRET &&
-    secret !== process.env.CRON_SECRET
-  ) {
+  if (!secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const provided = Buffer.from(secret);
+  const expected = Buffer.from(configuredSecret);
+  const isAuthorized =
+    provided.length === expected.length &&
+    crypto.timingSafeEqual(provided, expected);
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -91,6 +107,5 @@ export async function GET(req: NextRequest) {
     checked_at: currentTime,
     day: today,
     triggered_count: triggered.length,
-    triggered_users: triggered,
   });
 }

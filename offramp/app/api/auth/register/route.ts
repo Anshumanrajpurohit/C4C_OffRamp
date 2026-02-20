@@ -127,11 +127,11 @@ export async function POST(req: Request) {
 
     if (existingError && existingError.code !== "PGRST116") {
       console.error("User lookup error", existingError);
-      return NextResponse.json({ error: existingError.message }, { status: 500 });
+      return NextResponse.json({ error: "Registration failed" }, { status: 500 });
     }
 
     if (existingUser) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      return NextResponse.json({ error: "Unable to create account with provided details" }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(payload.password, 12);
@@ -152,34 +152,18 @@ export async function POST(req: Request) {
     if (error) {
       const status = toHttpStatus(error.status, error.code === "user_already_exists" ? 409 : 400);
       console.error("Register error", error);
-      return NextResponse.json({ error: error.message }, { status });
+      return NextResponse.json({ error: "Unable to create account with provided details" }, { status });
     }
 
     let activeSession = data.session ?? null;
     const registeredUser = data.user ?? null;
 
-    if (registeredUser && !activeSession) {
-      const { error: confirmError } = await adminClient.auth.admin.updateUserById(registeredUser.id, {
-        email_confirm: true,
-      });
-
-      if (confirmError) {
-        console.error("Email confirm fallback error", confirmError);
-      } else {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: payload.email,
-          password: payload.password,
-        });
-
-        if (signInError) {
-          console.error("Post-register sign-in fallback error", signInError);
-        } else {
-          activeSession = signInData.session ?? null;
-        }
-      }
+    if (!registeredUser) {
+      console.error("Register error: missing user after signUp");
+      return NextResponse.json({ error: "Registration failed" }, { status: 500 });
     }
 
-    const supabaseUserId = registeredUser?.id ?? crypto.randomUUID();
+    const supabaseUserId = registeredUser.id;
 
     const { error: insertError } = await adminClient.from("users").insert({
       id: supabaseUserId,
@@ -194,7 +178,7 @@ export async function POST(req: Request) {
 
     if (insertError) {
       console.error("User insert error", insertError);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return NextResponse.json({ error: "Registration failed" }, { status: 500 });
     }
 
     return NextResponse.json({

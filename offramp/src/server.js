@@ -8,9 +8,26 @@ dotenv.config({ path: new URL("../../.env.local", import.meta.url) });
 
 const app = express();
 const PORT = process.env.EXPRESS_PORT || 4000;
+const ALLOWED_ORIGINS = [
+  process.env.NEXT_PUBLIC_APP_URL,
+  "http://localhost:3000",
+].filter(Boolean);
 
 // ── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin not allowed"));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-cron-secret"],
+  }),
+);
 app.use(express.json());
 
 // ── Health check ─────────────────────────────────────────────────────────────

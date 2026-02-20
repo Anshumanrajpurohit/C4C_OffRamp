@@ -22,6 +22,8 @@ export async function GET() {
         .from("user_preferences")
         .select("baseline_nonveg_meals, transition_period_weeks")
         .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       admin
         .from("user_progress")

@@ -2,6 +2,26 @@ import { Router } from "express";
 import { supabase } from "../lib/supabaseClient.js";
 
 const router = Router();
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_AUTH_API_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function getUserFromAuthHeader(req) {
+  const auth = req.headers.authorization || req.headers.Authorization;
+  if (!auth || !auth.startsWith("Bearer ") || !SUPABASE_URL) return null;
+
+  const headers = { Authorization: auth };
+  if (SUPABASE_AUTH_API_KEY) {
+    headers.apikey = SUPABASE_AUTH_API_KEY;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers });
+  if (!response.ok) return null;
+  const json = await response.json();
+  return json;
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/dashboard/progress/:user_id
@@ -11,7 +31,11 @@ const router = Router();
 // ────────────────────────────────────────────────────────────────────────────
 router.get("/progress/:user_id", async (req, res) => {
   try {
-    const { user_id } = req.params;
+    const user = await getUserFromAuthHeader(req);
+    if (!user || !user.id) return res.status(401).json({ error: "Unauthorized" });
+    if (req.params.user_id !== user.id) return res.status(403).json({ error: "Forbidden" });
+
+    const user_id = user.id;
 
     // Fetch preferences + progress in parallel
     const [prefResult, progressResult] = await Promise.all([
@@ -19,6 +43,8 @@ router.get("/progress/:user_id", async (req, res) => {
         .from("user_preferences")
         .select("baseline_nonveg_meals, transition_period_weeks")
         .eq("user_id", user_id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from("user_progress")
@@ -66,7 +92,11 @@ router.get("/progress/:user_id", async (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 router.get("/weekly-plans/:user_id", async (req, res) => {
   try {
-    const { user_id } = req.params;
+    const user = await getUserFromAuthHeader(req);
+    if (!user || !user.id) return res.status(401).json({ error: "Unauthorized" });
+    if (req.params.user_id !== user.id) return res.status(403).json({ error: "Forbidden" });
+
+    const user_id = user.id;
 
     const { data, error } = await supabase
       .from("weekly_plans")

@@ -114,6 +114,8 @@ export default function ProfilePage() {
         .from("user_preferences")
         .select("*")
         .eq("user_id", data.user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (preferences) {
         setProfile(preferences);

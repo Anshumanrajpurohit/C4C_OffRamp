@@ -57,7 +57,9 @@ export default function ProfileOnboardingStep({ formData, setFormData, onComplet
           .from("user_preferences")
           .select("*")
           .eq("user_id", user.id)
-          .single();
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
         if (data) {
           setFormData({
             baselineMeals: data.baseline_nonveg_meals ?? 7,
@@ -73,8 +75,7 @@ export default function ProfileOnboardingStep({ formData, setFormData, onComplet
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setFormData]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -89,27 +90,21 @@ export default function ProfileOnboardingStep({ formData, setFormData, onComplet
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-      if (authError || !user) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("user_preferences")
-        .upsert(
-          {
-            user_id: user.id,
-            baseline_nonveg_meals: formData.baselineMeals,
-            target_goal: formData.targetGoal,
-            transition_period_weeks: formData.transitionWeeks,
-            preferred_cuisine: formData.preferredCuisine,
-            effort_level: formData.effortLevel,
-            reminder_time: formData.reminderTime,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
-      if (error) throw error;
+      const res = await fetch("/api/preferences/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseline_nonveg_meals: formData.baselineMeals,
+          target_goal: formData.targetGoal,
+          transition_period_weeks: formData.transitionWeeks,
+          preferred_cuisine: formData.preferredCuisine,
+          effort_level: formData.effortLevel,
+          reminder_time: formData.reminderTime,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to save preferences");
       if (onComplete) onComplete();
     } catch (err: any) {
       setError(err?.message || "Failed to save preferences");

@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 
 const SECRET = process.env.AUTH_SECRET!;
 
 export async function GET() {
   try {
+    if (!SECRET) {
+      return NextResponse.json(
+        { error: "Authentication is not configured" },
+        { status: 500 }
+      );
+    }
+
     const cookieStore = await cookies();
     const token = cookieStore.get("session")?.value;
 
@@ -17,9 +24,10 @@ export async function GET() {
       );
     }
 
-    const decoded = jwt.verify(token, SECRET) as { userId: string };
+    const decoded = jwt.verify(token, SECRET, { algorithms: ["HS256"] }) as { userId: string };
+    const adminClient = getSupabaseAdminClient();
 
-    const { data: user, error } = await supabase
+    const { data: user, error } = await adminClient
       .from("users")
       .select("id, email, full_name, city, region, budget_level")
       .eq("id", decoded.userId)
@@ -33,7 +41,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ user });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "Invalid session" },
       { status: 401 }
