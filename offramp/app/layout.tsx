@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-
+import { SpeedInsights } from "@vercel/speed-insights/next";
 const sans = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -90,6 +90,7 @@ export default function RootLayout({
         className={`${sans.variable} ${mono.variable} antialiased bg-[#f7f3ee] text-[#131614]`}
       >
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
