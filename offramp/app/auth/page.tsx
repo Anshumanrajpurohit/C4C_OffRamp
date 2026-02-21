@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import bg from "@/public/assets/bg.jpg";
@@ -19,6 +19,30 @@ export default function AuthPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkSession() {
+      try {
+        const response = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!active) return;
+        if (response.ok) {
+          router.replace("/dashboard");
+        }
+      } catch {
+        // Ignore session check failures on auth screen.
+      }
+    }
+
+    checkSession();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

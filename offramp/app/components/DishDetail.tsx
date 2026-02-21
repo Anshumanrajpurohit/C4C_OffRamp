@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Playfair_Display } from "next/font/google";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import type { DishDetail as DishDetailType } from "../../lib/dishes";
 
@@ -17,6 +17,7 @@ type Props = {
   onBack?: () => void;
   costSaved?: number | null;
   costSavedStatus?: CostSavedStatus;
+  onSwapNowFromReview?: (rating?: number, imageUrl?: string) => Promise<{ ok: boolean; error?: string }>;
 };
 
 type TabKey = "cook" | "buy" | "impact" | "reviews";
@@ -82,7 +83,7 @@ const glassStyles = {
   chip: "inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold",
 };
 
-export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = null, costSavedStatus = "idle" }: Props) {
+export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = null, costSavedStatus = "idle", onSwapNowFromReview }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -93,6 +94,13 @@ export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = n
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewNotice, setReviewNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [swapNotice, setSwapNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [isSwapRecording, setIsSwapRecording] = useState(false);
+  const [reviewImagePreview, setReviewImagePreview] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageUploadNotice, setImageUploadNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const reviewImageInputRef = useRef<HTMLInputElement | null>(null);
   const [ratingStats, setRatingStats] = useState(() => ({
     average: typeof dish.rating === "number" ? dish.rating : 0,
     count: typeof dish.reviews === "number" ? dish.reviews : 0,
@@ -204,7 +212,7 @@ export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = n
     };
   }, [mapOpen]);
 
-  const handleReviewSubmit = () => {
+	  const handleReviewSubmit = () => {
     if (!userRating || reviewText.trim().length < 6) {
       setReviewNotice({ tone: "error", text: "Pick a rating and add a quick note." });
       return;
@@ -225,8 +233,79 @@ export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = n
     });
     setUserRating(0);
     setReviewText("");
-    setReviewNotice({ tone: "success", text: "Thanks for rating this swap!" });
+	    setReviewNotice({ tone: "success", text: "Thanks for rating this swap!" });
+	  };
+
+  const handleSwapNowFromReview = async () => {
+    if (!onSwapNowFromReview || isSwapRecording) return;
+
+    setIsSwapRecording(true);
+    setSwapNotice(null);
+    try {
+      const result = await onSwapNowFromReview(
+        userRating > 0 ? userRating : undefined,
+        uploadedImageUrl ?? undefined
+      );
+      if (!result?.ok) {
+        setSwapNotice({ tone: "error", text: result?.error || "Failed to record swap." });
+        return;
+      }
+      setSwapNotice({ tone: "success", text: "Swap recorded!" });
+    } catch {
+      setSwapNotice({ tone: "error", text: "Failed to record swap." });
+    } finally {
+      setIsSwapRecording(false);
+    }
   };
+
+  const handleReviewImageSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImageUploadNotice(null);
+    setUploadedImageUrl(null);
+    setSwapNotice(null);
+    setReviewNotice(null);
+
+    const nextPreview = URL.createObjectURL(file);
+    setReviewImagePreview(nextPreview);
+    setIsImageUploading(true);
+
+    try {
+      const body = new FormData();
+      body.append("image", file);
+
+      const response = await fetch("/api/swaps/upload-image", {
+        method: "POST",
+        credentials: "include",
+        body,
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setImageUploadNotice({ tone: "error", text: payload?.error || "Photo upload failed." });
+        return;
+      }
+
+      setUploadedImageUrl(payload?.imageUrl ?? null);
+      setImageUploadNotice({ tone: "success", text: "Photo attached." });
+    } catch {
+      setImageUploadNotice({ tone: "error", text: "Photo upload failed." });
+    } finally {
+      setIsImageUploading(false);
+      if (reviewImageInputRef.current) {
+        reviewImageInputRef.current.value = "";
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (reviewImagePreview) {
+        URL.revokeObjectURL(reviewImagePreview);
+      }
+    };
+  }, [reviewImagePreview]);
 
   const videoEmbed = dish.videoId ? `https://www.youtube.com/embed/${dish.videoId}?rel=0` : null;
 
@@ -395,29 +474,88 @@ export function DishDetail({ dish, onBack, onCook, costSaved: costSavedValue = n
             );
           })}
         </div>
+        <div className="mt-4">
+          <input
+            ref={reviewImageInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(event) => {
+              void handleReviewImageSelect(event);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => reviewImageInputRef.current?.click()}
+            disabled={isImageUploading}
+            className="inline-flex items-center gap-2 rounded-full border border-[#0b8a60] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-[#0b8a60] transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-base">photo_camera</span>
+            {isImageUploading ? "Uploading..." : "Add Photo"}
+          </button>
+          {reviewImagePreview && (
+            <div className="mt-3">
+              <img
+                src={reviewImagePreview}
+                alt="Review upload preview"
+                className="h-20 w-20 rounded-xl border border-[#e1d8cd] object-cover"
+              />
+            </div>
+          )}
+          {imageUploadNotice && (
+            <p
+              className={`mt-2 text-xs font-semibold uppercase tracking-[0.3em] ${
+                imageUploadNotice.tone === "success" ? "text-emerald-600" : "text-amber-500"
+              }`}
+            >
+              {imageUploadNotice.text}
+            </p>
+          )}
+        </div>
         <textarea
           className="mt-4 w-full rounded-2xl border border-[#e1d8cd] bg-[#fdf8f1] p-4 text-sm text-[#142118] placeholder:text-slate-400 focus:outline-none"
           rows={4}
           placeholder="What stood out in this swap?"
           value={reviewText}
-          onChange={(event) => {
-            setReviewText(event.target.value);
-            setReviewNotice(null);
-          }}
-        />
-        <button type="submit" className="mt-4 w-full rounded-full bg-gradient-to-r from-[#10b981] to-[#0b8a60] py-3 text-sm font-black uppercase tracking-[0.35em] text-white shadow-[0_10px_30px_rgba(16,185,129,0.35)]">
-          Submit
-        </button>
-        {reviewNotice && (
-          <p
-            className={`mt-3 text-xs font-semibold uppercase tracking-[0.3em] ${
-              reviewNotice.tone === "success" ? "text-emerald-600" : "text-amber-500"
-            }`}
-          >
-            {reviewNotice.text}
-          </p>
-        )}
-      </form>
+	          onChange={(event) => {
+	            setReviewText(event.target.value);
+	            setReviewNotice(null);
+              setSwapNotice(null);
+	          }}
+	        />
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <button type="submit" className="w-full rounded-full bg-gradient-to-r from-[#10b981] to-[#0b8a60] py-3 text-sm font-black uppercase tracking-[0.35em] text-white shadow-[0_10px_30px_rgba(16,185,129,0.35)]">
+              Submit
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSwapNowFromReview()}
+              disabled={!onSwapNowFromReview || isSwapRecording || isImageUploading}
+              className="w-full rounded-full border border-[#0b8a60] bg-white py-3 text-sm font-black uppercase tracking-[0.35em] text-[#0b8a60] transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSwapRecording ? "Recording..." : "Swap Now"}
+            </button>
+          </div>
+	        {reviewNotice && (
+	          <p
+	            className={`mt-3 text-xs font-semibold uppercase tracking-[0.3em] ${
+	              reviewNotice.tone === "success" ? "text-emerald-600" : "text-amber-500"
+	            }`}
+	          >
+	            {reviewNotice.text}
+	          </p>
+	        )}
+          {swapNotice && (
+            <p
+              className={`mt-2 text-xs font-semibold uppercase tracking-[0.3em] ${
+                swapNotice.tone === "success" ? "text-emerald-600" : "text-amber-500"
+              }`}
+            >
+              {swapNotice.text}
+            </p>
+          )}
+	      </form>
       <div className="rounded-3xl border border-[#e1d8cd] bg-white/95 p-6 shadow-sm md:w-2/3">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">

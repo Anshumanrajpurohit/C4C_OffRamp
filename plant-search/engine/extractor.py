@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 from . import DishFeatures, NutritionProfile, TasteProfile
 
@@ -13,6 +13,30 @@ def _normalize_list(values: List[str]) -> List[str]:
     if values is None:
         return []
     return [v.lower() for v in values if v]
+
+
+TRANSITION_CATEGORY_KEYS = ["non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"]
+CATEGORY_TABLES = {
+    "non-vegan": "dishes_non_vegan",
+    "veg": "dishes_veg",
+    "vegetarian": "dishes_vegetarian",
+    "vegan": "dishes_vegan",
+    "jain": "dishes_jain",
+    "keto": "dishes_keto",
+}
+
+
+def normalize_transition_category(value: Any) -> str:
+    raw = _to_lower(value) if isinstance(value, str) else ""
+    if raw == "veg":
+        return "veg"
+    if raw in {"vegetarian", "vegeterian"}:
+        return "vegetarian"
+    if raw in {"nonveg", "non_veg"}:
+        return "non-vegan"
+    if raw in {"non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"}:
+        return raw
+    return "vegan"
 
 
 def dict_to_features(dish_dict: Dict[str, Any]) -> DishFeatures:
@@ -44,7 +68,7 @@ def dict_to_features(dish_dict: Dict[str, Any]) -> DishFeatures:
     return DishFeatures(
         dish_id=dish_dict.get("id", ""),
         name=dish_dict["name"],
-        category=dish_dict["category"],
+        category=normalize_transition_category(dish_dict["category"]),
         price_range=dish_dict["price_range"],
         availability=dish_dict["availability"],
         taste=taste,
@@ -112,41 +136,62 @@ def dict_to_dish_response(dish_dict: Dict[str, Any]):
     return DishResponse(**payload)
 
 
-def load_vegan_feature_map(vegan_dishes: List[Dict[str, Any]]) -> Dict[str, DishFeatures]:
-    """Convert list of vegan dish dicts to feature map keyed by ID."""
-    feature_map = {}
-    for dish_dict in vegan_dishes:
+def load_feature_maps(dishes: List[Dict[str, Any]]) -> Dict[str, Dict[str, DishFeatures]]:
+    """Convert dish rows to feature maps keyed by normalized transition category then dish id."""
+    maps: Dict[str, Dict[str, DishFeatures]] = {key: {} for key in TRANSITION_CATEGORY_KEYS}
+    for dish_dict in dishes:
         dish_id = dish_dict.get("id", "")
-        if dish_id:
-            feature_map[dish_id] = dict_to_features(dish_dict)
-    return feature_map
+        if not dish_id:
+            continue
+        category = normalize_transition_category(dish_dict.get("category"))
+        maps.setdefault(category, {})
+        maps[category][dish_id] = dict_to_features(dish_dict)
+    return maps
 
 
-def load_vegan_feature_map_from_db() -> Dict[str, DishFeatures]:
-    """Load vegan dishes from AWS RDS database into feature map for scoring."""
+def load_feature_maps_from_db() -> Tuple[Dict[str, Dict[str, DishFeatures]], Dict[str, int], int, List[str]]:
+    """Load all dishes from category-specific tables and build per-category feature maps."""
     from db import get_db_connection
     from psycopg2.extras import RealDictCursor
-    
-    feature_map = {}
-    
+
+    category_counts: Dict[str, int] = {key: 0 for key in TRANSITION_CATEGORY_KEYS}
+    feature_maps: Dict[str, Dict[str, DishFeatures]] = {key: {} for key in TRANSITION_CATEGORY_KEYS}
+    missing_tables: Dict[str, bool] = {key: False for key in TRANSITION_CATEGORY_KEYS}
+
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
-                SELECT 
-                    id, name, category, price_range, availability,
-                    taste_features, texture_features, emotion_features, nutrition
-                FROM dishes
-                WHERE category = 'vegan'
-                ORDER BY name
-            """)
-            
-            vegan_dishes = cursor.fetchall()
-            
-            for dish in vegan_dishes:
-                # Convert psycopg2 RealDictRow to regular dict
-                dish_dict = dict(dish)
-                dish_id = dish_dict.get("id", "")
-                if dish_id:
-                    feature_map[dish_id] = dict_to_features(dish_dict)
-    
-    return feature_map
+            for category in TRANSITION_CATEGORY_KEYS:
+                table_name = CATEGORY_TABLES[category]
+                cursor.execute("SELECT to_regclass(%s) AS table_ref", (f"public.{table_name}",))
+                exists_row = cursor.fetchone() or {}
+                if not exists_row.get("table_ref"):
+                    missing_tables[category] = True
+                    print(f"[STARTUP] Missing table '{table_name}'. Treating {category} count as 0.")
+                    continue
+
+                cursor.execute(
+                    f"""
+                    SELECT id, name, price_range, availability,
+                           taste_features, texture_features, emotion_features, nutrition
+                    FROM {table_name}
+                    ORDER BY name
+                    """
+                )
+                rows = cursor.fetchall()
+                category_counts[category] = len(rows)
+
+                for row in rows:
+                    dish = dict(row)
+                    dish["category"] = category
+                    dish_id = dish.get("id", "")
+                    if not dish_id:
+                        continue
+                    feature_maps[category][dish_id] = dict_to_features(dish)
+
+    # If vegetarian table is missing, allow vegetarian requests to use veg data.
+    if missing_tables.get("vegetarian") and feature_maps.get("veg"):
+        feature_maps["vegetarian"] = dict(feature_maps["veg"])
+
+    total_count = sum(category_counts.values())
+    missing_categories = [key for key, missing in missing_tables.items() if missing]
+    return feature_maps, category_counts, total_count, missing_categories

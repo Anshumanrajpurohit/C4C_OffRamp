@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "../../../lib/supabaseServer";
 import { getSupabaseAdminClient } from "../../../lib/supabaseAdminClient";
+import { getSessionUser } from "../../../lib/auth/getSessionUser";
 
 export async function POST(req: Request) {
   try {
     const { full_name } = await req.json();
-    const supabase = await createSupabaseServerClient();
     const adminClient = getSupabaseAdminClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -38,15 +33,10 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
     const adminClient = getSupabaseAdminClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from db import init_db_pool, close_db_pool, get_db_connection
-from engine.extractor import load_vegan_feature_map_from_db
+from engine.extractor import TRANSITION_CATEGORY_KEYS, load_feature_maps_from_db
 
 from .routes import router
 
@@ -54,24 +54,20 @@ async def startup_event() -> None:
         # Initialize database connection pool
         init_db_pool(min_conn=2, max_conn=20)
         
-        # Test connection and count dishes
+        # Test connection
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*) FROM dishes WHERE category = 'non-vegan'")
-                non_vegan_count = cursor.fetchone()[0]
-                
-                cursor.execute("SELECT COUNT(*) FROM dishes WHERE category = 'vegan'")
-                vegan_count = cursor.fetchone()[0]
-                
                 print(f"[STARTUP] Connected to AWS RDS successfully")
-                print(f"[STARTUP] Non-vegan dishes in database: {non_vegan_count}")
-                print(f"[STARTUP] Vegan dishes in database: {vegan_count}")
-                print(f"[STARTUP] Total dishes available: {non_vegan_count + vegan_count}")
-        
-        # Load vegan feature map for scoring (cached in memory for performance)
-        print("[STARTUP] Loading vegan feature map into memory for fast scoring...")
-        app.state.vegan_feature_map = load_vegan_feature_map_from_db()
-        print(f"[STARTUP] Cached {len(app.state.vegan_feature_map)} vegan dishes for scoring")
+
+        print("[STARTUP] Loading feature maps into memory for fast scoring...")
+        feature_maps, category_counts, total_count, missing_categories = load_feature_maps_from_db()
+        app.state.feature_maps = feature_maps
+        app.state.missing_feature_map_categories = set(missing_categories)
+
+        print("[STARTUP] Category counts:")
+        for key in TRANSITION_CATEGORY_KEYS:
+            print(f"- {key}: {category_counts.get(key, 0)}")
+        print(f"[STARTUP] Total dishes: {total_count}")
         
         print("[STARTUP] System ready - using AWS RDS PostgreSQL database")
         

@@ -104,6 +104,8 @@ class DishSummary(BaseModel):
 class SearchRequest(BaseModel):
     dish_name: str
     top_n: Optional[int] = None
+    from_: Optional[str] = Field(None, alias="from")
+    to: Optional[str] = None
 
 
 class SearchResult(BaseModel):

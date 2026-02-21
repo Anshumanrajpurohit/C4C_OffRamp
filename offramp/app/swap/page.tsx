@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   PlantSearchError,
   getAllDishes,
@@ -36,12 +37,6 @@ type Dish = {
   category: string;
 };
 
-type SortOption = {
-  id: string;
-  label: string;
-  description?: string;
-};
-
 type FilterOption = {
   id: string;
   label: string;
@@ -53,6 +48,16 @@ type DishMeta = {
   rating: number;
   reviews: number;
   swapCost: number | null;
+};
+
+type SwapRecordNotice = {
+  tone: "success" | "error";
+  text: string;
+};
+
+type RecordSwapOptions = {
+  rating?: number;
+  imageUrl?: string;
 };
 
 const dishes: Dish[] = [
@@ -193,6 +198,8 @@ type PlantSearchFilters = {
   texturePreference: number | null;
 };
 
+type TargetDiet = DishDetailType["diet"] | null;
+
 type PlantSearchMeta = {
   appliedRestrictions: string[];
   texturePreference: number | null;
@@ -252,6 +259,64 @@ const toPlantRecommendation = (result: PlantSearchResult, detail?: DishDetailTyp
   reasons: result.reasons,
   detail,
 });
+
+const normalizeTransitionDiet = (value: string | null | undefined) => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "vegetarian") return "veg";
+  if (normalized === "nonveg" || normalized === "non_veg") return "non-vegan";
+  return normalized;
+};
+
+const toFrontendTargetDiet = (value: string | null | undefined): TargetDiet => {
+  const normalized = normalizeTransitionDiet(value);
+  if (normalized === "vegan") return "vegan";
+  if (normalized === "veg") return "vegetarian";
+  if (normalized === "jain") return "jain";
+  return null;
+};
+
+const toSuggestionFromFilter = (value: string | null | undefined) => {
+  const normalized = normalizeTransitionDiet(value);
+  if (!normalized) return undefined;
+  if (normalized === "non-vegan") return "non-vegan";
+  if (normalized === "veg") return "veg";
+  if (normalized === "vegan") return "vegan";
+  if (normalized === "jain") return "jain";
+  if (normalized === "keto") return "keto";
+  return undefined;
+};
+
+const targetDietLabel = (diet: TargetDiet) => {
+  if (diet === "vegan") return "Vegan";
+  if (diet === "vegetarian") return "Vegetarian";
+  if (diet === "jain") return "Jain";
+  return null;
+};
+
+const matchesTransitionToStrict = (dish: DishDetailType | undefined, transitionTo: string | null | undefined) => {
+  const normalizedTo = normalizeTransitionDiet(transitionTo);
+  const allowedTargets = new Set(["non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"]);
+  if (!normalizedTo || !allowedTargets.has(normalizedTo)) return true;
+  if (!dish) return false;
+  const rawDishDiet = typeof dish.diet === "string" ? dish.diet.trim().toLowerCase() : "";
+  const normalizedDishDiet = normalizeTransitionDiet(rawDishDiet) ?? rawDishDiet;
+  if (normalizedTo === "veg" || normalizedTo === "vegetarian") {
+    return normalizedDishDiet === "veg" || normalizedDishDiet === "vegetarian";
+  }
+  return normalizedDishDiet === normalizedTo;
+};
+
+const matchesTargetDiet = (dish: DishDetailType | undefined, targetDiet: TargetDiet) => {
+  if (!targetDiet) return true;
+  if (!dish) return false;
+  if (targetDiet === "vegan") return dish.diet === "vegan";
+  if (targetDiet === "vegetarian") {
+    return dish.diet === "vegetarian" || dish.diet === "vegan" || dish.diet === "jain";
+  }
+  return dish.diet === "jain";
+};
 
 const formatAllergenLabel = (value: string) => {
   const match = ALLERGEN_OPTIONS.find((entry) => entry.id === value);
@@ -344,8 +409,20 @@ function SwapPageInner() {
   const [engineHealth, setEngineHealth] = useState<PlantHealthResponse | null>(null);
   const [backendDishNames, setBackendDishNames] = useState<string[]>([]);
   const [spotlightDish, setSpotlightDish] = useState<PlantDishResponse | null>(null);
+  const [savedTransitionFromDiet, setSavedTransitionFromDiet] = useState<string | null>(null);
+  const [savedTransitionToDiet, setSavedTransitionToDiet] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const demoParam = searchParams.get("demo");
+  const demoParam = searchParams?.get("demo");
+  const transitionFromDiet = useMemo(() => {
+    const fromParam = normalizeTransitionDiet(searchParams?.get("from") ?? null);
+    return savedTransitionFromDiet ?? fromParam;
+  }, [savedTransitionFromDiet, searchParams]);
+  const transitionToDiet = useMemo(() => {
+    const toParam = normalizeTransitionDiet(searchParams?.get("to") ?? null);
+    return savedTransitionToDiet ?? toParam;
+  }, [savedTransitionToDiet, searchParams]);
+  const targetDiet = useMemo(() => toFrontendTargetDiet(transitionToDiet), [transitionToDiet]);
+  const suggestionFromFilter = useMemo(() => toSuggestionFromFilter(transitionFromDiet), [transitionFromDiet]);
   const isDemoTable = demoParam === "1" || demoParam === "2";
   const isDemoForm = demoParam === "3";
   const isDemo = isDemoTable || isDemoForm;
@@ -357,14 +434,14 @@ function SwapPageInner() {
   const [selectedTastes, setSelectedTastes] = useState<string[]>([]);
   const [prefSaved, setPrefSaved] = useState<string>("");
   const [showCode, setShowCode] = useState(false);
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [allergenMenuOpen, setAllergenMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedSort, setSelectedSort] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [recordingSwapKey, setRecordingSwapKey] = useState<string | null>(null);
+  const [swapRecordNotice, setSwapRecordNotice] = useState<SwapRecordNotice | null>(null);
+  const [midCtaNotice, setMidCtaNotice] = useState<string | null>(null);
 
-  const sortMenuRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const allergenMenuRef = useRef<HTMLDivElement>(null);
   const swapRequestIdRef = useRef(0);
@@ -385,26 +462,6 @@ function SwapPageInner() {
       return acc;
     }, {} as Record<string, DishMeta>);
   }, []);
-
-  const plantForwardCategories = useMemo(() => {
-    const tags = new Set<string>();
-    DISH_CATALOG.forEach((dish) => {
-      (dish.categories || []).forEach((category) => {
-        if (/veg|plant|green/.test(category.toLowerCase())) {
-          tags.add(category);
-        }
-      });
-    });
-    return Array.from(tags);
-  }, []);
-
-  const sortOptions = useMemo<SortOption[]>(() => {
-    const base: SortOption[] = [];
-    plantForwardCategories.forEach((tag) => {
-      base.push({ id: `tag-${tag}`, label: tag.replace(/-/g, " "), description: "Match detected veg-first category" });
-    });
-    return base;
-  }, [plantForwardCategories]);
 
   const filterOptions = useMemo<FilterOption[]>(
     () => [
@@ -481,26 +538,6 @@ function SwapPageInner() {
     };
   }, [dishMeta]);
 
-  const getSortPriority = (dish?: DishDetailType) => {
-    if (!dish || !selectedSort) return 0;
-    if (selectedSort.startsWith("tag-")) {
-      const tag = selectedSort.replace("tag-", "");
-      return (dish.categories || []).includes(tag) ? 2 : 0;
-    }
-    return 0;
-  };
-
-  const compareDishesBySort = (a?: DishDetailType, b?: DishDetailType) => {
-    if (!a || !b) return 0;
-    const priorityDiff = getSortPriority(b) - getSortPriority(a);
-    if (priorityDiff !== 0) return priorityDiff;
-    const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
-    if (ratingDiff !== 0) return ratingDiff;
-    const freshnessDiff = (dishMeta[b.slug]?.freshnessIndex ?? 0) - (dishMeta[a.slug]?.freshnessIndex ?? 0);
-    if (freshnessDiff !== 0) return freshnessDiff;
-    return a.name.localeCompare(b.name);
-  };
-
   const matchesActiveFilters = (dish?: DishDetailType) => {
     if (!activeFilters.length) return true;
     if (!dish) return false;
@@ -510,19 +547,10 @@ function SwapPageInner() {
     });
   };
 
-  const toggleSortMenu = () => {
-    setSortMenuOpen((prev) => {
-      const next = !prev;
-      if (next) setFilterMenuOpen(false);
-      return next;
-    });
-  };
-
   const toggleFilterMenu = () => {
     setFilterMenuOpen((prev) => {
       const next = !prev;
       if (next) {
-        setSortMenuOpen(false);
         setAllergenMenuOpen(false);
       }
       return next;
@@ -533,19 +561,10 @@ function SwapPageInner() {
     setAllergenMenuOpen((prev) => {
       const next = !prev;
       if (next) {
-        setSortMenuOpen(false);
         setFilterMenuOpen(false);
       }
       return next;
     });
-  };
-
-  const handleSortSelect = (optionId: string | null) => {
-    setSelectedSort((prev) => {
-      if (optionId === null) return null;
-      return prev === optionId ? null : optionId;
-    });
-    setSortMenuOpen(false);
   };
 
   const handleFilterToggle = (optionId: string) => {
@@ -556,9 +575,6 @@ function SwapPageInner() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
-        setSortMenuOpen(false);
-      }
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
         setFilterMenuOpen(false);
       }
@@ -573,7 +589,6 @@ function SwapPageInner() {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSortMenuOpen(false);
         setFilterMenuOpen(false);
         setAllergenMenuOpen(false);
       }
@@ -584,12 +599,43 @@ function SwapPageInner() {
 
   useEffect(() => {
     let isMounted = true;
+    const supabase = getSupabaseBrowserClient();
+
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user?.id) return;
+        if (!isMounted) return;
+
+        const { data: profile } = await supabase
+          .from("users")
+          .select("transition_from_diet, transition_to_diet")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (!profile || !isMounted) return;
+
+        setSavedTransitionFromDiet(normalizeTransitionDiet(profile.transition_from_diet));
+        setSavedTransitionToDiet(normalizeTransitionDiet(profile.transition_to_diet));
+      } catch {
+        // Ignore and keep default behavior for anonymous users.
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
     const controller = new AbortController();
 
     (async () => {
       const [healthResult, dishesResult] = await Promise.allSettled([
         healthCheck(controller.signal),
-        getAllDishes({ signal: controller.signal }),
+        getAllDishes({ from: suggestionFromFilter, signal: controller.signal }),
       ]);
 
       if (!isMounted) return;
@@ -638,7 +684,7 @@ function SwapPageInner() {
       isMounted = false;
       controller.abort();
     };
-  }, []);
+  }, [suggestionFromFilter]);
 
   const fetchPlantSearchResults = useCallback(
     async (term: string, filters: PlantSearchFilters, signal?: AbortSignal, requestId?: number) => {
@@ -668,6 +714,8 @@ function SwapPageInner() {
         const { dishes, raw } = await searchPlantAlternatives({
           dishName: normalized,
           limit: 9,
+          from: transitionFromDiet ?? undefined,
+          to: transitionToDiet ?? undefined,
           signal,
         });
 
@@ -675,9 +723,25 @@ function SwapPageInner() {
           return;
         }
 
-        setSwapEngineDishes(dishes ?? []);
-        setPlantRecommendations(raw.slice(0, 3).map((result, index) => toPlantRecommendation(result, dishes[index])));
+        const targetFilteredDishes = (dishes ?? []).filter(
+          (dish) =>
+            matchesTargetDiet(dish, targetDiet) &&
+            matchesTransitionToStrict(dish, transitionToDiet)
+        );
+        const rankedRecommendations = raw
+          .map((result, index) => ({ result, detail: dishes[index] }))
+          .filter(
+            ({ detail }) =>
+              matchesTargetDiet(detail, targetDiet) &&
+              matchesTransitionToStrict(detail, transitionToDiet)
+          )
+          .slice(0, 3)
+          .map(({ result, detail }) => toPlantRecommendation(result, detail));
+
+        setSwapEngineDishes(targetFilteredDishes);
+        setPlantRecommendations(rankedRecommendations);
         const summary = summarizeRawResults(raw);
+        const label = targetDietLabel(targetDiet);
         setSwapEngineMeta({
           ...createEmptySwapMeta(),
           appliedRestrictions: filters.dietaryRestrictions,
@@ -685,7 +749,9 @@ function SwapPageInner() {
             typeof filters.texturePreference === "number" ? filters.texturePreference : null,
           originalDish: normalized,
           engine: raw.length ? "plant-search" : undefined,
-          ...summary,
+          priceRanges: summary.priceRanges,
+          proteinTags: summary.proteinTags,
+          availabilityTags: label ? [label, ...summary.availabilityTags] : summary.availabilityTags,
         });
         setSwapEngineError(null);
       } catch (error) {
@@ -712,7 +778,7 @@ function SwapPageInner() {
         }
       }
     },
-    []
+    [targetDiet, transitionFromDiet, transitionToDiet]
   );
 
   useEffect(() => {
@@ -793,16 +859,13 @@ function SwapPageInner() {
     return swapResults
       .map((group) => {
         let dishes = [...group.dishes];
-        if (selectedSort) {
-          dishes = [...dishes].sort((a, b) => compareDishesBySort(a, b));
-        }
         if (activeFilters.length) {
           dishes = dishes.filter((dish) => matchesActiveFilters(dish));
         }
         return { ...group, dishes };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [swapResults, selectedSort, activeFilters, filterPredicates, dishMeta]);
+  }, [swapResults, activeFilters, filterPredicates, dishMeta]);
 
   const keywordAlternatives = useMemo(() => {
     const buildKey = (value: string) => value.trim().toLowerCase();
@@ -847,14 +910,17 @@ function SwapPageInner() {
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
     const lower = query.trim().toLowerCase();
+    const backendMatches = backendDishNames.filter((name) => name.toLowerCase().includes(lower));
+    if (suggestionFromFilter) {
+      return [...new Set(backendMatches)].slice(0, 10);
+    }
     const matchingNonVeg = SEARCH_KEYWORDS.filter((kw) => kw.includes(lower) || lower.includes(kw));
     const dishNames = dishes.map((d) => d.name).filter((name) => name.toLowerCase().includes(lower));
     const mappedAlternatives = keywordAlternatives
       .flatMap((group) => group.items.map((item) => item.name))
       .filter((name) => name.toLowerCase().includes(lower));
-    const backendMatches = backendDishNames.filter((name) => name.toLowerCase().includes(lower));
     return [...new Set([...matchingNonVeg, ...dishNames, ...mappedAlternatives, ...backendMatches])].slice(0, 10);
-  }, [query, keywordAlternatives, backendDishNames]);
+  }, [query, keywordAlternatives, backendDishNames, suggestionFromFilter]);
 
   useEffect(() => {
     setActiveSuggestionIndex(-1);
@@ -864,10 +930,6 @@ function SwapPageInner() {
   const hasSwapResults = processedSwapResults.length > 0;
   const activeFilterCount = activeFilters.length;
   const activeAllergenCount = dietaryRestrictions.length;
-  const currentSortLabel = selectedSort
-    ? sortOptions.find((option) => option.id === selectedSort)?.label ?? "Custom"
-    : "Sort";
-  const sortButtonLabel = selectedSort ? `Sort: ${currentSortLabel}` : "Sort";
   const filterButtonLabel = activeFilterCount ? `Filter (${activeFilterCount})` : "Filter";
   const allergenButtonLabel = activeAllergenCount ? `Allergen (${activeAllergenCount})` : "Allergen";
   const noResultsWithFilters = searchTerm && rawHasSwapResults && !hasSwapResults;
@@ -934,6 +996,86 @@ function SwapPageInner() {
   const handleBackFromDetail = () => {
     setSelectedDish(null);
   };
+
+  const handleRecordSwap = useCallback(
+    async (dish: DishDetailType, fromDishCandidate: string, options?: RecordSwapOptions) => {
+      const toDish = dish.name?.trim();
+      const fromDish = fromDishCandidate.trim();
+      if (!toDish || !fromDish) {
+        setSwapRecordNotice({ tone: "error", text: "Unable to record swap right now." });
+        return { ok: false, error: "Unable to record swap right now." };
+      }
+
+      const recordKey = `${fromDish}->${toDish}`;
+      if (recordingSwapKey) {
+        return { ok: false, error: "Swap recording already in progress." };
+      }
+
+      setRecordingSwapKey(recordKey);
+      setSwapRecordNotice(null);
+
+      try {
+        const response = await fetch("/api/swaps/record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            fromDish,
+            toDish,
+            fromCategory: transitionFromDiet ?? undefined,
+            toCategory: transitionToDiet ?? undefined,
+            rating: typeof options?.rating === "number" ? options.rating : typeof dish.rating === "number" ? Math.round(dish.rating) : undefined,
+            imageUrl: options?.imageUrl || dish.image || undefined,
+          }),
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+          if (response.status === 401) {
+            setSwapRecordNotice({ tone: "error", text: "Login required to record swaps." });
+            return { ok: false, error: "Login required to record swaps." };
+          }
+          const message = payload?.error || "Failed to record swap.";
+          setSwapRecordNotice({ tone: "error", text: message });
+          return { ok: false, error: message };
+        }
+
+        setSwapRecordNotice({ tone: "success", text: "Swap recorded!" });
+        return { ok: true };
+      } catch {
+        setSwapRecordNotice({ tone: "error", text: "Failed to record swap." });
+        return { ok: false, error: "Failed to record swap." };
+      } finally {
+        setRecordingSwapKey(null);
+      }
+    },
+    [recordingSwapKey, transitionFromDiet, transitionToDiet]
+  );
+
+  const handleMidSwapNow = useCallback(async () => {
+    setMidCtaNotice(null);
+
+    if (selectedDish) {
+      const fromDishName =
+        selectedDish.matchMeta?.originalDish?.trim() ||
+        normalizedSearchTerm ||
+        searchTerm.trim() ||
+        selectedDish.replaces?.[0] ||
+        selectedDish.name;
+      await handleRecordSwap(selectedDish, fromDishName);
+      return;
+    }
+
+    const resultsSection = document.getElementById("swap-results");
+    resultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    if (!hasSwapResults) {
+      setMidCtaNotice("Select a swap first.");
+      return;
+    }
+
+    setMidCtaNotice("Select a swap card and tap Swap Now.");
+  }, [handleRecordSwap, hasSwapResults, normalizedSearchTerm, searchTerm, selectedDish]);
 
   useEffect(() => {
     if (!selectedDish) {
@@ -1018,14 +1160,14 @@ function SwapPageInner() {
     if (term) {
       picks = picks.filter(({ dish }) => dish.name.toLowerCase().includes(term));
     }
+    if (targetDiet) {
+      picks = picks.filter(({ detail }) => matchesTargetDiet(detail, targetDiet));
+    }
     if (activeFilters.length) {
       picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
     }
-    if (selectedSort) {
-      picks = [...picks].sort((a, b) => compareDishesBySort(a.detail, b.detail));
-    }
     return picks.map(({ dish }) => dish).slice(0, 8);
-  }, [query, topPicksWithDetail, activeFilters, selectedSort]);
+  }, [query, topPicksWithDetail, targetDiet, activeFilters]);
 
   const toggleRestriction = (value: string) => {
     setDietaryRestrictions((prev) =>
@@ -1071,6 +1213,15 @@ function SwapPageInner() {
           onBack={handleBackFromDetail}
           costSaved={costSaved}
           costSavedStatus={costSavedStatus}
+          onSwapNowFromReview={async (rating, imageUrl) => {
+            const fromDishName =
+              selectedDish.matchMeta?.originalDish?.trim() ||
+              normalizedSearchTerm ||
+              searchTerm.trim() ||
+              selectedDish.replaces?.[0] ||
+              selectedDish.name;
+            return handleRecordSwap(selectedDish, fromDishName, { rating, imageUrl });
+          }}
         />
       </main>
     );
@@ -1273,68 +1424,6 @@ function SwapPageInner() {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2 justify-end">
-                <div className="relative" ref={sortMenuRef}>
-                  <button
-                    type="button"
-                    onClick={toggleSortMenu}
-                    aria-haspopup="menu"
-                    aria-expanded={sortMenuOpen}
-                    className={`flex items-center gap-2 rounded-full border-2 border-black px-4 py-2 text-sm font-bold uppercase transition transform ${
-                      selectedSort ? "bg-black text-white" : "bg-white text-black"
-                    } hover:-translate-y-[1px] hover:bg-black hover:text-white`}
-                  >
-                    {sortButtonLabel}
-                    <span
-                      className={`material-symbols-outlined text-base transition ${sortMenuOpen ? "rotate-180" : ""}`}
-                    >
-                      expand_more
-                    </span>
-                  </button>
-                  {sortMenuOpen && (
-                    <div
-                      role="menu"
-                      className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-                    >
-                      <button
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={!selectedSort}
-                        onClick={() => handleSortSelect(null)}
-                        className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
-                          !selectedSort ? "text-primary" : "text-slate-700"
-                        }`}
-                      >
-                        Default order
-                        {!selectedSort && <span className="material-symbols-outlined text-base">check</span>}
-                      </button>
-                      {sortOptions.map((option) => {
-                        const isActive = selectedSort === option.id;
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={isActive}
-                            onClick={() => handleSortSelect(option.id)}
-                            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
-                              isActive ? "text-primary" : "text-slate-700"
-                            }`}
-                          >
-                            <span>
-                              {option.label}
-                              {option.description && (
-                                <span className="block text-[11px] font-normal uppercase tracking-wide text-slate-400">
-                                  {option.description}
-                                </span>
-                              )}
-                            </span>
-                            {isActive && <span className="material-symbols-outlined text-base">check</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
                 <div className="relative" ref={filterMenuRef}>
                   <button
                     type="button"
@@ -1566,12 +1655,39 @@ function SwapPageInner() {
             </button>
           </div>
         )}
+	      </section>
+
+      <section className="px-6 pb-8">
+        <div className="mx-auto max-w-6xl text-center">
+          <button
+            type="button"
+            onClick={() => void handleMidSwapNow()}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-accent px-8 py-3 text-sm font-black uppercase tracking-[0.2em] text-white shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 hover:bg-black"
+          >
+            <span className="material-symbols-outlined text-base">swap_horiz</span>
+            Swap Now
+          </button>
+          {midCtaNotice && (
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">{midCtaNotice}</p>
+          )}
+        </div>
       </section>
 
-      {/* Swap Results Section */}
-      {hasSwapResults && (
+	      {/* Swap Results Section */}
+	      {hasSwapResults && (
         <section id="swap-results" className="px-6 pb-12">
           <div className="mx-auto max-w-6xl space-y-6">
+            {swapRecordNotice && (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                  swapRecordNotice.tone === "success"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-red-300 bg-red-50 text-red-700"
+                }`}
+              >
+                {swapRecordNotice.text}
+              </div>
+            )}
             {processedSwapResults.map((group) => (
               <div key={group.id} className="space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -1589,9 +1705,24 @@ function SwapPageInner() {
                   </span>
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {group.dishes.map((dish) => (
-                    <SwapResultCard key={dish.slug} dish={dish} onSelect={() => handleSelectDish(dish)} />
-                  ))}
+                  {group.dishes.map((dish) => {
+                    const fromDishName =
+                      dish.matchMeta?.originalDish?.trim() ||
+                      normalizedSearchTerm ||
+                      searchTerm.trim() ||
+                      dish.replaces?.[0] ||
+                      dish.name;
+                    const recordKey = `${fromDishName}->${dish.name}`;
+                    return (
+                      <SwapResultCard
+                        key={dish.slug}
+                        dish={dish}
+                        onSelect={() => handleSelectDish(dish)}
+                        onRecordSwap={() => void handleRecordSwap(dish, fromDishName)}
+                        swapNowDisabled={recordingSwapKey === recordKey}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1611,18 +1742,17 @@ function SwapPageInner() {
           <div className="mx-auto max-w-2xl rounded-2xl border-3 border-black bg-white px-6 py-6 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
             <p className="font-impact text-2xl uppercase text-black">No matches with current filters</p>
             <p className="mt-2 text-sm font-semibold text-slate-600">
-              Try removing one of the filters or resetting to the default ordering to see every available swap for "{searchTerm}".
+              Try removing one of the filters to see every available swap for "{searchTerm}".
             </p>
             <div className="mt-4 flex justify-center">
               <button
                 type="button"
                 onClick={() => {
                   setActiveFilters([]);
-                  setSelectedSort(null);
                 }}
                 className="rounded-full border-2 border-black bg-black px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-accent"
               >
-                Reset filters & sort
+                Reset filters
               </button>
             </div>
           </div>
@@ -2229,7 +2359,17 @@ function PlantRecommendationCard({ recommendation, onSelect }: { recommendation:
 }
 
 // Swap result card for search results
-function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: () => void }) {
+function SwapResultCard({
+  dish,
+  onSelect,
+  onRecordSwap,
+  swapNowDisabled,
+}: {
+  dish: DishDetailType;
+  onSelect: () => void;
+  onRecordSwap: () => void;
+  swapNowDisabled: boolean;
+}) {
   const viewedBy = typeof dish.reviews === "number" ? dish.reviews.toLocaleString() : null;
   const ingredients = dish.ingredients?.slice(0, 5) || [];
   const chefTips = dish.chefTips?.slice(0, 2) || [];
@@ -2240,9 +2380,16 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
   const liveScoreLabel = typeof engineMeta?.score === "number" ? `${Math.round(engineMeta.score * 100)}% live score` : null;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
       suppressHydrationWarning
       className="group relative flex h-full min-h-[28rem] w-full cursor-pointer overflow-hidden rounded-3xl border-3 border-black bg-white text-left shadow-[5px_5px_0px_0px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[9px_9px_0px_0px_rgba(0,0,0,0.55)]"
     >
@@ -2332,7 +2479,18 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
                 )}
               </div>
 
-              <div className="mt-auto flex justify-end">
+              <div className="mt-auto flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRecordSwap();
+                  }}
+                  disabled={swapNowDisabled}
+                  className="rounded-full border-2 border-black bg-black px-3 py-1 text-xs font-bold uppercase text-white transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {swapNowDisabled ? "Recording..." : "Swap Now"}
+                </button>
                 <span className="rounded-full border-2 border-primary bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                   View Recipe →
                 </span>
@@ -2365,7 +2523,7 @@ function SwapResultCard({ dish, onSelect }: { dish: DishDetailType; onSelect: ()
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

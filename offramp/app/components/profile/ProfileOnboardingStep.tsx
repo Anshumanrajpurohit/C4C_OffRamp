@@ -1,7 +1,6 @@
 
 "use client";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
 
 export type ProfileOnboardingForm = {
   baselineMeals: number;
@@ -49,18 +48,18 @@ export default function ProfileOnboardingStep({ formData, setFormData, onComplet
   useEffect(() => {
     const load = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from("user_preferences")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (data) {
+        const sessionRes = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!sessionRes.ok) return;
+        const res = await fetch("/api/preferences/get", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (payload?.preferences) {
+          const data = payload.preferences;
           setFormData({
             baselineMeals: data.baseline_nonveg_meals ?? 7,
             targetGoal: data.target_goal ?? "",
@@ -92,6 +91,7 @@ export default function ProfileOnboardingStep({ formData, setFormData, onComplet
     try {
       const res = await fetch("/api/preferences/save", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           baseline_nonveg_meals: formData.baselineMeals,

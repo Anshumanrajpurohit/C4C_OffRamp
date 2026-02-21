@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type WeekRow = {
   week_number: number;
@@ -22,6 +23,7 @@ const DAY_LABELS: Record<string, string> = {
 const ALL_DAYS = Object.keys(DAY_LABELS);
 
 export default function WeeklyPlanPage() {
+  const router = useRouter();
   const [plan, setPlan] = useState<WeekRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,15 +33,42 @@ export default function WeeklyPlanPage() {
     .toLowerCase();
 
   useEffect(() => {
-    fetch("/api/transition/plan")
-      .then((r) => r.json())
-      .then((json) => {
+    let active = true;
+
+    async function load() {
+      try {
+        const sessionRes = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!sessionRes.ok) {
+          if (active) {
+            setError("Login required.");
+            setLoading(false);
+            router.replace("/auth");
+          }
+          return;
+        }
+
+        const res = await fetch("/api/transition/plan", {
+          credentials: "include",
+        });
+        const json = await res.json();
+        if (!active) return;
         if (json.error) setError(json.error);
         else setPlan(json.plan ?? []);
-      })
-      .catch(() => setError("Failed to load plan."))
-      .finally(() => setLoading(false));
-  }, []);
+      } catch {
+        if (active) setError("Failed to load plan.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   return (
     <main className="min-h-screen px-4 py-12 max-w-3xl mx-auto">

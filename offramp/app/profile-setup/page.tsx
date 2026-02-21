@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { Session } from "@supabase/supabase-js";
-import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
 import ProfileOnboardingStep, { ProfileOnboardingForm } from "@/app/components/profile/ProfileOnboardingStep";
@@ -43,24 +42,15 @@ const upcomingRegions = ["West India", "Central India", "Global Fusion"];
 const upcomingCuisines = ["Bengali", "Goan", "Indo-Chinese", "Konkan"];
 const upcomingAllergies = ["Gluten", "Shellfish", "Mustard"];
 
-const dietTransitionOptions = [
-  "Non-veg/Non-vegan",
-  "Vegetarian",
-  "Vegan",
-  "Jain",
-  "Eggetarian",
-  "Pescatarian",
-  "Flexitarian",
-  "Satvik",
-  "Keto",
-  "Paleo",
-  "Mediterranean",
-  "Gluten-free",
-  "Low-carb",
-  "High-protein",
+const transitionCardOptions = [
+  { label: "Non-vegan -> Veg", from: "non-vegan", to: "veg" },
+  { label: "Non-vegan -> Vegetarian", from: "non-vegan", to: "vegetarian" },
+  { label: "Veg -> Vegan", from: "veg", to: "vegan" },
+  { label: "Vegan -> Jain", from: "vegan", to: "jain" },
+  { label: "Jain -> Keto", from: "jain", to: "keto" },
 ] as const;
 
-const toDietTransitionOptions = dietTransitionOptions.filter((diet) => diet !== "Non-veg/Non-vegan");
+const upcomingTransitionTracks = ["Vegan Explorer", "Jain Explorer", "Veg Explorer", "Many more"] as const;
 
 const budgetLevels: Record<BudgetLevel, { label: string; description: string; icon: string }> = {
   1: {
@@ -93,6 +83,15 @@ type SupabaseErrorPayload = {
   message?: string;
   code?: string;
   details?: string;
+};
+
+type SessionUser = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  city?: string | null;
+  region?: string | null;
+  budget_level?: string | null;
 };
 
 const extractErrorInfo = (error: unknown): Required<Pick<SupabaseErrorPayload, "message">> & SupabaseErrorPayload => {
@@ -157,6 +156,7 @@ export default function ProfileSetupPage() {
       reminderTime: "09:00",
     });
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [prevStep, setPrevStep] = useState<number | null>(null);
   const [region, setRegion] = useState("");
@@ -166,10 +166,11 @@ export default function ProfileSetupPage() {
   const [transitionToDiet, setTransitionToDiet] = useState("");
   const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(DEFAULT_BUDGET_LEVEL);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [isSavingStep, setIsSavingStep] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [showUpdatedNotice, setShowUpdatedNotice] = useState(false);
   const totalSteps = STEPS.length;
 
   const budget = useMemo(() => budgetLevels[budgetLevel], [budgetLevel]);
@@ -177,52 +178,42 @@ export default function ProfileSetupPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          logSupabaseErrorDetails("profile-setup:getSession", error);
-          throw error;
-        }
-        const active = data.session ?? null;
-        setSession(active);
-        if (!active) {
+        const response = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!response.ok) {
           router.replace("/auth");
+          return;
         }
+        const payload = await response.json();
+        setSessionUser(payload?.user ?? null);
       } catch (error) {
-        logSupabaseErrorDetails("profile-setup:init", error);
-        setSession(null);
         router.replace("/auth");
       } finally {
         setCheckingSession(false);
       }
     };
     void init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession);
-        if (newSession) {
-          router.replace("/profile-setup");
-        }
-      }
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
   }, [router, supabase]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStepIdx]);
 
-  const resolveUserId = useCallback(async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      logSupabaseErrorDetails("profile-setup:getUser", error);
-      throw error;
+  useEffect(() => {
+    if (searchParams?.get("updated") !== "1") {
+      return;
     }
-    return data.user?.id ?? null;
-  }, [supabase]);
+    setShowUpdatedNotice(true);
+    const timer = setTimeout(() => setShowUpdatedNotice(false), 3000);
+    router.replace("/profile-setup");
+    return () => clearTimeout(timer);
+  }, [router, searchParams]);
+
+  const resolveUserId = useCallback(async () => {
+    return sessionUser?.id ?? null;
+  }, [sessionUser]);
 
   const loadProfileData = useCallback(async () => {
     setIsProfileLoading(true);
@@ -247,9 +238,9 @@ export default function ProfileSetupPage() {
   }, [resolveUserId, supabase]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!sessionUser) return;
     void loadProfileData();
-  }, [loadProfileData, session]);
+  }, [loadProfileData, sessionUser]);
 
   const toggleCuisine = (name: string) => {
     setSelectedCuisines((prev) =>
@@ -319,9 +310,8 @@ export default function ProfileSetupPage() {
   const completeSetup = () => {
     setIsCompleting(true);
     setTimeout(() => {
-      // alert("Setup complete! Redirecting to your personalized swap recommendations...");
       setIsCompleting(false);
-      router.push("/swap");
+      router.push("/profile-setup?updated=1");
     }, 500);
   };
 
@@ -343,7 +333,7 @@ export default function ProfileSetupPage() {
         <div className="min-h-screen flex items-center justify-center bg-highlight text-slate-800">
           <p className="font-bold">Checking session...</p>
         </div>
-      ) : !session ? null : (
+      ) : !sessionUser ? null : (
         <div>
       <nav className="sticky top-0 z-50 border-b-3 border-black bg-highlight/90 backdrop-blur-sm transition-all duration-300">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -429,6 +419,11 @@ export default function ProfileSetupPage() {
 
       <section className="grid-pattern-subtle flex-1 px-4 py-8 sm:px-6 sm:py-12">
         <div className="max-w-5xl mx-auto">
+          {showUpdatedNotice && (
+            <div className="mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              Profile updated
+            </div>
+          )}
           <div className="mb-12 fade-in">
             <div className="flex flex-col gap-6 rounded-3xl border-3 border-black bg-white/90 p-6 shadow-progress">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -578,7 +573,13 @@ export default function ProfileSetupPage() {
               <button
                 id="nextBtn"
                 className="w-full sm:w-auto rounded-2xl border-2 border-black bg-accent px-16 py-4 font-impact text-xl uppercase tracking-wide text-white shadow-strong transition-all hover:-translate-y-0.5 hover:bg-black"
-                onClick={() => void nextStep()}
+                onClick={() => {
+                  if (currentStepIdx === totalSteps - 1) {
+                    completeSetup();
+                    return;
+                  }
+                  void nextStep();
+                }}
               >
                 {currentStepIdx === totalSteps - 1 ? (
                   <span><span className="material-symbols-outlined">check</span> Complete Setup</span>
@@ -940,6 +941,9 @@ function ConstraintsStep({
   setTransitionFromDiet,
   setTransitionToDiet,
 }: ConstraintsStepProps) {
+  const primaryTransitionCards = transitionCardOptions.slice(0, 4);
+  const finalTransitionCard = transitionCardOptions[4];
+
   return (
     <div className="space-y-10">
       <header className="space-y-2">
@@ -1001,46 +1005,68 @@ function ConstraintsStep({
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">From</label>
-              <div className="relative mt-2">
-                <select
-                  className="form-select"
-                  value={transitionFromDiet}
-                  onChange={(event) => setTransitionFromDiet(event.target.value)}
-                >
-                  <option value="">Select diet...</option>
-                  {dietTransitionOptions.map((diet) => (
-                    <option key={diet} value={diet}>
-                      {diet}
-                    </option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-2xl text-slate-400">
-                  expand_more
-                </span>
-              </div>
+          <div className="mt-5 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {primaryTransitionCards.map((option) => {
+                const isSelected = transitionFromDiet === option.from && transitionToDiet === option.to;
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => {
+                      setTransitionFromDiet(option.from);
+                      setTransitionToDiet(option.to);
+                    }}
+                    className={cn(
+                      "w-full rounded-2xl border-2 px-4 py-4 text-left transition-all",
+                      isSelected
+                        ? "border-black bg-accent text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                        : "border-slate-200 bg-white text-slate-800 hover:border-black hover:bg-highlight"
+                    )}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="flex items-center justify-between gap-4">
+                      <span className="font-black uppercase tracking-[0.1em]">{option.label}</span>
+                      {isSelected ? <span className="material-symbols-outlined text-xl">check_circle</span> : null}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">To</label>
-              <div className="relative mt-2">
-                <select
-                  className="form-select"
-                  value={transitionToDiet}
-                  onChange={(event) => setTransitionToDiet(event.target.value)}
-                >
-                  <option value="">Select target diet...</option>
-                  {toDietTransitionOptions.map((diet) => (
-                    <option key={diet} value={diet}>
-                      {diet}
-                    </option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 text-2xl text-slate-400">
-                  expand_more
-                </span>
+            <button
+              type="button"
+              onClick={() => {
+                setTransitionFromDiet(finalTransitionCard.from);
+                setTransitionToDiet(finalTransitionCard.to);
+              }}
+              className={cn(
+                "w-full rounded-2xl border-2 px-4 py-4 text-left transition-all",
+                transitionFromDiet === finalTransitionCard.from && transitionToDiet === finalTransitionCard.to
+                  ? "border-black bg-accent text-white shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
+                  : "border-slate-200 bg-white text-slate-800 hover:border-black hover:bg-highlight"
+              )}
+              aria-pressed={transitionFromDiet === finalTransitionCard.from && transitionToDiet === finalTransitionCard.to}
+            >
+              <span className="flex items-center justify-between gap-4">
+                <span className="font-black uppercase tracking-[0.1em]">{finalTransitionCard.label}</span>
+                {transitionFromDiet === finalTransitionCard.from && transitionToDiet === finalTransitionCard.to ? (
+                  <span className="material-symbols-outlined text-xl">check_circle</span>
+                ) : null}
+              </span>
+            </button>
+
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Coming Soon</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {upcomingTransitionTracks.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-3 font-semibold text-slate-500"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
           </div>

@@ -21,10 +21,8 @@ const normalizeImageValue = (value: unknown) => {
 const resolveBaseUrl = () => {
   const baseUrl =
     process.env.NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL?.trim() ||
-    process.env.PLANT_SEARCH_API_BASE_URL?.trim();
-  if (!baseUrl) {
-    throw new PlantSearchError("Smart Search base URL is not configured. Set NEXT_PUBLIC_PLANT_SEARCH_API_BASE_URL.");
-  }
+    process.env.PLANT_SEARCH_API_BASE_URL?.trim() ||
+    "http://127.0.0.1:8000";
   return baseUrl.replace(/\/$/, "");
 };
 
@@ -101,6 +99,8 @@ type RequestOptions = {
 type SearchOptions = RequestOptions & {
   dishName: string;
   limit?: number;
+  from?: string;
+  to?: string;
 };
 
 type GetAllDishesOptions = RequestOptions & {
@@ -108,6 +108,8 @@ type GetAllDishesOptions = RequestOptions & {
   protein?: string;
   priceRange?: string;
   name?: string;
+  from?: string;
+  to?: string;
 };
 
 const clampScore = (value: number | string | null | undefined) => {
@@ -328,12 +330,19 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   return (payload as T) ?? ({} as T);
 };
 
-export const searchPlantAlternatives = async ({ dishName, limit = 9, signal }: SearchOptions): Promise<SearchAlternativesResponse> => {
+export const searchPlantAlternatives = async ({ dishName, limit = 9, from, to, signal }: SearchOptions): Promise<SearchAlternativesResponse> => {
+  const normalizedFrom = from?.trim().toLowerCase();
+  const normalizedTo = to?.trim().toLowerCase();
   const endpoint = buildUrl("/search");
   const response = await fetchFromPlantSearch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dish_name: dishName, top_n: limit }),
+    body: JSON.stringify({
+      dish_name: dishName,
+      top_n: limit,
+      ...(normalizedFrom ? { from: normalizedFrom } : {}),
+      ...(normalizedTo ? { to: normalizedTo } : {}),
+    }),
     signal,
   });
 
@@ -379,12 +388,16 @@ export const searchPlantAlternatives = async ({ dishName, limit = 9, signal }: S
   };
 };
 
-export const getAllDishes = async ({ category, protein, priceRange, name, signal }: GetAllDishesOptions = {}) => {
+export const getAllDishes = async ({ category, protein, priceRange, name, from, to, signal }: GetAllDishesOptions = {}) => {
+  const normalizedFrom = from?.trim().toLowerCase();
+  const normalizedTo = to?.trim().toLowerCase();
   const endpoint = buildUrl("/dishes", {
     category,
     protein,
     price_range: priceRange,
     name,
+    from: normalizedFrom,
+    to: normalizedTo,
   });
 
   const response = await fetchFromPlantSearch(endpoint, { signal });
