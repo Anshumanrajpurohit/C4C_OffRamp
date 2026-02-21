@@ -1,12 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LogoMark } from "@/app/components/LogoMark";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
 
 export default function SiteNav() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{ id: string } | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          setSessionUser(null);
+          return;
+        }
+
+        const payload = await response.json();
+        setSessionUser(payload?.user?.id ? { id: payload.user.id } : null);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          console.error("Failed to load session", error);
+        }
+        setSessionUser(null);
+      } finally {
+        if (!controller.signal.aborted) {
+          setSessionLoaded(true);
+        }
+      }
+    };
+
+    loadSession();
+    return () => controller.abort();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setIsSigningOut(true);
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      setMobileMenuOpen(false);
+      router.replace("/auth");
+    } catch (error) {
+      console.error("Failed to log out", error);
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-highlight/90 text-[#0b1c21] backdrop-blur-sm transition-all duration-300">
@@ -107,6 +158,42 @@ export default function SiteNav() {
             <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Food Swap</Link>
             <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Coming Soon</Link>
             <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>About</Link>
+            <div className="mt-2 border-t border-black/15 pt-4">
+              {!sessionLoaded ? (
+                <span className="inline-flex w-full items-center justify-center rounded-full border-2 border-black px-4 py-2 text-xs font-bold uppercase opacity-70">
+                  Checking...
+                </span>
+              ) : !sessionUser ? (
+                <Link
+                  href="/auth"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-[#2f6b4a] px-4 py-3 text-xs font-bold uppercase text-white transition hover:brightness-95"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="material-symbols-outlined mr-1 text-base">login</span>
+                  Login
+                </Link>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#2f6b4a] px-4 py-3 text-xs font-bold uppercase text-white transition hover:brightness-95"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="material-symbols-outlined mr-1 text-base">dashboard</span>
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={isSigningOut}
+                    className="inline-flex w-full items-center justify-center rounded-full border-2 border-black px-4 py-3 text-xs font-bold uppercase text-black transition hover:bg-highlight disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined mr-1 text-base">logout</span>
+                    {isSigningOut ? "Signing out" : "Logout"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
