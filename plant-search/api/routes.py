@@ -8,10 +8,12 @@ from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
+from psycopg2 import sql
 from psycopg2.extras import RealDictCursor, Json
 
 from db import get_db_connection
 from engine.extractor import (
+    CATEGORY_TABLES,
     TRANSITION_CATEGORY_KEYS,
     dict_to_dish_response,
     dict_to_features,
@@ -173,6 +175,54 @@ def _resolve_category_map(feature_maps: Dict[str, Dict[str, Any]], category: str
     return dataset
 
 
+def _transition_category_to_api_category(transition_category: str) -> str:
+    normalized = normalize_transition_category(transition_category)
+    if normalized == "non-vegan":
+        return "non-vegan"
+    return "vegan"
+
+
+def _query_dish_from_unified_table(cursor: RealDictCursor, name: str, normalized_name: str):
+    cursor.execute(
+        """
+        SELECT id, name, category, price_range, availability,
+               taste_features, texture_features, emotion_features, nutrition,
+               created_at, data
+        FROM dishes
+        WHERE LOWER(name) = LOWER(%s)
+           OR trim(regexp_replace(lower(name), '[^a-z0-9]+', ' ', 'g')) = %s
+        ORDER BY CASE WHEN LOWER(name) = LOWER(%s) THEN 0 ELSE 1 END, name
+        LIMIT 1
+        """,
+        (name, normalized_name, name),
+    )
+    return cursor.fetchone()
+
+
+def _query_dish_from_category_table(
+    cursor: RealDictCursor,
+    *,
+    table_name: str,
+    api_category: str,
+    name: str,
+    normalized_name: str,
+):
+    query = sql.SQL(
+        """
+        SELECT id, name, %s AS category, price_range, availability,
+               taste_features, texture_features, emotion_features, nutrition,
+               NOW() AS created_at, NULL::jsonb AS data
+        FROM {table_name}
+        WHERE LOWER(name) = LOWER(%s)
+           OR trim(regexp_replace(lower(name), '[^a-z0-9]+', ' ', 'g')) = %s
+        ORDER BY CASE WHEN LOWER(name) = LOWER(%s) THEN 0 ELSE 1 END, name
+        LIMIT 1
+        """
+    ).format(table_name=sql.Identifier(table_name))
+    cursor.execute(query, (api_category, name, normalized_name, name))
+    return cursor.fetchone()
+
+
 def _dish_to_db_dict(dish: DishCreate) -> Dict[str, Any]:
     """Convert DishCreate model to dictionary for database insertion."""
     dish_id = dish.id or str(uuid.uuid4())
@@ -284,23 +334,40 @@ async def search_dishes(request: Request, payload: SearchRequest) -> List[Search
 
 
 @router.get("/dish/{name}", response_model=DishResponse)
-async def get_dish(name: str) -> DishResponse:
+async def get_dish(name: str, request: Request) -> DishResponse:
     """Get a single dish by name from AWS RDS database."""
+    normalized_name = _normalize_dish_name(name)
+    if not normalized_name:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dish not found")
+
+    dish = None
+    missing_categories = _get_missing_feature_map_categories(request)
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(
-                """
-                SELECT id, name, category, price_range, availability,
-                       taste_features, texture_features, emotion_features, nutrition,
-                       created_at, data
-                FROM dishes
-                WHERE LOWER(name) = LOWER(%s)
-                LIMIT 1
-                """,
-                (name,),
-            )
-            
-            dish = cursor.fetchone()
+            dish = _query_dish_from_unified_table(cursor, name, normalized_name)
+
+            if not dish:
+                for transition_category in TRANSITION_CATEGORY_KEYS:
+                    if transition_category in missing_categories:
+                        continue
+                    table_name = CATEGORY_TABLES.get(transition_category)
+                    if not table_name:
+                        continue
+                    dish = _query_dish_from_category_table(
+                        cursor,
+                        table_name=table_name,
+                        api_category=_transition_category_to_api_category(transition_category),
+                        name=name,
+                        normalized_name=normalized_name,
+                    )
+                    if dish:
+                        logger.info(
+                            "dish lookup fallback: requested='%s' normalized='%s' matched_table='%s'",
+                            name,
+                            normalized_name,
+                            table_name,
+                        )
+                        break
     
     if not dish:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dish not found")

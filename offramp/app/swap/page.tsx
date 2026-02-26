@@ -323,19 +323,6 @@ const getDietBadge = (dietValue: string | null | undefined) => {
   return null;
 };
 
-const matchesTransitionToStrict = (dish: DishDetailType | undefined, transitionTo: string | null | undefined) => {
-  const normalizedTo = normalizeTransitionDiet(transitionTo);
-  const allowedTargets = new Set(["non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"]);
-  if (!normalizedTo || !allowedTargets.has(normalizedTo)) return true;
-  if (!dish) return false;
-  const rawDishDiet = typeof dish.diet === "string" ? dish.diet.trim().toLowerCase() : "";
-  const normalizedDishDiet = normalizeTransitionDiet(rawDishDiet) ?? rawDishDiet;
-  if (normalizedTo === "veg" || normalizedTo === "vegetarian") {
-    return normalizedDishDiet === "veg" || normalizedDishDiet === "vegetarian";
-  }
-  return normalizedDishDiet === normalizedTo;
-};
-
 const matchesTargetDiet = (dish: DishDetailType | undefined, targetDiet: TargetDiet) => {
   if (!targetDiet) return true;
   if (!dish) return false;
@@ -751,18 +738,15 @@ function SwapPageInner() {
           return;
         }
 
-        const targetFilteredDishes = (dishes ?? []).filter(
-          (dish) =>
-            matchesTargetDiet(dish, targetDiet) &&
-            matchesTransitionToStrict(dish, transitionToDiet)
+        // Backend already applies `from`/`to` transition filters. Keep only
+        // frontend diet preference filtering here to avoid hiding valid swaps
+        // when hydrated dish metadata is partial.
+        const targetFilteredDishes = (dishes ?? []).filter((dish) =>
+          matchesTargetDiet(dish, targetDiet)
         );
         const rankedRecommendations = raw
           .map((result, index) => ({ result, detail: dishes[index] }))
-          .filter(
-            ({ detail }) =>
-              matchesTargetDiet(detail, targetDiet) &&
-              matchesTransitionToStrict(detail, transitionToDiet)
-          )
+          .filter(({ detail }) => matchesTargetDiet(detail, targetDiet))
           .slice(0, 3)
           .map(({ result, detail }) => toPlantRecommendation(result, detail));
 
