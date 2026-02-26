@@ -295,6 +295,34 @@ const targetDietLabel = (diet: TargetDiet) => {
   return null;
 };
 
+const DIET_LABEL_BADGES: Record<DishDetailType["diet"], { src: string; label: string; alt: string }> = {
+  vegan: {
+    src: "/Labels/vegan.png",
+    label: "Vegan",
+    alt: "Vegan label",
+  },
+  vegetarian: {
+    src: "/Labels/vegetarian.png",
+    label: "Vegetarian",
+    alt: "Vegetarian label",
+  },
+  jain: {
+    src: "/Labels/jain.png",
+    label: "Jain",
+    alt: "Jain label",
+  },
+};
+
+const DIET_LABEL_ORDER: DishDetailType["diet"][] = ["vegan", "vegetarian", "jain"];
+
+const getDietBadge = (dietValue: string | null | undefined) => {
+  const normalized = typeof dietValue === "string" ? dietValue.trim().toLowerCase() : "";
+  if (normalized === "vegan") return DIET_LABEL_BADGES.vegan;
+  if (normalized === "veg" || normalized === "vegetarian") return DIET_LABEL_BADGES.vegetarian;
+  if (normalized === "jain") return DIET_LABEL_BADGES.jain;
+  return null;
+};
+
 const matchesTransitionToStrict = (dish: DishDetailType | undefined, transitionTo: string | null | undefined) => {
   const normalizedTo = normalizeTransitionDiet(transitionTo);
   const allowedTargets = new Set(["non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"]);
@@ -1688,6 +1716,27 @@ function SwapPageInner() {
                 {swapRecordNotice.text}
               </div>
             )}
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Label index</span>
+              {DIET_LABEL_ORDER.map((dietKey) => {
+                const badge = DIET_LABEL_BADGES[dietKey];
+                return (
+                  <span
+                    key={dietKey}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
+                  >
+                    <Image
+                      src={badge.src}
+                      alt={badge.alt}
+                      width={18}
+                      height={18}
+                      className="h-[18px] w-[18px] rounded-md object-cover"
+                    />
+                    {badge.label}
+                  </span>
+                );
+              })}
+            </div>
             {processedSwapResults.map((group) => (
               <div key={group.id} className="space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -2373,8 +2422,8 @@ function SwapResultCard({
   const viewedBy = typeof dish.reviews === "number" ? dish.reviews.toLocaleString() : null;
   const ingredients = dish.ingredients?.slice(0, 5) || [];
   const chefTips = dish.chefTips?.slice(0, 2) || [];
-  const slug = dish.slug ?? dish.name ?? "swap-dish";
   const engineMeta = dish.matchMeta;
+  const dietBadge = getDietBadge(dish.diet);
   const nutritionMatchLabel = formatMatchScoreLabel(engineMeta?.score);
   const ratingValue = typeof dish.rating === "number" ? dish.rating.toFixed(1) : null;
   const liveScoreLabel = typeof engineMeta?.score === "number" ? `${Math.round(engineMeta.score * 100)}% live score` : null;
@@ -2416,10 +2465,17 @@ function SwapResultCard({
               </div>
 
               {/* badges above image */}
-              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-green-700 px-3 py-1 text-xs font-bold text-white">
-                <span className="material-symbols-outlined text-sm">eco</span>
-                Plant-based swap
-              </div>
+              {dietBadge && (
+                <div className="absolute left-3 top-3 z-10 rounded-2xl border border-white/70 bg-white/95 p-1 shadow">
+                  <Image
+                    src={dietBadge.src}
+                    alt={dietBadge.alt}
+                    width={44}
+                    height={44}
+                    className="h-11 w-11 rounded-xl object-cover"
+                  />
+                </div>
+              )}
               <div className="absolute right-3 bottom-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-black shadow">
                 <span className="material-symbols-outlined text-xs">water_drop</span>
                 Water saved · CO2 reduced
