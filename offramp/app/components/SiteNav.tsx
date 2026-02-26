@@ -11,6 +11,7 @@ import whatsappLogo from "@/public/WhatsApp_Logo_green.svg-removebg-preview.png"
 export default function SiteNav() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileHomeDropdownOpen, setMobileHomeDropdownOpen] = useState(false);
   const [sessionUser, setSessionUser] = useState<{ id: string } | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -87,6 +88,11 @@ export default function SiteNav() {
       console.error("Failed to log out", error);
       setIsSigningOut(false);
     }
+  };
+
+  const closeMobileMenu = () => {
+    setMobileHomeDropdownOpen(false);
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -208,7 +214,13 @@ export default function SiteNav() {
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-white text-black md:hidden"
             onClick={() => {
               setIsScannerOpen(false);
-              setMobileMenuOpen((prev) => !prev);
+              setMobileMenuOpen((prev) => {
+                const next = !prev;
+                if (!next) {
+                  setMobileHomeDropdownOpen(false);
+                }
+                return next;
+              });
             }}
           >
             <span className="material-symbols-outlined text-xl">{mobileMenuOpen ? "close" : "menu"}</span>
@@ -219,14 +231,32 @@ export default function SiteNav() {
       {mobileMenuOpen && (
         <div className="border-t-2 border-black bg-white px-4 py-4 md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm font-bold uppercase tracking-wider">
-            <Link href="/#home" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-            <Link href="/#how-it-works" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>How it Works</Link>
-            <Link href="/#features" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Features</Link>
-            <Link href="/#impact" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Impact</Link>
-            <Link href="/#institutions" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Institutions</Link>
-            <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Food Swap</Link>
-            <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>Coming Soon</Link>
-            <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={() => setMobileMenuOpen(false)}>About</Link>
+            <div className="rounded-xl border border-black/10">
+              <div className="flex items-center">
+                <Link href="/#home" className="flex-1 rounded-l-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Home</Link>
+                <button
+                  type="button"
+                  aria-label="Toggle Home section links"
+                  aria-expanded={mobileHomeDropdownOpen}
+                  aria-controls="site-mobile-home-dropdown"
+                  className="inline-flex items-center rounded-r-xl px-3 py-2 hover:bg-highlight"
+                  onClick={() => setMobileHomeDropdownOpen((prev) => !prev)}
+                >
+                  <span className="material-symbols-outlined text-base">{mobileHomeDropdownOpen ? "expand_less" : "expand_more"}</span>
+                </button>
+              </div>
+              {mobileHomeDropdownOpen && (
+                <div id="site-mobile-home-dropdown" className="flex flex-col gap-1 border-t border-black/10 px-2 py-2 text-xs">
+                  <Link href="/#how-it-works" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>How it Works</Link>
+                  <Link href="/#features" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Features</Link>
+                  <Link href="/#impact" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Impact</Link>
+                  <Link href="/#institutions" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Institutions</Link>
+                </div>
+              )}
+            </div>
+            <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Food Swap</Link>
+            <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Coming Soon</Link>
+            <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>About</Link>
             <div className="mt-2 border-t border-black/15 pt-4">
               {!sessionLoaded ? (
                 <span className="inline-flex w-full items-center justify-center rounded-full border-2 border-black px-4 py-2 text-xs font-bold uppercase opacity-70">
@@ -236,7 +266,7 @@ export default function SiteNav() {
                 <Link
                   href="/auth"
                   className="inline-flex w-full items-center justify-center rounded-full bg-[#2f6b4a] px-4 py-3 text-xs font-bold uppercase text-white transition hover:brightness-95"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
                   <span className="material-symbols-outlined mr-1 text-base">login</span>
                   Login
@@ -246,7 +276,7 @@ export default function SiteNav() {
                   <Link
                     href="/dashboard"
                     className="inline-flex w-full items-center justify-center rounded-full bg-[#2f6b4a] px-4 py-3 text-xs font-bold uppercase text-white transition hover:brightness-95"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                   >
                     <span className="material-symbols-outlined mr-1 text-base">dashboard</span>
                     Dashboard
