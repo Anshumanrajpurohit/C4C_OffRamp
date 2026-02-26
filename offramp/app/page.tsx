@@ -440,7 +440,7 @@ export default function Home() {
                   </div>
                 </div>
                 <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDufMJacStbAFdf7Q8-89ljksa8FW-kwlZGPlLaZWYDnBhSZirOWG5YY97EKERs4JAe4Q4Nif39PxcO603XzpIqLFz-L8029eGJKUMFUs8iIHP8fQM7SBYSszsqAAqxyKi6j7Bt5zWvsgMtWqJGLlGn-F08rWd9PdgC4l0ujgZxiv30mgnSqv-ju8-n_WG_t5feEvhR7nDETEhy85-HGFMiEfg0a6gFvWgL89YNI5cGWcLSJCmcAFQ9-gqCpXA2D2gaL7NhqJGiYKdf"
+                  src="/Labels/vegan.png"
                   alt="Graph visual"
                   className="mt-8 h-48 w-full rounded-2xl border-2 border-black object-cover transition-transform duration-500 hover:scale-105"
                 />

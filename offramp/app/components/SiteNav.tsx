@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LogoMark } from "@/app/components/LogoMark";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
+import whatsappLogo from "@/public/WhatsApp_Logo_green.svg-removebg-preview.png";
 
 export default function SiteNav() {
   const router = useRouter();
@@ -12,6 +14,8 @@ export default function SiteNav() {
   const [sessionUser, setSessionUser] = useState<{ id: string } | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const scannerContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -46,6 +50,32 @@ export default function SiteNav() {
     loadSession();
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (!isScannerOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!scannerContainerRef.current?.contains(event.target as Node)) {
+        setIsScannerOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsScannerOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isScannerOpen]);
 
   const handleLogout = async () => {
     try {
@@ -135,12 +165,51 @@ export default function SiteNav() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
+          <div ref={scannerContainerRef} className="relative md:hidden">
+            <button
+              type="button"
+              aria-label="Open WhatsApp companion QR"
+              aria-haspopup="dialog"
+              aria-expanded={isScannerOpen}
+              aria-controls="site-nav-scanner-popover"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-black/10 bg-white transition hover:border-[#2f6b4a] hover:bg-[#f2fbf4]"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsScannerOpen((prev) => !prev);
+              }}
+            >
+              <Image src={whatsappLogo} alt="WhatsApp companion" width={24} height={24} className="h-6 w-6" />
+            </button>
+            {isScannerOpen && (
+              <div
+                id="site-nav-scanner-popover"
+                role="dialog"
+                aria-label="Scan WhatsApp companion QR"
+                className="absolute right-0 top-full z-50 mt-3 w-60 rounded-2xl border border-black/10 bg-white p-4 shadow-lg shadow-black/15"
+              >
+                <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[#0b1c21]">
+                  WhatsApp Companion
+                </p>
+                <Image
+                  src="/code.png"
+                  alt="WhatsApp companion QR code"
+                  width={200}
+                  height={200}
+                  className="w-full rounded-xl border border-zinc-200 bg-white p-2"
+                />
+              </div>
+            )}
+          </div>
           <button
             type="button"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-white text-black md:hidden"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            onClick={() => {
+              setIsScannerOpen(false);
+              setMobileMenuOpen((prev) => !prev);
+            }}
           >
             <span className="material-symbols-outlined text-xl">{mobileMenuOpen ? "close" : "menu"}</span>
           </button>
