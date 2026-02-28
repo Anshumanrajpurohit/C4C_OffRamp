@@ -158,6 +158,12 @@ export default function SiteNav() {
             Food Swap
           </Link>
           <Link
+            href="/brochure"
+            className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+          >
+            Brochure
+          </Link>
+          <Link
             href="/coming-soon"
             className="relative text-[#0b1c21] transition-colors duration-300 hover:text-accent after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
           >
@@ -255,6 +261,7 @@ export default function SiteNav() {
               )}
             </div>
             <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Food Swap</Link>
+            <Link href="/brochure" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Brochure</Link>
             <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Coming Soon</Link>
             <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>About</Link>
             <div className="mt-2 border-t border-black/15 pt-4">

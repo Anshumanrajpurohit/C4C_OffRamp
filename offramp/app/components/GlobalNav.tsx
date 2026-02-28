@@ -166,6 +166,9 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
           <Link href="/swap" className={navLinkClass}>
             Food Swap
           </Link>
+          <Link href="/brochure" className={navLinkClass} prefetch={false}>
+            Brochure
+          </Link>
           {comingSoonLink}
           <Link href="/about" className={navLinkClass} prefetch={false}>
             About
@@ -256,6 +259,7 @@ export function GlobalNav({ enableHashNavigation = false }: GlobalNavProps) {
               )}
             </div>
             <Link href="/swap" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu}>Food Swap</Link>
+            <Link href="/brochure" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu} prefetch={false}>Brochure</Link>
             <Link href="/coming-soon" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu} prefetch={false}>Coming Soon</Link>
             <Link href="/about" className="rounded-xl px-3 py-2 hover:bg-highlight" onClick={closeMobileMenu} prefetch={false}>About</Link>
             <div className="mt-2 border-t border-black/15 pt-4">
