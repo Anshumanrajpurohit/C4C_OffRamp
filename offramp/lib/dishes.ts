@@ -6,7 +6,9 @@ export type DishMatchMeta = {
   protein?: string;
   availability?: string;
   score?: number;
+  similarity?: number;
   reasons?: string[];
+  matchedIngredients?: string[];
   dishId?: string | number;
   originalDish?: string;
 };

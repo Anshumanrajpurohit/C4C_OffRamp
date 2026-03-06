@@ -17,10 +17,13 @@ from engine.extractor import (
     dict_to_features,
     normalize_transition_category,
 )
-from engine.ranker import rank_top_matches
-from engine.scorer import score_all
+from search.dataset_loader import DatasetCatalog, find_dish_in_dataset, load_dataset_catalog_from_db
+from search.ranking_engine import rank_with_ingredients
+from search.result_formatter import build_search_results
+from search.suggestion_engine import rank_suggestions
 
 from .models import (
+    DatasetResponse,
     DeleteResponse,
     DishCreate,
     DishResponse,
@@ -77,10 +80,41 @@ def _get_missing_feature_map_categories(request: Request) -> set[str]:
     return set()
 
 
+def _get_dataset_catalog(request: Request) -> Optional[DatasetCatalog]:
+    catalog = getattr(request.app.state, "dataset_catalog", None)
+    if isinstance(catalog, DatasetCatalog):
+        return catalog
+    return None
+
+
 def _normalize_dish_name(value: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", " ", value.strip().lower())
     normalized = re.sub(r"\s+", " ", normalized).strip()
     return normalized
+
+
+def _resolve_dataset_name(
+    catalog: Optional[DatasetCatalog],
+    category_value: Optional[str],
+    dataset_value: Optional[str],
+    fallback: str,
+) -> Optional[str]:
+    if not catalog:
+        return None
+
+    dataset = (dataset_value or "").strip().lower()
+    if dataset in catalog.dishes_by_dataset:
+        return dataset
+
+    category = _normalize_transition_value(category_value)
+    if category:
+        for entry in catalog.datasets:
+            if entry.category == category:
+                return entry.dataset
+
+    if fallback in catalog.dishes_by_dataset:
+        return fallback
+    return None
 
 
 def _find_source_feature(source_map: Dict[str, Any], dish_name: str, source_category: str):
@@ -242,13 +276,31 @@ async def search_dishes(request: Request, payload: SearchRequest) -> List[Search
     """Search for vegan alternatives to a non-vegan dish using AWS RDS database."""
     top_n_default = getattr(request.app.state, "top_n_default", 10)
     top_n = payload.top_n or top_n_default
-    from_value = _normalize_transition_value(payload.from_)
-    to_value = _normalize_transition_value(payload.to)
+    from_value = _normalize_transition_value(payload.from_category or payload.from_)
+    to_value = _normalize_transition_value(payload.to_category or payload.to)
 
     feature_maps = _get_feature_maps(request)
     missing_categories = _get_missing_feature_map_categories(request)
+    dataset_catalog = _get_dataset_catalog(request)
 
-    source_category = from_value or "non-vegan"
+    from_dataset = _resolve_dataset_name(
+        dataset_catalog,
+        from_value,
+        payload.from_dataset or payload.from_,
+        "dishes_non_vegan",
+    )
+    to_dataset = _resolve_dataset_name(
+        dataset_catalog,
+        to_value,
+        payload.to_dataset or payload.to,
+        "dishes_vegan",
+    )
+
+    source_category = from_value
+    if not source_category and from_dataset and dataset_catalog:
+        source_category = dataset_catalog.dataset_to_category.get(from_dataset)
+    source_category = source_category or "non-vegan"
+
     source_map = _resolve_category_map(feature_maps, source_category)
     if from_value and not source_map and from_value in missing_categories:
         source_map = _resolve_category_map(feature_maps, "non-vegan")
@@ -256,16 +308,36 @@ async def search_dishes(request: Request, payload: SearchRequest) -> List[Search
     if not source_features:
         return []
 
-    if to_value:
-        filtered_map = _resolve_category_map(feature_maps, to_value)
-        if not filtered_map and to_value in missing_categories:
+    source_ingredients: List[str] = []
+    if dataset_catalog and from_dataset:
+        source_dish = find_dish_in_dataset(dataset_catalog, from_dataset, payload.dish_name)
+        if source_dish:
+            source_ingredients = source_dish.ingredients
+
+    if to_dataset and dataset_catalog:
+        to_category = dataset_catalog.dataset_to_category.get(to_dataset, "")
+        filtered_map = _resolve_category_map(feature_maps, to_category)
+    else:
+        to_category = to_value
+        if not to_category and to_dataset and dataset_catalog:
+            to_category = dataset_catalog.dataset_to_category.get(to_dataset)
+        if to_category:
+            filtered_map = _resolve_category_map(feature_maps, to_category)
+            if not filtered_map and to_category in missing_categories:
+                filtered_map = {}
+                for key, dataset in feature_maps.items():
+                    if key == "non-vegan":
+                        continue
+                    filtered_map.update(dataset)
+        else:
+            # Preserve old behavior: if no `to` is provided, score against the full plant-forward pool.
             filtered_map = {}
             for key, dataset in feature_maps.items():
                 if key == "non-vegan":
                     continue
                 filtered_map.update(dataset)
-    else:
-        # Preserve old behavior: if no `to` is provided, score against the full plant-forward pool.
+
+    if not filtered_map and not to_dataset:
         filtered_map = {}
         for key, dataset in feature_maps.items():
             if key == "non-vegan":
@@ -275,12 +347,29 @@ async def search_dishes(request: Request, payload: SearchRequest) -> List[Search
     if not filtered_map:
         return []
     
-    # Score and rank
-    score_map = score_all(source_features, filtered_map)
-    candidate_count = len(filtered_map)
-    ranked_full = rank_top_matches(score_map, filtered_map, candidate_count)
-    
-    return [SearchResult(**item) for item in ranked_full[:top_n]]
+    candidate_ingredients: Dict[str, List[str]] = {}
+    if dataset_catalog and to_dataset:
+        dishes = dataset_catalog.dishes_by_dataset.get(to_dataset, [])
+        candidate_ingredients = {dish.dish_id: dish.ingredients for dish in dishes}
+
+    ranked_full = rank_with_ingredients(
+        source_features=source_features,
+        source_ingredients=source_ingredients,
+        candidate_features=filtered_map,
+        candidate_ingredients=candidate_ingredients,
+    )
+
+    from_dataset_label = from_dataset or source_category
+    to_dataset_label = to_dataset or (to_category or "all")
+    response_rows = build_search_results(
+        ranked_rows=ranked_full,
+        candidate_features=filtered_map,
+        source_name=source_features.name,
+        from_dataset=from_dataset_label,
+        to_dataset=to_dataset_label,
+        top_n=top_n,
+    )
+    return [SearchResult(**item) for item in response_rows]
 
 
 @router.get("/dish/{name}", response_model=DishResponse)
@@ -365,6 +454,7 @@ async def add_dish(request: Request, payload: DishCreate) -> DishResponse:
         {**dish_dict, "category": transition_category}
     )
     request.app.state.feature_maps = feature_maps
+    request.app.state.dataset_catalog = load_dataset_catalog_from_db()
     
     return dict_to_dish_response(dict(new_dish))
 
@@ -392,99 +482,80 @@ async def delete_dish(dish_id: str, request: Request) -> DeleteResponse:
         if isinstance(dataset, dict):
             dataset.pop(dish_id, None)
     request.app.state.feature_maps = feature_maps
+    request.app.state.dataset_catalog = load_dataset_catalog_from_db()
     
     return DeleteResponse(status="deleted", deleted_id=dish_id)
 
 
 @router.get("/dishes", response_model=List[DishSummary])
 async def list_dishes(
-    category: Optional[str] = Query(None, pattern="^(vegan|non-vegan)$"),
+    request: Request,
+    category: Optional[str] = Query(None),
     protein: Optional[str] = None,
     price_range: Optional[str] = None,
     name: Optional[str] = Query(None, min_length=1),
     from_: Optional[str] = Query(None, alias="from"),
     to: Optional[str] = Query(None),
+    from_dataset: Optional[str] = Query(None),
+    to_dataset: Optional[str] = Query(None),
+    dataset: Optional[str] = Query(None),
 ) -> List[DishSummary]:
-    """List dishes with optional filtering from AWS RDS database."""
-    
-    # Build dynamic query
-    query = """
-        SELECT id, name, category, price_range, nutrition->>'protein' as protein
-        FROM dishes
-        WHERE 1=1
-    """
-    params = []
-    
-    if category:
-        query += " AND category = %s"
-        params.append(category)
+    """List dishes with optional filtering from dataset catalog (autocomplete-safe)."""
+    catalog = _get_dataset_catalog(request)
+    if not catalog:
+        return []
 
     from_value = _normalize_transition_value(from_)
     to_value = _normalize_transition_value(to)
-    if from_value:
-        if from_value == "non-vegan":
-            query += " AND category = 'non-vegan'"
-        else:
-            query += """
-            AND category = 'vegan'
-            AND (
-              CASE
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) = 'veg' THEN 'veg'
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) IN ('vegetarian', 'vegeterian') THEN 'vegetarian'
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) IN ('vegan', 'jain', 'keto') THEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan'))
-                ELSE 'vegan'
-              END
-            ) = %s
-          """
-            params.append(from_value)
+    active_dataset = (from_dataset or to_dataset or dataset or "").strip().lower()
+    if not active_dataset:
+        active_dataset = _resolve_dataset_name(catalog, from_value or to_value, None, "") or ""
 
-    if to_value:
-        if to_value == "non-vegan":
-            query += " AND category = 'non-vegan'"
-        else:
-            query += """
-            AND category = 'vegan'
-            AND (
-              CASE
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) = 'veg' THEN 'veg'
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) IN ('vegetarian', 'vegeterian') THEN 'vegetarian'
-                WHEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan')) IN ('vegan', 'jain', 'keto') THEN LOWER(COALESCE(NULLIF(data->>'diet', ''), 'vegan'))
-                ELSE 'vegan'
-              END
-            ) = %s
-          """
-            params.append(to_value)
-    
+    if active_dataset and active_dataset in catalog.dishes_by_dataset:
+        pools = [catalog.dishes_by_dataset[active_dataset]]
+    else:
+        pools = list(catalog.dishes_by_dataset.values())
+
+    dishes = [dish for pool in pools for dish in pool]
+
+    if category:
+        normalized_category = _normalize_transition_value(category) or category.strip().lower()
+        dishes = [dish for dish in dishes if dish.category == normalized_category]
     if protein:
-        query += " AND nutrition->>'protein' = %s"
-        params.append(protein)
-    
+        dishes = [dish for dish in dishes if dish.protein == protein.strip().lower()]
     if price_range:
-        query += " AND price_range = %s"
-        params.append(price_range)
-    
+        dishes = [dish for dish in dishes if dish.price_range == price_range]
+
     if name:
-        query += " AND LOWER(name) LIKE LOWER(%s)"
-        params.append(f"{name}%")
-    
-    query += " ORDER BY name LIMIT 50"
-    
-    # Execute query
-    with get_db_connection() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query, tuple(params))
-            dishes = cursor.fetchall()
-    
-    # Convert to response model
+        ranked = rank_suggestions(name, dishes, limit=50)
+    else:
+        ranked = sorted(dishes, key=lambda item: item.name.lower())[:50]
+
     return [
         DishSummary(
-            id=dish["id"],
-            name=dish["name"],
-            category=dish["category"],
-            price_range=dish["price_range"],
-            protein=dish["protein"],
+            id=dish.dish_id,
+            name=dish.name,
+            category=dish.category,
+            price_range=dish.price_range,
+            protein=dish.protein,
         )
-        for dish in dishes
+        for dish in ranked
+    ]
+
+
+@router.get("/datasets", response_model=List[DatasetResponse])
+async def list_datasets(request: Request) -> List[DatasetResponse]:
+    catalog = _get_dataset_catalog(request)
+    if not catalog:
+        return []
+    return [
+        DatasetResponse(
+            category=item.category,
+            dataset=item.dataset,
+            table_name=item.table_name,
+            dish_count=item.dish_count,
+        )
+        for item in catalog.datasets
     ]
 
 

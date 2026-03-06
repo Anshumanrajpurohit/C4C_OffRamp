@@ -104,6 +104,51 @@
       margin-bottom: 1.5rem;
     }
 
+    .dataset-selector {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid #dfe5df;
+      border-radius: 0.9rem;
+      background: #f8fbf8;
+    }
+
+    .selector-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .selector-group label {
+      font-size: 0.82rem;
+      color: #2a4b31;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .selector-group select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #2e7d32;
+      background: white;
+      color: #333;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 44px;
+      appearance: menulist;
+      -webkit-appearance: menulist;
+      -moz-appearance: menulist;
+    }
+
+    .selector-group select:focus {
+      outline: none;
+      border-color: #256628;
+      box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+    }
+
     .search-form {
       display: flex;
       gap: 1rem;
@@ -272,6 +317,10 @@
       aside {
         position: static;
       }
+
+      .dataset-selector {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -313,6 +362,16 @@
     </aside>
     <main>
       <section class="search-panel">
+        <div class="dataset-selector">
+          <div class="selector-group">
+            <label for="fromDataset">FROM</label>
+            <select id="fromDataset"></select>
+          </div>
+          <div class="selector-group">
+            <label for="toDataset">TO</label>
+            <select id="toDataset"></select>
+          </div>
+        </div>
         <form class="search-form" id="search-form">
           <div class="suggestions">
             <input type="text" id="search-input" placeholder="Search non-vegan dish (e.g. Smoky Chicken Burger)" autocomplete="off" />
@@ -363,6 +422,8 @@
     const topNInput = document.getElementById('top-n');
     const resultsContainer = document.getElementById('results-container');
     const suggestionsBox = document.getElementById('suggestions');
+    const fromDatasetSelect = document.getElementById('fromDataset');
+    const toDatasetSelect = document.getElementById('toDataset');
 
     const filters = {
       protein: 'any',
@@ -372,9 +433,75 @@
 
     let currentResults = [];
     let suggestionTimer;
+    let datasetCatalog = [];
 
     const proteinOrder = ['low', 'medium', 'high', 'very-high'];
     const priceOrder = ['low', 'medium', 'high'];
+
+    function populateSelect(selectElement, items, valueKey, labelBuilder, placeholder = 'Select') {
+      const currentValue = selectElement.value;
+      if (!items.length) {
+        selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+        selectElement.value = '';
+        return;
+      }
+      selectElement.innerHTML = items.map(item => {
+        const value = item[valueKey];
+        const label = labelBuilder(item);
+        return `<option value="${value}">${label}</option>`;
+      }).join('');
+      if (currentValue && items.some(item => item[valueKey] === currentValue)) {
+        selectElement.value = currentValue;
+      }
+    }
+
+    function normalizeDatasetsResponse(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (payload && Array.isArray(payload.datasets)) {
+        return payload.datasets.map(item => {
+          if (typeof item === 'string') {
+            return { dataset: item, table_name: item, dish_count: null };
+          }
+          return item;
+        });
+      }
+      return [];
+    }
+
+    function syncDatasetDropdowns() {
+      populateSelect(
+        fromDatasetSelect,
+        datasetCatalog,
+        'dataset',
+        item => item.dish_count ? `${item.dataset} (${item.dish_count})` : item.dataset,
+        'No datasets'
+      );
+      populateSelect(
+        toDatasetSelect,
+        datasetCatalog,
+        'dataset',
+        item => item.dish_count ? `${item.dataset} (${item.dish_count})` : item.dataset,
+        'No datasets'
+      );
+
+      const fromPreferred = datasetCatalog.find(item => item.dataset === 'dishes_non_vegan');
+      const toPreferred = datasetCatalog.find(item => item.dataset === 'dishes_vegan');
+      if (fromPreferred) fromDatasetSelect.value = 'dishes_non_vegan';
+      if (toPreferred) toDatasetSelect.value = 'dishes_vegan';
+      suggestionsBox.hidden = true;
+    }
+
+    async function loadDatasets() {
+      try {
+        const response = await fetch(`${API_BASE}/datasets`);
+        if (!response.ok) return;
+        datasetCatalog = normalizeDatasetsResponse(await response.json());
+        if (!datasetCatalog.length) return;
+        syncDatasetDropdowns();
+      } catch (_) {
+        datasetCatalog = [];
+      }
+    }
 
     function setLoading(isLoading) {
       if (isLoading) {
@@ -427,22 +554,29 @@
         return;
       }
       const cards = filtered.map(result => {
-        const progress = Math.min(result.score * 4, 100);
+        const progress = Math.min(result.similarity || (result.score * 4), 100);
         const reasons = result.reasons.length ? result.reasons.map(reason => `<li>Matched: ${reason}</li>`).join('') : '<li>High overall affinity</li>';
+        const contextLine = result.from_dish
+          ? `<small>${result.from_dish} (${result.from_dataset || 'source'}) -> ${result.name} (${result.to_dataset || 'target'})</small>`
+          : '';
+        const ingredientLine = result.matched_ingredients && result.matched_ingredients.length
+          ? `<li>Matched ingredients: ${result.matched_ingredients.join(', ')}</li>`
+          : '';
         return `
           <article class="result-card">
             <div>
               <h3>${result.name}</h3>
+              ${contextLine}
               <div class="badges">
                 <span class="badge">Protein: ${result.protein}</span>
                 <span class="badge">Price: ${result.price_range}</span>
               </div>
             </div>
             <div>
-              <small>Match score</small>
+              <small>Similarity: ${progress.toFixed(1)}%</small>
               <div class="progress"><span style="width:${progress}%"></span></div>
             </div>
-            <ul class="reasons">${reasons}</ul>
+            <ul class="reasons">${reasons}${ingredientLine}</ul>
           </article>
         `;
       }).join('');
@@ -458,7 +592,13 @@
         const response = await fetch(`${API_BASE}/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dish_name: dishName, top_n: Number(topNInput.value) || 10 })
+          body: JSON.stringify({
+            dish: dishName,
+            dish_name: dishName,
+            top_n: Number(topNInput.value) || 10,
+            from_dataset: fromDatasetSelect.value || null,
+            to_dataset: toDatasetSelect.value || null
+          })
         });
         if (!response.ok) {
           const message = await response.text();
@@ -475,6 +615,9 @@
     async function fetchSuggestions(term) {
       try {
         const params = new URLSearchParams({ name: term });
+        if (fromDatasetSelect.value) {
+          params.set('from_dataset', fromDatasetSelect.value);
+        }
         const response = await fetch(`${API_BASE}/dishes?${params.toString()}`);
         if (!response.ok) return;
         const dishes = await response.json();
@@ -513,6 +656,7 @@
 
     searchForm.addEventListener('submit', performSearch);
     updateFilters();
+    loadDatasets();
   </script>
 </body>
 </html>

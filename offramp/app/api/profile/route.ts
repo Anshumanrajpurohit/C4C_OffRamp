@@ -42,7 +42,7 @@ export async function GET() {
 
     const { data: profile, error: fetchError } = await adminClient
       .from("users")
-      .select("id, full_name, email, phone, region, city, budget_level")
+      .select("id, full_name, email, phone, region, city, budget_level, transition_from_diet, transition_to_diet")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -54,6 +54,8 @@ export async function GET() {
       profile: profile
         ? {
             ...profile,
+            diet_from: profile.transition_from_diet ?? null,
+            diet_to: profile.transition_to_diet ?? null,
             avatar_url: null,
           }
         : null,

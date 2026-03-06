@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from db import init_db_pool, close_db_pool, get_db_connection
 from engine.extractor import TRANSITION_CATEGORY_KEYS, load_feature_maps_from_db
+from search.dataset_loader import load_dataset_catalog_from_db
 
 from .routes import router
 
@@ -63,6 +64,7 @@ async def startup_event() -> None:
         feature_maps, category_counts, total_count, missing_categories = load_feature_maps_from_db()
         app.state.feature_maps = feature_maps
         app.state.missing_feature_map_categories = set(missing_categories)
+        app.state.dataset_catalog = load_dataset_catalog_from_db()
 
         print("[STARTUP] Category counts:")
         for key in TRANSITION_CATEGORY_KEYS:

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
 import SiteFooter from "@/app/components/SiteFooter";
@@ -14,31 +14,27 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 });
 
-// Centralized mock metrics for future API replacement
-const mockMetrics = {
-  impact: {
-    waterSavedML: 1.2,
-    co2AvoidedTons: 450,
-    dailySwaps: 1320,
-    weeklyTransitions: 8420,
-    mealsInfluenced: 18250,
-  },
-  dashboard: {
-    totalSwaps: 128450,
-    ecoScore: 9.2,
-    progressPercent: 75,
-    todaysImpact: 320,
-    monthlySwaps: 28450,
-    avgEcoScoreToday: 9.1,
-  },
-  micro: {
-    liveSwapsNow: 87,
-    campuses: 64,
-  },
+type LandingMetrics = {
+  total_users: number;
+  total_swaps: number;
+  active_users_today: number;
+  weekly_swaps: number;
+  live_swaps: number;
+};
+
+const defaultMetrics: LandingMetrics = {
+  total_users: 0,
+  total_swaps: 0,
+  active_users_today: 0,
+  weekly_swaps: 0,
+  live_swaps: 0,
 };
 
 export default function Home() {
   const animatedElements = useRef(new WeakSet<HTMLElement>());
+  const [metrics, setMetrics] = useState<LandingMetrics>(defaultMetrics);
+  const liveActivityPercent =
+    metrics.weekly_swaps > 0 ? Math.min(100, Math.round((metrics.live_swaps / metrics.weekly_swaps) * 100)) : 0;
 
   useEffect(() => {
     document.documentElement.classList.add("scroll-smooth");
@@ -92,35 +88,6 @@ export default function Home() {
       requestAnimationFrame(update);
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("active");
-
-          const counters = entry.target.querySelectorAll<HTMLElement>(
-            ".counter, .counter-swaps, .counter-score, .counter-dashboard, .counter-micro"
-          );
-          counters.forEach(animateCounterEl);
-
-          const progressBars = entry.target.querySelectorAll<HTMLElement>("[data-progress-target]");
-          progressBars.forEach((bar) => {
-            if (animatedElements.current.has(bar)) return;
-            const targetWidth = bar.dataset.progressTarget || "75";
-            setTimeout(() => {
-              bar.style.width = `${targetWidth}%`;
-              bar.style.transition = "width 2s ease-out";
-            }, 300);
-            animatedElements.current.add(bar);
-          });
-        }
-      });
-    }, observerOptions);
-
-    const targets = document.querySelectorAll(
-      ".scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .impact-card, .counter-trigger, .progress-trigger"
-    );
-    targets.forEach((el) => observer.observe(el));
-
     const anchorHandler = (event: Event) => {
       const target = event.currentTarget as HTMLAnchorElement;
       if (!target?.hash) return;
@@ -134,10 +101,71 @@ export default function Home() {
     const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'));
     anchors.forEach((anchor) => anchor.addEventListener("click", anchorHandler));
 
+    let mounted = true;
+    let observer: IntersectionObserver | null = null;
+    let targets: NodeListOf<Element> | null = null;
+
+    const setupObserver = () => {
+      if (!mounted) return;
+
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active");
+
+            const counters = entry.target.querySelectorAll<HTMLElement>(
+              ".counter, .counter-swaps, .counter-score, .counter-dashboard, .counter-micro"
+            );
+            counters.forEach(animateCounterEl);
+
+            const progressBars = entry.target.querySelectorAll<HTMLElement>("[data-progress-target]");
+            progressBars.forEach((bar) => {
+              if (animatedElements.current.has(bar)) return;
+              const targetWidth = bar.dataset.progressTarget || "0";
+              setTimeout(() => {
+                bar.style.width = `${targetWidth}%`;
+                bar.style.transition = "width 2s ease-out";
+              }, 300);
+              animatedElements.current.add(bar);
+            });
+          }
+        });
+      }, observerOptions);
+
+      targets = document.querySelectorAll(
+        ".scroll-reveal, .scroll-reveal-left, .scroll-reveal-right, .impact-card, .counter-trigger, .progress-trigger"
+      );
+      targets.forEach((el) => observer?.observe(el));
+    };
+
+    const loadMetrics = async () => {
+      try {
+        const res = await fetch("/api/landing/metrics", {
+          next: { revalidate: 300 },
+        } as RequestInit);
+        const payload = res.ok ? await res.json() : defaultMetrics;
+        if (!mounted) return;
+        setMetrics({
+          total_users: Number(payload?.total_users) || 0,
+          total_swaps: Number(payload?.total_swaps) || 0,
+          active_users_today: Number(payload?.active_users_today) || 0,
+          weekly_swaps: Number(payload?.weekly_swaps) || 0,
+          live_swaps: Number(payload?.live_swaps) || 0,
+        });
+      } catch {
+        if (mounted) setMetrics(defaultMetrics);
+      } finally {
+        setupObserver();
+      }
+    };
+
+    loadMetrics();
+
     return () => {
+      mounted = false;
       anchors.forEach((anchor) => anchor.removeEventListener("click", anchorHandler));
-      targets.forEach((el) => observer.unobserve(el));
-      observer.disconnect();
+      targets?.forEach((el) => observer?.unobserve(el));
+      observer?.disconnect();
       document.documentElement.classList.remove("scroll-smooth");
     };
   }, []);
@@ -195,7 +223,7 @@ export default function Home() {
                       <div className="absolute left-2 top-2 rounded bg-primary px-3 py-1 text-[10px] font-bold text-white">AFTER</div>
                     </div>
                     <div className="rounded-xl border-2 border-black bg-highlight p-4 text-sm font-bold italic">
-                      "Mushroom Keema: 95% texture match"
+                      "Mushroom Keema: texture-aligned swap"
                     </div>
                   </div>
                 </div>
@@ -287,7 +315,7 @@ export default function Home() {
                 <span className="material-symbols-outlined">analytics</span>
               </div>
               <h3 className="mb-3 font-impact text-2xl uppercase">Measured Impact</h3>
-              <p className="text-sm font-bold leading-relaxed text-slate-600">Real-time stats on carbon and water saved per swap.</p>
+              <p className="text-sm font-bold leading-relaxed text-slate-600">Real-time platform activity from live usage data.</p>
             </div>
           </div>
         </div>
@@ -306,66 +334,63 @@ export default function Home() {
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">water_drop</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={mockMetrics.impact.waterSavedML}
-                  data-format="fixed-1"
-                  data-suffix="M L"
+                  data-target={metrics.total_users}
+                  data-format="int"
                 >
                   0
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Million Liters Freshwater Saved</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Total Users</p>
               </div>
               <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-accent p-8 text-white hover-lift">
                 <span
                   className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow"
                   style={{ animationDelay: "0.5s" }}
                 >
-                  co2
+                  groups
                 </span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={mockMetrics.impact.co2AvoidedTons}
+                  data-target={metrics.total_swaps}
                   data-format="int"
-                  data-suffix=" TONS"
                 >
                   0
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Tons CO2 Emissions Avoided</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Total Swaps</p>
               </div>
               <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-secondary p-8 text-white hover-lift">
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">swap_horiz</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={mockMetrics.impact.dailySwaps}
+                  data-target={metrics.active_users_today}
                   data-format="int"
-                  data-suffix=" DAILY"
                 >
                   0
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Daily Swaps Completed</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/80">Active Users Today</p>
               </div>
               <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-highlight p-8 text-black hover-lift">
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">trending_up</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={mockMetrics.impact.weeklyTransitions}
+                  data-target={metrics.weekly_swaps}
                   data-format="int"
                   data-suffix=" /WK"
                 >
                   0
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-black/80">Weekly Plant-Based Transitions</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-black/80">Weekly Swaps</p>
               </div>
               <div className="impact-card bold-shadow rounded-[2rem] border-3 border-black bg-white p-8 text-black hover-lift">
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">restaurant</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={mockMetrics.impact.mealsInfluenced}
+                  data-target={metrics.live_swaps}
                   data-format="int"
-                  data-suffix=" MEALS"
+                  data-suffix=" LIVE"
                 >
                   0
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Estimated Meals Influenced</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Live Swaps (5 min)</p>
               </div>
             </div>
           </div>
@@ -381,25 +406,25 @@ export default function Home() {
                 </div>
                 <div className="space-y-6">
                   <div className="h-6 overflow-hidden rounded-full border-2 border-black bg-slate-200 progress-trigger">
-                    <div className="progress-bar h-full w-0 rounded-full bg-accent" data-progress-target={mockMetrics.dashboard.progressPercent} />
+                    <div className="progress-bar h-full w-0 rounded-full bg-accent" data-progress-target={liveActivityPercent} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
-                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL SWAPS</p>
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL USERS</p>
                       <p
                         className="counter counter-swaps font-impact text-4xl text-black"
-                        data-target={mockMetrics.dashboard.totalSwaps}
+                        data-target={metrics.total_users}
                         data-format="int"
                       >
                         0
                       </p>
                     </div>
                     <div className="rounded-2xl border-3 border-black bg-white p-6 transition-transform duration-300 hover:scale-105">
-                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">ECO-SCORE</p>
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL SWAPS</p>
                       <p
                         className="counter counter-score font-impact text-4xl text-accent"
-                        data-target={mockMetrics.dashboard.ecoScore}
-                        data-format="fixed-1"
+                        data-target={metrics.total_swaps}
+                        data-format="int"
                       >
                         0
                       </p>
@@ -407,32 +432,31 @@ export default function Home() {
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 counter-trigger">
                     <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Today's Impact</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Users Today</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-black"
-                        data-target={mockMetrics.dashboard.todaysImpact}
+                        data-target={metrics.active_users_today}
                         data-format="int"
-                        data-suffix=" kcal"
                       >
                         0
                       </p>
                     </div>
                     <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">This Month's Swaps</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Weekly Swaps</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-accent"
-                        data-target={mockMetrics.dashboard.monthlySwaps}
+                        data-target={metrics.weekly_swaps}
                         data-format="int"
                       >
                         0
                       </p>
                     </div>
                     <div className="rounded-2xl border-3 border-black bg-white p-4 text-center transition-transform duration-300 hover-lift">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Avg. Eco Score Today</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live Swaps</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-primary"
-                        data-target={mockMetrics.dashboard.avgEcoScoreToday}
-                        data-format="fixed-1"
+                        data-target={metrics.live_swaps}
+                        data-format="int"
                       >
                         0
                       </p>
@@ -460,9 +484,9 @@ export default function Home() {
             <span className="material-symbols-outlined text-primary">apartment</span>
             <span
               className="counter counter-micro font-impact text-2xl text-primary"
-              data-target={mockMetrics.micro.campuses}
+              data-target={metrics.total_users}
               data-format="int"
-              data-suffix=" CAMPUSES ONBOARD"
+              data-suffix=" USERS ON PLATFORM"
             >
               0
             </span>
@@ -530,7 +554,7 @@ export default function Home() {
               <span className="material-symbols-outlined text-white">bolt</span>
               <span
                 className="counter counter-micro font-impact text-2xl text-white"
-                data-target={mockMetrics.micro.liveSwapsNow}
+                data-target={metrics.live_swaps}
                 data-format="int"
                 data-suffix=" LIVE SWAPS NOW"
               >

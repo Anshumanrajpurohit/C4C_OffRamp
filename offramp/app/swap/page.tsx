@@ -8,7 +8,12 @@ import { useSearchParams } from "next/navigation";
 import { DISH_CATALOG, type DishDetail as DishDetailType } from "../../lib/dishes";
 import { DishDetail } from "../components/DishDetail";
 import { NavAuthButton } from "@/app/components/NavAuthButton";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  DEFAULT_FROM_DIET,
+  DEFAULT_TO_DIET,
+  formatDietLabel,
+  normalizeDiet,
+} from "@/lib/dietTransition";
 import {
   PlantSearchError,
   getAllDishes,
@@ -37,11 +42,9 @@ type Dish = {
   category: string;
 };
 
-type FilterOption = {
-  id: string;
-  label: string;
-  description?: string;
-};
+type ProteinLevel = "any" | "low" | "medium" | "high" | "very_high";
+type PriceLevel = "any" | "low" | "medium" | "high";
+type SortBy = "score" | "protein" | "price";
 
 type DishMeta = {
   freshnessIndex: number;
@@ -191,11 +194,43 @@ const ALLERGEN_OPTIONS = [
   { id: "garlic_free", label: "Garlic" },
 ];
 
+const PROTEIN_FILTER_OPTIONS: Array<{ id: ProteinLevel; label: string }> = [
+  { id: "any", label: "Any" },
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+  { id: "very_high", label: "Very High" },
+];
+
+const PRICE_FILTER_OPTIONS: Array<{ id: PriceLevel; label: string }> = [
+  { id: "any", label: "Any" },
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+];
+
+const SORT_FILTER_OPTIONS: Array<{ id: SortBy; label: string }> = [
+  { id: "score", label: "Score" },
+  { id: "protein", label: "Protein" },
+  { id: "price", label: "Price" },
+];
+
+const TRANSITION_OPTIONS = [
+  { value: "non-vegan", label: "NON-VEGAN" },
+  { value: "veg", label: "VEG" },
+  { value: "vegan", label: "VEGAN" },
+  { value: "jain", label: "JAIN" },
+  { value: "keto", label: "KETO" },
+] as const;
+
 const DEFAULT_TEXTURE_TARGET = 0.85;
 
 type PlantSearchFilters = {
   dietaryRestrictions: string[];
   texturePreference: number | null;
+  proteinLevel: ProteinLevel;
+  priceLevel: PriceLevel;
+  sortBy: SortBy;
 };
 
 type TargetDiet = DishDetailType["diet"] | null;
@@ -261,11 +296,9 @@ const toPlantRecommendation = (result: PlantSearchResult, detail?: DishDetailTyp
 });
 
 const normalizeTransitionDiet = (value: string | null | undefined) => {
-  if (!value) return null;
-  const normalized = value.trim().toLowerCase();
+  const normalized = normalizeDiet(value);
   if (!normalized) return null;
   if (normalized === "vegetarian") return "veg";
-  if (normalized === "nonveg" || normalized === "non_veg") return "non-vegan";
   return normalized;
 };
 
@@ -297,13 +330,13 @@ const targetDietLabel = (diet: TargetDiet) => {
 
 const matchesTransitionToStrict = (dish: DishDetailType | undefined, transitionTo: string | null | undefined) => {
   const normalizedTo = normalizeTransitionDiet(transitionTo);
-  const allowedTargets = new Set(["non-vegan", "veg", "vegetarian", "vegan", "jain", "keto"]);
+  const allowedTargets = new Set(["non-vegan", "veg", "vegan", "jain", "keto"]);
   if (!normalizedTo || !allowedTargets.has(normalizedTo)) return true;
   if (!dish) return false;
   const rawDishDiet = typeof dish.diet === "string" ? dish.diet.trim().toLowerCase() : "";
   const normalizedDishDiet = normalizeTransitionDiet(rawDishDiet) ?? rawDishDiet;
-  if (normalizedTo === "veg" || normalizedTo === "vegetarian") {
-    return normalizedDishDiet === "veg" || normalizedDishDiet === "vegetarian";
+  if (normalizedTo === "veg") {
+    return normalizedDishDiet === "veg";
   }
   return normalizedDishDiet === normalizedTo;
 };
@@ -411,16 +444,35 @@ function SwapPageInner() {
   const [spotlightDish, setSpotlightDish] = useState<PlantDishResponse | null>(null);
   const [savedTransitionFromDiet, setSavedTransitionFromDiet] = useState<string | null>(null);
   const [savedTransitionToDiet, setSavedTransitionToDiet] = useState<string | null>(null);
+  const [manualTransitionFromDiet, setManualTransitionFromDiet] = useState<string>(DEFAULT_FROM_DIET);
+  const [manualTransitionToDiet, setManualTransitionToDiet] = useState<string>(DEFAULT_TO_DIET);
   const searchParams = useSearchParams();
   const demoParam = searchParams?.get("demo");
+  const fromParam = useMemo(
+    () => normalizeTransitionDiet(searchParams?.get("from") ?? null),
+    [searchParams]
+  );
+  const toParam = useMemo(
+    () => normalizeTransitionDiet(searchParams?.get("to") ?? null),
+    [searchParams]
+  );
+  const hasProfileTransition = Boolean(savedTransitionFromDiet && savedTransitionToDiet);
   const transitionFromDiet = useMemo(() => {
-    const fromParam = normalizeTransitionDiet(searchParams?.get("from") ?? null);
-    return savedTransitionFromDiet ?? fromParam;
-  }, [savedTransitionFromDiet, searchParams]);
+    return (
+      savedTransitionFromDiet ??
+      fromParam ??
+      manualTransitionFromDiet ??
+      DEFAULT_FROM_DIET
+    );
+  }, [savedTransitionFromDiet, fromParam, manualTransitionFromDiet]);
   const transitionToDiet = useMemo(() => {
-    const toParam = normalizeTransitionDiet(searchParams?.get("to") ?? null);
-    return savedTransitionToDiet ?? toParam;
-  }, [savedTransitionToDiet, searchParams]);
+    return (
+      savedTransitionToDiet ??
+      toParam ??
+      manualTransitionToDiet ??
+      DEFAULT_TO_DIET
+    );
+  }, [savedTransitionToDiet, toParam, manualTransitionToDiet]);
   const targetDiet = useMemo(() => toFrontendTargetDiet(transitionToDiet), [transitionToDiet]);
   const suggestionFromFilter = useMemo(() => toSuggestionFromFilter(transitionFromDiet), [transitionFromDiet]);
   const isDemoTable = demoParam === "1" || demoParam === "2";
@@ -437,7 +489,9 @@ function SwapPageInner() {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [allergenMenuOpen, setAllergenMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [proteinLevel, setProteinLevel] = useState<ProteinLevel>("any");
+  const [priceLevel, setPriceLevel] = useState<PriceLevel>("any");
+  const [sortBy, setSortBy] = useState<SortBy>("score");
   const [recordingSwapKey, setRecordingSwapKey] = useState<string | null>(null);
   const [swapRecordNotice, setSwapRecordNotice] = useState<SwapRecordNotice | null>(null);
   const [midCtaNotice, setMidCtaNotice] = useState<string | null>(null);
@@ -463,88 +517,65 @@ function SwapPageInner() {
     }, {} as Record<string, DishMeta>);
   }, []);
 
-  const filterOptions = useMemo<FilterOption[]>(
-    () => [
-      { id: "new", label: "Newly Updated", description: "Latest recipe refresh" },
-      { id: "old", label: "Oldest Updated", description: "Legacy staples" },
-      { id: "recommended", label: "Most Recommended", description: "Best-rated swaps" },
-      { id: "budget", label: "Budget Friendly", description: "Lower swap cost" },
-      { id: "protein_high", label: "High Protein", description: "Engine-verified protein rich" },
-      { id: "price_low", label: "Budget Match", description: "Plant engine low price range" },
-      { id: "availability_easy", label: "Easy Availability", description: "Common pantry or easy sourcing" },
-      { id: "score_elite", label: "Elite Match", description: "95%+ match confidence" },
-    ],
-    []
-  );
+  const resolveProteinValue = (dish?: DishDetailType) => {
+    if (!dish) return null;
+    if (typeof dish.protein === "number" && Number.isFinite(dish.protein)) {
+      return dish.protein;
+    }
+    const rawProtein = dish.matchMeta?.protein;
+    if (!rawProtein) return null;
+    const numeric = Number(rawProtein.replace(/[^0-9.]/g, ""));
+    return Number.isNaN(numeric) ? null : numeric;
+  };
 
-  const filterPredicates = useMemo<Record<string, (dish: DishDetailType) => boolean>>(() => {
-    const total = DISH_CATALOG.length;
-    const newestThreshold = total - Math.max(1, Math.floor(total * 0.3));
-    const oldestThreshold = Math.max(1, Math.floor(total * 0.3));
+  const resolveProteinLevel = (dish?: DishDetailType): ProteinLevel => {
+    const rawProtein = dish?.matchMeta?.protein?.toLowerCase();
+    if (rawProtein?.includes("very high")) return "very_high";
+    if (rawProtein?.includes("high") || rawProtein?.includes("power")) return "high";
+    if (rawProtein?.includes("medium") || rawProtein?.includes("moderate")) return "medium";
+    if (rawProtein?.includes("low")) return "low";
+    const numeric = resolveProteinValue(dish);
+    if (numeric === null) return "any";
+    if (numeric >= 22) return "very_high";
+    if (numeric >= 15) return "high";
+    if (numeric >= 8) return "medium";
+    return "low";
+  };
 
-    const isHighProteinDish = (dish?: DishDetailType) => {
-      if (!dish) return false;
-      const metaProtein = dish.matchMeta?.protein?.toLowerCase();
-      if (metaProtein) {
-        return metaProtein.includes("high") || metaProtein.includes("power");
-      }
-      const numericProtein = typeof dish.protein === "number" ? dish.protein : undefined;
-      return typeof numericProtein === "number" ? numericProtein >= 15 : false;
-    };
-
-    const matchesPriceBand = (dish: DishDetailType | undefined, band: "low" | "premium") => {
-      if (!dish) return false;
-      const metaPrice = dish.matchMeta?.priceRange?.toLowerCase();
-      if (metaPrice) {
-        if (band === "low") {
-          return metaPrice.includes("low") || metaPrice.includes("budget");
-        }
-        return metaPrice.includes("premium") || metaPrice.includes("high");
-      }
-      const price = dishMeta[dish.slug]?.swapCost;
-      if (typeof price !== "number") return false;
-      return band === "low" ? price <= 180 : price >= 260;
-    };
-
-    const hasEasyAvailability = (dish?: DishDetailType) => {
-      if (!dish) return false;
-      const availability = dish.matchMeta?.availability?.toLowerCase();
-      if (availability) {
-        return availability.includes("common") || availability.includes("easy") || availability.includes("everyday");
-      }
-      return true;
-    };
-
-    const hasEliteScore = (dish?: DishDetailType) => {
-      const score = dish?.matchMeta?.score;
-      if (typeof score === "number") {
-        return score >= 0.95;
-      }
-      return false;
-    };
-
-    return {
-      new: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) >= newestThreshold,
-      old: (dish) => (dishMeta[dish.slug]?.freshnessIndex ?? 0) <= oldestThreshold,
-      recommended: (dish) => (dish.rating ?? 0) >= 4.85 || (dish.reviews ?? 0) >= 900,
-      budget: (dish) => {
-        const price = dishMeta[dish.slug]?.swapCost;
-        return typeof price === "number" ? price <= 180 : false;
-      },
-      protein_high: (dish) => isHighProteinDish(dish),
-      price_low: (dish) => matchesPriceBand(dish, "low"),
-      availability_easy: (dish) => hasEasyAvailability(dish),
-      score_elite: (dish) => hasEliteScore(dish),
-    };
-  }, [dishMeta]);
+  const resolvePriceLevel = (dish?: DishDetailType): PriceLevel => {
+    const rawPrice = dish?.matchMeta?.priceRange?.toLowerCase();
+    if (rawPrice?.includes("low") || rawPrice?.includes("budget") || rawPrice?.includes("economy")) return "low";
+    if (rawPrice?.includes("medium") || rawPrice?.includes("mid") || rawPrice?.includes("standard")) return "medium";
+    if (rawPrice?.includes("high") || rawPrice?.includes("premium")) return "high";
+    const price = dish ? dishMeta[dish.slug]?.swapCost : null;
+    if (typeof price !== "number") return "any";
+    if (price <= 180) return "low";
+    if (price <= 260) return "medium";
+    return "high";
+  };
 
   const matchesActiveFilters = (dish?: DishDetailType) => {
-    if (!activeFilters.length) return true;
+    if (proteinLevel === "any" && priceLevel === "any") {
+      return true;
+    }
     if (!dish) return false;
-    return activeFilters.every((filterId) => {
-      const predicate = filterPredicates[filterId];
-      return predicate ? predicate(dish) : true;
-    });
+    if (proteinLevel !== "any" && resolveProteinLevel(dish) !== proteinLevel) {
+      return false;
+    }
+    if (priceLevel !== "any" && resolvePriceLevel(dish) !== priceLevel) {
+      return false;
+    }
+    return true;
+  };
+
+  const compareBySort = (left: DishDetailType, right: DishDetailType) => {
+    if (sortBy === "protein") {
+      return (resolveProteinValue(right) ?? 0) - (resolveProteinValue(left) ?? 0);
+    }
+    if (sortBy === "price") {
+      return (dishMeta[left.slug]?.swapCost ?? Number.MAX_SAFE_INTEGER) - (dishMeta[right.slug]?.swapCost ?? Number.MAX_SAFE_INTEGER);
+    }
+    return (right.matchMeta?.score ?? 0) - (left.matchMeta?.score ?? 0);
   };
 
   const toggleFilterMenu = () => {
@@ -567,11 +598,11 @@ function SwapPageInner() {
     });
   };
 
-  const handleFilterToggle = (optionId: string) => {
-    setActiveFilters((prev) => (prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]));
+  const clearFilters = () => {
+    setProteinLevel("any");
+    setPriceLevel("any");
+    setSortBy("score");
   };
-
-  const clearFilters = () => setActiveFilters([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -599,27 +630,33 @@ function SwapPageInner() {
 
   useEffect(() => {
     let isMounted = true;
-    const supabase = getSupabaseBrowserClient();
-
     (async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user?.id) return;
-        if (!isMounted) return;
-
-        const { data: profile } = await supabase
-          .from("users")
-          .select("transition_from_diet, transition_to_diet")
-          .eq("id", user.id)
-          .maybeSingle();
+        const response = await fetch("/api/profile", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!response.ok || !isMounted) return;
+        const payload = (await response.json()) as {
+          profile?: {
+            diet_from?: string | null;
+            diet_to?: string | null;
+            transition_from_diet?: string | null;
+            transition_to_diet?: string | null;
+          } | null;
+        };
+        const profile = payload?.profile;
         if (!profile || !isMounted) return;
 
-        setSavedTransitionFromDiet(normalizeTransitionDiet(profile.transition_from_diet));
-        setSavedTransitionToDiet(normalizeTransitionDiet(profile.transition_to_diet));
+        const fromDiet = normalizeTransitionDiet(profile.diet_from ?? profile.transition_from_diet ?? null);
+        const toDiet = normalizeTransitionDiet(profile.diet_to ?? profile.transition_to_diet ?? null);
+        if (fromDiet && toDiet) {
+          setSavedTransitionFromDiet(fromDiet);
+          setSavedTransitionToDiet(toDiet);
+        }
       } catch {
-        // Ignore and keep default behavior for anonymous users.
+        // Ignore and keep default transition fallback.
       }
     })();
 
@@ -627,6 +664,12 @@ function SwapPageInner() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (hasProfileTransition) return;
+    setManualTransitionFromDiet(fromParam ?? DEFAULT_FROM_DIET);
+    setManualTransitionToDiet(toParam ?? DEFAULT_TO_DIET);
+  }, [fromParam, toParam, hasProfileTransition]);
 
   useEffect(() => {
     let isMounted = true;
@@ -716,6 +759,9 @@ function SwapPageInner() {
           limit: 9,
           from: transitionFromDiet ?? undefined,
           to: transitionToDiet ?? undefined,
+          proteinLevel: filters.proteinLevel !== "any" ? filters.proteinLevel : undefined,
+          priceLevel: filters.priceLevel !== "any" ? filters.priceLevel : undefined,
+          sortBy: filters.sortBy,
           signal,
         });
 
@@ -803,6 +849,9 @@ function SwapPageInner() {
       {
         dietaryRestrictions,
         texturePreference,
+        proteinLevel,
+        priceLevel,
+        sortBy,
       },
       controller.signal,
       requestId
@@ -816,6 +865,9 @@ function SwapPageInner() {
     normalizedSearchTerm,
     dietaryRestrictions,
     texturePreference,
+    proteinLevel,
+    priceLevel,
+    sortBy,
     fetchPlantSearchResults,
   ]);
 
@@ -859,13 +911,11 @@ function SwapPageInner() {
     return swapResults
       .map((group) => {
         let dishes = [...group.dishes];
-        if (activeFilters.length) {
-          dishes = dishes.filter((dish) => matchesActiveFilters(dish));
-        }
+        dishes = dishes.filter((dish) => matchesActiveFilters(dish)).sort(compareBySort);
         return { ...group, dishes };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [swapResults, activeFilters, filterPredicates, dishMeta]);
+  }, [swapResults, proteinLevel, priceLevel, sortBy, dishMeta]);
 
   const keywordAlternatives = useMemo(() => {
     const buildKey = (value: string) => value.trim().toLowerCase();
@@ -928,7 +978,19 @@ function SwapPageInner() {
 
   const rawHasSwapResults = swapResults.length > 0;
   const hasSwapResults = processedSwapResults.length > 0;
-  const activeFilterCount = activeFilters.length;
+  const activeFilterCount =
+    (proteinLevel !== "any" ? 1 : 0) + (priceLevel !== "any" ? 1 : 0) + (sortBy !== "score" ? 1 : 0);
+  const selectedFilterChips = [
+    proteinLevel !== "any"
+      ? { id: `protein:${proteinLevel}`, label: `Protein: ${PROTEIN_FILTER_OPTIONS.find((opt) => opt.id === proteinLevel)?.label ?? proteinLevel}` }
+      : null,
+    priceLevel !== "any"
+      ? { id: `price:${priceLevel}`, label: `Price: ${PRICE_FILTER_OPTIONS.find((opt) => opt.id === priceLevel)?.label ?? priceLevel}` }
+      : null,
+    sortBy !== "score"
+      ? { id: `sort:${sortBy}`, label: `Sort: ${SORT_FILTER_OPTIONS.find((opt) => opt.id === sortBy)?.label ?? sortBy}` }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
   const activeAllergenCount = dietaryRestrictions.length;
   const filterButtonLabel = activeFilterCount ? `Filter (${activeFilterCount})` : "Filter";
   const allergenButtonLabel = activeAllergenCount ? `Allergen (${activeAllergenCount})` : "Allergen";
@@ -1163,11 +1225,18 @@ function SwapPageInner() {
     if (targetDiet) {
       picks = picks.filter(({ detail }) => matchesTargetDiet(detail, targetDiet));
     }
-    if (activeFilters.length) {
-      picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
-    }
-    return picks.map(({ dish }) => dish).slice(0, 8);
-  }, [query, topPicksWithDetail, targetDiet, activeFilters]);
+    picks = picks.filter(({ detail }) => matchesActiveFilters(detail));
+    return picks
+      .slice()
+      .sort((left, right) => {
+        if (!left.detail && !right.detail) return 0;
+        if (!left.detail) return 1;
+        if (!right.detail) return -1;
+        return compareBySort(left.detail, right.detail);
+      })
+      .map(({ dish }) => dish)
+      .slice(0, 8);
+  }, [query, topPicksWithDetail, targetDiet, proteinLevel, priceLevel, sortBy, dishMeta]);
 
   const toggleRestriction = (value: string) => {
     setDietaryRestrictions((prev) =>
@@ -1391,6 +1460,47 @@ function SwapPageInner() {
 
       <section id="search" className="px-4 pb-6 sm:px-6">
         <div className="mx-auto max-w-6xl">
+          <div className="mb-4 rounded-2xl border-2 border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.35)]">
+            {hasProfileTransition ? (
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-700">
+                Profile transition: {formatDietLabel(transitionFromDiet)} to {formatDietLabel(transitionToDiet)}
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[160px]">
+                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">From dataset</p>
+                  <select
+                    value={manualTransitionFromDiet}
+                    onChange={(event) => setManualTransitionFromDiet(normalizeTransitionDiet(event.target.value) ?? DEFAULT_FROM_DIET)}
+                    className="w-full rounded-xl border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none"
+                  >
+                    {TRANSITION_OPTIONS.map((option) => (
+                      <option key={`from-${option.value}`} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[160px]">
+                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">To dataset</p>
+                  <select
+                    value={manualTransitionToDiet}
+                    onChange={(event) => setManualTransitionToDiet(normalizeTransitionDiet(event.target.value) ?? DEFAULT_TO_DIET)}
+                    className="w-full rounded-xl border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none"
+                  >
+                    {TRANSITION_OPTIONS.map((option) => (
+                      <option key={`to-${option.value}`} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="pb-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+                  Default: NON-VEGAN to VEGAN
+                </p>
+              </div>
+            )}
+          </div>
           <div className="relative mb-4">
             <form
               onSubmit={(e) => {
@@ -1444,37 +1554,81 @@ function SwapPageInner() {
                   {filterMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border-3 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                      className="absolute right-0 z-30 mt-2 w-72 rounded-2xl border-3 border-black bg-white p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                     >
-                      {filterOptions.map((option) => {
-                        const isActive = activeFilters.includes(option.id);
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            role="menuitemcheckbox"
-                            aria-checked={isActive}
-                            onClick={() => handleFilterToggle(option.id)}
-                            className={`flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition hover:bg-highlight ${
-                              isActive ? "text-primary" : "text-slate-700"
-                            }`}
-                          >
-                            <span>
-                              {option.label}
-                              {option.description && (
-                                <span className="block text-[11px] font-normal uppercase tracking-wide text-slate-400">
-                                  {option.description}
-                                </span>
-                              )}
-                            </span>
-                            {isActive && <span className="material-symbols-outlined text-base">check</span>}
-                          </button>
-                        );
-                      })}
-                      {activeFilters.length > 0 && (
+                      <h3 className="text-sm font-black uppercase tracking-[0.2em] text-black">Filters</h3>
+                      <div className="mt-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-bold text-black">Protein</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {PROTEIN_FILTER_OPTIONS.map((option) => {
+                              const isActive = proteinLevel === option.id;
+                              return (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  role="menuitemradio"
+                                  aria-checked={isActive}
+                                  onClick={() => setProteinLevel(option.id)}
+                                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                    isActive ? "bg-[#2e7d32] text-white" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-black">Price</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {PRICE_FILTER_OPTIONS.map((option) => {
+                              const isActive = priceLevel === option.id;
+                              return (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  role="menuitemradio"
+                                  aria-checked={isActive}
+                                  onClick={() => setPriceLevel(option.id)}
+                                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                    isActive ? "bg-[#2e7d32] text-white" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-black">Sort</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {SORT_FILTER_OPTIONS.map((option) => {
+                              const isActive = sortBy === option.id;
+                              return (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  role="menuitemradio"
+                                  aria-checked={isActive}
+                                  onClick={() => setSortBy(option.id)}
+                                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                    isActive ? "bg-[#2e7d32] text-white" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      {activeFilterCount > 0 && (
                         <button
                           type="button"
-                          className="flex w-full items-center justify-center border-t border-black/10 px-4 py-2 text-xs font-bold uppercase text-slate-500 transition hover:text-black"
+                          className="mt-4 flex w-full items-center justify-center border-t border-black/10 px-4 pt-3 text-xs font-bold uppercase text-slate-500 transition hover:text-black"
                           onClick={() => {
                             clearFilters();
                             setFilterMenuOpen(false);
@@ -1629,23 +1783,16 @@ function SwapPageInner() {
             </div>
           </div>
         </div>
-        {activeFilters.length > 0 && (
+        {selectedFilterChips.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-            {activeFilters.map((filterId) => {
-              const option = filterOptions.find((opt) => opt.id === filterId);
-              if (!option) return null;
-              return (
-                <button
-                  type="button"
-                  key={filterId}
-                  className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-primary/10 px-3 py-1 text-primary transition hover:bg-primary hover:text-white"
-                  onClick={() => handleFilterToggle(filterId)}
-                >
-                  {option.label}
-                  <span className="material-symbols-outlined text-base">close</span>
-                </button>
-              );
-            })}
+            {selectedFilterChips.map((chip) => (
+              <span
+                key={chip.id}
+                className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-primary/10 px-3 py-1 text-primary"
+              >
+                {chip.label}
+              </span>
+            ))}
             <button
               type="button"
               className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1 text-slate-500 transition hover:text-black"
@@ -1748,7 +1895,7 @@ function SwapPageInner() {
               <button
                 type="button"
                 onClick={() => {
-                  setActiveFilters([]);
+                  clearFilters();
                 }}
                 className="rounded-full border-2 border-black bg-black px-5 py-2 text-xs font-bold uppercase text-white transition hover:bg-accent"
               >

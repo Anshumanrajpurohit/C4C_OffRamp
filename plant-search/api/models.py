@@ -106,6 +106,10 @@ class SearchRequest(BaseModel):
     top_n: Optional[int] = None
     from_: Optional[str] = Field(None, alias="from")
     to: Optional[str] = None
+    from_category: Optional[str] = None
+    to_category: Optional[str] = None
+    from_dataset: Optional[str] = None
+    to_dataset: Optional[str] = None
 
 
 class SearchResult(BaseModel):
@@ -116,6 +120,18 @@ class SearchResult(BaseModel):
     protein: str
     availability: str
     reasons: List[str]
+    from_dish: Optional[str] = None
+    from_dataset: Optional[str] = None
+    to_dataset: Optional[str] = None
+    similarity: Optional[float] = None
+    matched_ingredients: List[str] = Field(default_factory=list)
+
+
+class DatasetResponse(BaseModel):
+    category: str
+    dataset: str
+    table_name: str
+    dish_count: int
 
 
 class HealthResponse(BaseModel):

@@ -46,10 +46,15 @@ export type PlantSearchResult = {
   dish_id: string;
   name: string;
   score: number;
+  similarity?: number;
+  similarity_score?: number;
   price_range: string;
   protein: string;
   availability: string;
   reasons: string[];
+  matched_ingredients?: string[];
+  from_dataset?: string;
+  to_dataset?: string;
 };
 
 export type PlantDishSummary = {
@@ -101,6 +106,9 @@ type SearchOptions = RequestOptions & {
   limit?: number;
   from?: string;
   to?: string;
+  proteinLevel?: "low" | "medium" | "high" | "very_high";
+  priceLevel?: "low" | "medium" | "high";
+  sortBy?: "score" | "protein" | "price";
 };
 
 type GetAllDishesOptions = RequestOptions & {
@@ -210,7 +218,9 @@ const mapPlantSearchResultToDish = (result: PlantSearchResult, originalDish: str
       protein,
       availability,
       score: scoreBase,
+      similarity: result.similarity ?? result.similarity_score ?? scoreBase,
       reasons: chefNotes,
+      matchedIngredients: sanitizeReasons(result.matched_ingredients),
       dishId: result.dish_id ?? slug,
       originalDish,
     },
@@ -330,31 +340,39 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   return (payload as T) ?? ({} as T);
 };
 
-export const searchPlantAlternatives = async ({ dishName, limit = 9, from, to, signal }: SearchOptions): Promise<SearchAlternativesResponse> => {
+export const searchPlantAlternatives = async ({
+  dishName,
+  limit = 9,
+  from,
+  to,
+  proteinLevel,
+  priceLevel,
+  sortBy,
+  signal,
+}: SearchOptions): Promise<SearchAlternativesResponse> => {
   const normalizedFrom = from?.trim().toLowerCase();
   const normalizedTo = to?.trim().toLowerCase();
-  const endpoint = buildUrl("/search");
+  const endpoint = "/search";
   const response = await fetchFromPlantSearch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      dish_name: dishName,
+      dish_query: dishName,
       top_n: limit,
       ...(normalizedFrom ? { from: normalizedFrom } : {}),
       ...(normalizedTo ? { to: normalizedTo } : {}),
+      ...(proteinLevel ? { protein_level: proteinLevel } : {}),
+      ...(priceLevel ? { price_level: priceLevel } : {}),
+      ...(sortBy ? { sort_by: sortBy } : {}),
     }),
     signal,
   });
 
-  if (response.status === 404) {
-    debugLog("/search 404", dishName);
-    return { dishes: [], raw: [] };
-  }
-
-  const payload = await handleResponse<PlantSearchResult[]>(response);
-  debugLog("/search", payload);
+  const payload = await handleResponse<{ results?: PlantSearchResult[] } | PlantSearchResult[]>(response);
+  const rows = Array.isArray(payload) ? payload : Array.isArray(payload.results) ? payload.results : [];
+  debugLog("/search", rows);
   const detailedDishes = await Promise.allSettled(
-    payload.map(async (item) => {
+    rows.map(async (item) => {
       const detail = await getDish(item.name, signal);
       const hydrated = mapPlantDishResponseToDishDetail(detail, dishName);
       return {
@@ -366,7 +384,9 @@ export const searchPlantAlternatives = async ({ dishName, limit = 9, from, to, s
           protein: item.protein || hydrated.matchMeta?.protein,
           availability: item.availability || hydrated.matchMeta?.availability,
           score: clampScore(item.score),
+          similarity: item.similarity ?? item.similarity_score ?? clampScore(item.score),
           reasons: sanitizeReasons(item.reasons),
+          matchedIngredients: sanitizeReasons(item.matched_ingredients),
           dishId: item.dish_id ?? hydrated.slug,
           originalDish: dishName,
         },
@@ -374,7 +394,7 @@ export const searchPlantAlternatives = async ({ dishName, limit = 9, from, to, s
     })
   );
 
-  const dishes = payload.map((item, index) => {
+  const dishes = rows.map((item, index) => {
     const resolved = detailedDishes[index];
     if (resolved.status === "fulfilled") {
       return resolved.value;
@@ -383,7 +403,7 @@ export const searchPlantAlternatives = async ({ dishName, limit = 9, from, to, s
   });
 
   return {
-    raw: payload,
+    raw: rows,
     dishes,
   };
 };
