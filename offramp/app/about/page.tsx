@@ -39,7 +39,7 @@ const valuePillars = [
 const contactOptions = [
   {
     label: "Email Us",
-    value: "Movement@offramp.co",
+    value: "impact@off-ramp.live",
     href: "mailto:hello@offramp.co",
     icon: "mail",
     shadow: "shadow-[6px_6px_0px_0px_#FF6B35]",
