@@ -43,8 +43,7 @@ const upcomingCuisines = ["Bengali", "Goan", "Indo-Chinese", "Konkan"];
 const upcomingAllergies = ["Gluten", "Shellfish", "Mustard"];
 
 const transitionCardOptions = [
-  { label: "Non-vegan -> Veg", from: "non-vegan", to: "veg" },
-  { label: "Non-vegan -> Vegetarian", from: "non-vegan", to: "vegetarian" },
+  { label: "Non-veg -> Veg", from: "non-veg", to: "veg" },
   { label: "Veg -> Vegan", from: "veg", to: "vegan" },
   { label: "Vegan -> Jain", from: "vegan", to: "jain" },
   { label: "Jain -> Keto", from: "jain", to: "keto" },
