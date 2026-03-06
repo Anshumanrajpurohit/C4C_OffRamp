@@ -489,16 +489,26 @@ svg {
   color: #000;
 }
 
-.coming-soon-content {
+.hero-container,
+.features-container,
+.impact-container {
   position: relative;
   z-index: 3;
+  width: min(1120px, calc(100% - 3rem));
   margin: 0 auto;
-  max-width: 760px;
-  padding: clamp(2.5rem, 6vw, 4rem);
-  background: rgba(247, 243, 238, 0.95);
-  border: 3px solid #131614;
-  border-radius: clamp(2.5rem, 4vw, 3.5rem);
-  box-shadow: 14px 14px 0 0 #131614;
+  padding: clamp(2rem, 4vw, 3.5rem);
+  border-radius: clamp(1rem, 2.4vw, 1.25rem);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(19, 22, 20, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+}
+
+.features-container,
+.impact-container {
+  margin-top: clamp(2.2rem, 5vw, 4.5rem);
+}
+
+.coming-soon-hero {
   text-align: center;
   color: #000;
 }
@@ -535,7 +545,21 @@ svg {
   line-height: 1.7;
   color: #000;
   max-width: 52ch;
-  margin: 0 auto 2.5rem;
+  margin: 0 auto 1.35rem;
+}
+
+.coming-soon-intro {
+  max-width: 60ch;
+  margin: 0 auto 2.35rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.coming-soon-intro p {
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: rgba(0, 0, 0, 0.86);
+  margin: 0;
 }
 
 .coming-soon-actions {
@@ -544,6 +568,20 @@ svg {
   justify-content: center;
   gap: 1rem;
   margin-bottom: 3rem;
+}
+
+.coming-soon-section-title {
+  margin: 0 0 1.15rem;
+  font-family: var(--font-impact, "Bebas Neue", sans-serif);
+  font-size: clamp(2rem, 5.5vw, 3.8rem);
+  line-height: 0.95;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #131614;
+}
+
+.coming-soon-features {
+  color: #000;
 }
 
 .coming-soon-btn {
@@ -584,9 +622,9 @@ svg {
 
 .coming-soon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .coming-soon-card {
@@ -622,14 +660,25 @@ svg {
   line-height: 1.6;
 }
 
-.coming-soon-status {
+.coming-soon-facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
   text-align: left;
+  border: 2px solid rgba(19, 22, 20, 0.22);
+  border-radius: 1.35rem;
+  background: #fff;
+  padding: 1.15rem;
 }
 
-.coming-soon-status dt {
+.coming-soon-facts div {
+  border: 1px solid rgba(19, 22, 20, 0.14);
+  border-radius: 1rem;
+  background: rgba(247, 243, 238, 0.75);
+  padding: 0.9rem 0.95rem;
+}
+
+.coming-soon-facts dt {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.3em;
@@ -637,10 +686,42 @@ svg {
   margin-bottom: 0.4rem;
 }
 
-.coming-soon-status dd {
-  font-size: 1.05rem;
+.coming-soon-facts dd {
+  font-size: 0.94rem;
+  line-height: 1.5;
   font-weight: 700;
   margin: 0;
+}
+
+.coming-soon-why {
+  color: #000;
+}
+
+.coming-soon-why__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.coming-soon-why__card {
+  border: 2px solid rgba(19, 22, 20, 0.22);
+  border-radius: 1.25rem;
+  background: #fff;
+  padding: 1rem 1rem 1.05rem;
+}
+
+.coming-soon-why__card h3 {
+  margin: 0 0 0.38rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: #131614;
+}
+
+.coming-soon-why__card p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.82);
 }
 
 .tape-strip {
@@ -738,9 +819,28 @@ svg {
     padding-top: 3rem;
   }
 
-  .coming-soon-content {
-    padding: 2rem;
-    box-shadow: 8px 8px 0 0 #131614;
+  .hero-container,
+  .features-container,
+  .impact-container {
+    width: calc(100% - 3rem);
+    padding: 1.5rem;
+  }
+
+  .coming-soon-intro {
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  .coming-soon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .coming-soon-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .coming-soon-why__grid {
+    grid-template-columns: 1fr;
   }
 
   .coming-soon-btn {
@@ -754,5 +854,17 @@ svg {
 
   .tape-strip--b {
     bottom: 18%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .coming-soon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .coming-soon-grid {
+    grid-template-columns: 1fr;
   }
 }

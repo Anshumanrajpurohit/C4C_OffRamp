@@ -69,10 +69,10 @@ export default function ProfileWeeklyPlanSection() {
   }, [router]);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_16px_44px_rgba(15,28,33,0.08)] sm:p-6 lg:p-7">
       <div className="mb-8">
         <h2
-          className="text-5xl font-black uppercase tracking-tight"
+          className="text-4xl font-black uppercase tracking-tight sm:text-5xl"
           style={{ fontFamily: "var(--font-impact)", color: "var(--color-primary)" }}
         >
           Weekly Plan
@@ -106,26 +106,18 @@ export default function ProfileWeeklyPlanSection() {
       )}
 
       {plan.length > 0 && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {plan.map((row) => (
             <div
               key={row.week_number}
-              className="rounded-2xl border p-5 flex flex-col gap-3"
-              style={{
-                borderColor: "var(--color-primary)",
-                background: "var(--color-highlight)",
-              }}
+              className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-white via-[#f7fbf8] to-[#eef6f1] p-5 shadow-[0_10px_28px_rgba(15,28,33,0.08)]"
             >
               <div className="flex items-center justify-between">
-                <span
-                  className="text-xs font-bold uppercase tracking-widest"
-                  style={{ color: "var(--color-secondary)" }}
-                >
+                <span className="text-sm font-black uppercase tracking-[0.25em] text-slate-700">
                   Week {row.week_number}
                 </span>
                 <span
-                  className="text-sm font-bold rounded-full px-3 py-1 text-white"
-                  style={{ backgroundColor: "var(--color-accent)" }}
+                  className="rounded-full bg-[#f28f16] px-3 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-white"
                 >
                   {row.meals_to_replace} swap{row.meals_to_replace !== 1 ? "s" : ""}
                 </span>
@@ -137,15 +129,15 @@ export default function ProfileWeeklyPlanSection() {
                   return (
                     <span
                       key={day}
-                      className="text-xs rounded-full px-3 py-1 font-semibold border"
+                      className="rounded-full border px-3 py-1.5 text-xs font-semibold"
                       style={{
                         backgroundColor: isSwap
                           ? "var(--color-primary)"
-                          : "transparent",
+                          : "#f4f4f5",
                         color: isSwap ? "#fff" : "var(--color-foreground)",
                         borderColor: isSwap
                           ? "var(--color-primary)"
-                          : "#ccc",
+                          : "#e4e4e7",
                         outline: isToday ? "2px solid var(--color-accent)" : "none",
                         outlineOffset: "2px",
                       }}

@@ -11,7 +11,6 @@ import { NavAuthButton } from "@/app/components/NavAuthButton";
 import {
   DEFAULT_FROM_DIET,
   DEFAULT_TO_DIET,
-  formatDietLabel,
   normalizeDiet,
 } from "@/lib/dietTransition";
 import {
@@ -214,14 +213,6 @@ const SORT_FILTER_OPTIONS: Array<{ id: SortBy; label: string }> = [
   { id: "protein", label: "Protein" },
   { id: "price", label: "Price" },
 ];
-
-const TRANSITION_OPTIONS = [
-  { value: "non-vegan", label: "NON-VEGAN" },
-  { value: "veg", label: "VEG" },
-  { value: "vegan", label: "VEGAN" },
-  { value: "jain", label: "JAIN" },
-  { value: "keto", label: "KETO" },
-] as const;
 
 const DEFAULT_TEXTURE_TARGET = 0.85;
 
@@ -782,7 +773,7 @@ function SwapPageInner() {
       }
 
       try {
-        const { dishes, raw } = await searchPlantAlternatives({
+        const { dishes, raw, warning } = await searchPlantAlternatives({
           dishName: normalized,
           limit: 9,
           from: transitionFromDiet ?? undefined,
@@ -803,13 +794,20 @@ function SwapPageInner() {
         const targetFilteredDishes = (dishes ?? []).filter((dish) =>
           matchesTargetDiet(dish, targetDiet)
         );
-        const rankedRecommendations = raw
+        const safeDishes =
+          targetFilteredDishes.length > 0 || (dishes ?? []).length === 0
+            ? targetFilteredDishes
+            : (dishes ?? []);
+        const rankedRecommendationsPool = raw
           .map((result, index) => ({ result, detail: dishes[index] }))
-          .filter(({ detail }) => matchesTargetDiet(detail, targetDiet))
+          .filter(({ detail }) => matchesTargetDiet(detail, targetDiet));
+        const rankedRecommendations = (rankedRecommendationsPool.length
+          ? rankedRecommendationsPool
+          : raw.map((result, index) => ({ result, detail: dishes[index] })))
           .slice(0, 3)
           .map(({ result, detail }) => toPlantRecommendation(result, detail));
 
-        setSwapEngineDishes(targetFilteredDishes);
+        setSwapEngineDishes(safeDishes);
         setPlantRecommendations(rankedRecommendations);
         const summary = summarizeRawResults(raw);
         const label = targetDietLabel(targetDiet);
@@ -824,7 +822,9 @@ function SwapPageInner() {
           proteinTags: summary.proteinTags,
           availabilityTags: label ? [label, ...summary.availabilityTags] : summary.availabilityTags,
         });
-        setSwapEngineError(null);
+        setSwapEngineError(
+          warning && raw.length === 0 ? "Live plant-search is currently degraded. Showing best available fallback state." : null
+        );
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
@@ -1485,47 +1485,6 @@ function SwapPageInner() {
 
       <section id="search" className="px-4 pb-6 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 rounded-2xl border-2 border-black bg-white px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.35)]">
-            {hasProfileTransition ? (
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-700">
-                Profile transition: {formatDietLabel(transitionFromDiet)} to {formatDietLabel(transitionToDiet)}
-              </p>
-            ) : (
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="min-w-[160px]">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">From dataset</p>
-                  <select
-                    value={manualTransitionFromDiet}
-                    onChange={(event) => setManualTransitionFromDiet(normalizeTransitionDiet(event.target.value) ?? DEFAULT_FROM_DIET)}
-                    className="w-full rounded-xl border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none"
-                  >
-                    {TRANSITION_OPTIONS.map((option) => (
-                      <option key={`from-${option.value}`} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="min-w-[160px]">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">To dataset</p>
-                  <select
-                    value={manualTransitionToDiet}
-                    onChange={(event) => setManualTransitionToDiet(normalizeTransitionDiet(event.target.value) ?? DEFAULT_TO_DIET)}
-                    className="w-full rounded-xl border border-black/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none"
-                  >
-                    {TRANSITION_OPTIONS.map((option) => (
-                      <option key={`to-${option.value}`} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p className="pb-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
-                  Default: NON-VEGAN to VEGAN
-                </p>
-              </div>
-            )}
-          </div>
           <div className="relative mb-4">
             <form
               onSubmit={(e) => {
@@ -1948,18 +1907,6 @@ function SwapPageInner() {
                 Reset filters
               </button>
             </div>
-          </div>
-        </section>
-      )}
-
-      {/* No Results Message */}
-      {searchTerm && !rawHasSwapResults && (
-        <section className="px-6 pb-12">
-          <div className="mx-auto max-w-2xl rounded-2xl border-3 border-black bg-white px-6 py-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <p className="font-impact text-2xl uppercase text-black">No swaps found for "{searchTerm}"</p>
-            <p className="mt-2 text-sm font-semibold text-slate-600">
-              Try searching for dishes like Chicken Biryani, Mutton Curry, Fish Fry, or Egg Bhurji to see plant-based alternatives.
-            </p>
           </div>
         </section>
       )}

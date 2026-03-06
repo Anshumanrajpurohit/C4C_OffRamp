@@ -64,62 +64,112 @@ export default function ComingSoonPage() {
         <TapeStrip variant="a" direction="forward" duration="18s" sealSrc={TAPE_SEAL_SRC} />
         <TapeStrip variant="b" direction="reverse" duration="22s" sealSrc={TAPE_SEAL_SRC} />
 
-        <section className="coming-soon-content">
-          <p className="coming-soon-eyebrow">Beta channel · Wave 02</p>
+        <section className="coming-soon-hero hero-container">
+          <p className="coming-soon-eyebrow">Guided pilot channel - wave 02</p>
           <h1 className="coming-soon-title">
-            The OffRamp partner space is almost here.
-            <span>We are finishing the behavioral ops toolkit.</span>
+            Offramp is almost ready.
+            <span>A smarter shift toward plant-forward food choices.</span>
           </h1>
           <p className="coming-soon-lede">
-            We are calibrating the campus and enterprise coordination tools so your kitchens can spin up plant-forward
-            rotations without the guesswork. Drop your info and we will move you to the front of the invite queue.
+            Offramp is a web-first dish swap and discovery assistant that helps people make practical plant-forward
+            decisions through personalized recommendations, budget-aware options, and measurable impact framing.
           </p>
+
+          <div className="coming-soon-intro">
+            <p>
+              We are building a behavior-change product that fits real food culture: guided swaps, familiar meals, and
+              low-friction nudges across web and messaging surfaces including WhatsApp.
+            </p>
+            <p>
+              The first release is a guided early-access rollout focused on real-world learning before broader launch:
+              swap quality, onboarding clarity, and everyday repeat use.
+            </p>
+          </div>
+
           <div className="coming-soon-actions">
             <Link href="/swap" className="coming-soon-btn coming-soon-btn--solid">
               Explore Current Swap Flow
             </Link>
-            <Link href="mailto:hello@offramp.c4c" className="coming-soon-btn coming-soon-btn--ghost">
-              Request Early Access
-            </Link>
           </div>
+        </section>
 
+        <section className="coming-soon-features features-container" aria-labelledby="coming-soon-features">
+          <h2 id="coming-soon-features" className="coming-soon-section-title">FEATURES</h2>
           <div className="coming-soon-grid">
             <article className="coming-soon-card">
-              <p className="coming-soon-card__label">What is baking</p>
-              <h3>Predictive menu intelligence</h3>
+              <p className="coming-soon-card__label">Feature 01</p>
+              <h3>Personalized dish swaps</h3>
               <p>
-                Multi-week menu choreography with ingredient-level swap intelligence and purchasing guidance tied to your
-                supply partner data.
+                Help users move toward plant-forward meals without forcing a complete lifestyle reset. Recommend
+                culturally relevant alternatives based on taste, budget, and everyday eating habits.
               </p>
             </article>
             <article className="coming-soon-card">
-              <p className="coming-soon-card__label">Why it matters</p>
-              <h3>Behavioral ops dashboard</h3>
-              <p>Track campus cohorts, measure carbon deltas, and convert insights directly into next-week playbooks.</p>
+              <p className="coming-soon-card__label">Feature 02</p>
+              <h3>Guided behavior journeys</h3>
+              <p>
+                Turn one-off food decisions into repeatable progress with nudges, meal pathways, and lightweight
+                coaching across web and messaging surfaces.
+              </p>
             </article>
             <article className="coming-soon-card">
-              <p className="coming-soon-card__label">How to join</p>
-              <h3>Partner concierge</h3>
+              <p className="coming-soon-card__label">Feature 03</p>
+              <h3>Measurable impact signals</h3>
               <p>
-                Guided onboarding for campuses, operators, and foodservice vendors. We onboard a limited cohort every sixty days.
+                Show how small meal changes support better personal health, reduced animal harm, and lower
+                environmental strain in a way that feels motivating, not overwhelming.
               </p>
             </article>
           </div>
 
-          <dl className="coming-soon-status">
+          <dl className="coming-soon-facts">
             <div>
-              <dt>Gate status</dt>
-              <dd>Internal QA · 82% complete</dd>
+              <dt>Launch stage</dt>
+              <dd>Guided pilot readiness - closed rollout preparation</dd>
             </div>
             <div>
               <dt>First release</dt>
-              <dd>Targeting March 2026</dd>
+              <dd>21 Feb 2026</dd>
             </div>
             <div>
-              <dt>Priority list</dt>
-              <dd>Health systems · Universities · Venue groups</dd>
+              <dt>Core priorities</dt>
+              <dd>Health improvement - Animal welfare - Nature protection - Behavior change - Community adoption</dd>
             </div>
           </dl>
+        </section>
+
+        <section className="coming-soon-why impact-container" aria-labelledby="why-launch-matters">
+          <h2 id="why-launch-matters" className="coming-soon-section-title">WHY THIS LAUNCH MATTERS</h2>
+          <div className="coming-soon-why__grid">
+            <article className="coming-soon-why__card">
+              <h3>For people</h3>
+              <p>
+                Offramp is built for people who want realistic food improvement without perfection pressure. Start
+                with one better swap and build confidence over time.
+              </p>
+            </article>
+            <article className="coming-soon-why__card">
+              <h3>For institutions and communities</h3>
+              <p>
+                Campuses, health systems, partners, and mission-led communities can run structured behavior-change
+                programs with measurable participation and adoption signals.
+              </p>
+            </article>
+            <article className="coming-soon-why__card">
+              <h3>For animals and nature</h3>
+              <p>
+                The platform supports reduced animal harm, more mindful consumption, and stronger outcomes for
+                environmental protection and nature-positive living.
+              </p>
+            </article>
+            <article className="coming-soon-why__card">
+              <h3>For the next release cycle</h3>
+              <p>
+                Early release is focused on validating real usage patterns, swap quality, onboarding simplicity, and
+                clear impact communication before wider rollout.
+              </p>
+            </article>
+          </div>
         </section>
       </main>
       <SiteFooter />

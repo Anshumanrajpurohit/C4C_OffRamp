@@ -14,14 +14,11 @@ type ProgressData = {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div
-      className="rounded-2xl border p-4 flex flex-col gap-1"
-      style={{ borderColor: "var(--color-primary)", background: "var(--color-highlight)" }}
-    >
-      <span className="text-xs font-bold uppercase tracking-widest text-secondary">
+    <div className="flex h-full min-h-[132px] flex-col justify-between rounded-3xl border border-emerald-100 bg-gradient-to-br from-white via-[#f7fbf8] to-[#eef6f1] p-5 shadow-[0_10px_28px_rgba(15,28,33,0.08)]">
+      <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
         {label}
       </span>
-      <span className="text-3xl font-black" style={{ color: "var(--color-primary)" }}>
+      <span className="text-4xl font-black leading-none" style={{ color: "var(--color-primary)" }}>
         {value}
       </span>
     </div>
@@ -76,12 +73,12 @@ export default function ProfileDashboardSection() {
   }, [router]);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_16px_44px_rgba(15,28,33,0.08)] sm:p-6 lg:p-7">
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-2 flex items-start justify-between">
         <div>
           <h2
-            className="text-5xl font-black uppercase tracking-tight"
+            className="text-4xl font-black uppercase tracking-tight sm:text-5xl"
             style={{ fontFamily: "var(--font-impact)", color: "var(--color-primary)" }}
           >
             Dashboard
@@ -115,7 +112,7 @@ export default function ProfileDashboardSection() {
 
       {/* Data */}
       {data && !loading && (
-        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
           {/* Completion banner */}
           {data.transition_complete && (
             <div
@@ -127,19 +124,19 @@ export default function ProfileDashboardSection() {
           )}
 
           {/* Progress bar */}
-          <div className="rounded-2xl border p-5 flex flex-col gap-3" style={{ borderColor: "var(--color-primary)", background: "var(--color-highlight)" }}>
+          <div className="rounded-3xl border border-emerald-100 bg-[#f4fbf7] p-5 shadow-[0_8px_24px_rgba(15,28,33,0.06)]">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest">
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
                 Overall Progress
               </span>
               <span
-                className="text-2xl font-black"
+                className="text-3xl font-black"
                 style={{ color: "var(--color-primary)" }}
               >
                 {data.completion_percentage}%
               </span>
             </div>
-            <div className="h-4 rounded-full bg-gray-200 overflow-hidden">
+            <div className="h-3.5 overflow-hidden rounded-full bg-slate-200">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{
@@ -150,13 +147,13 @@ export default function ProfileDashboardSection() {
                 }}
               />
             </div>
-            <p className="text-xs text-secondary">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Week {data.current_week} of {data.total_weeks}
             </p>
           </div>
 
           {/* Stat grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <StatCard
               label="Meals Replaced"
               value={data.total_meals_replaced}
@@ -172,9 +169,8 @@ export default function ProfileDashboardSection() {
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-2">
             <Link
-              href="/onboarding"
-              className="block text-center rounded-xl py-3 font-bold uppercase tracking-widest text-sm text-white"
-              style={{ backgroundColor: "var(--color-primary)" }}
+              href="/profile-setup"
+              className="inline-flex items-center justify-center rounded-2xl border-2 border-black bg-black px-5 py-3 text-center text-xs font-black uppercase tracking-[0.25em] text-white transition hover:-translate-y-0.5 hover:bg-accent"
             >
               Update Preferences
             </Link>

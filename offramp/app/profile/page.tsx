@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { GlobalNav } from "@/app/components/GlobalNav";
-import { DISH_CATALOG } from "@/lib/dishes";
 import ProfileMain from "@/app/components/profile/ProfileMain";
 
 type SessionUser = {
@@ -43,10 +42,15 @@ type SidebarItem = {
 };
 
 type SwapEntry = {
+  id: string;
   from: string;
   to: string;
   time: string;
-  savings: string;
+  savings: string | null;
+  rating: number | null;
+  fromCategory: string | null;
+  toCategory: string | null;
+  imageUrl: string | null;
 };
 
 type ChefHighlight = {
@@ -57,18 +61,45 @@ type ChefHighlight = {
   trend: string;
 };
 
+type SwapHistoryItem = {
+  id: string;
+  fromDish: string;
+  toDish: string;
+  fromCategory: string | null;
+  toCategory: string | null;
+  rating: number | null;
+  imageUrl: string | null;
+  createdAt: string;
+  reviewText?: string | null;
+};
+
+type ProgressSummary = {
+  total_meals_replaced: number;
+  current_week: number;
+  total_weeks: number;
+  baseline_nonveg_meals: number;
+  transition_complete: boolean;
+  completion_percentage: number;
+};
+
+type ImpactSummary = {
+  meals: number;
+  co2_saved_kg: number;
+  water_saved_liters: number;
+  money_saved_inr: number;
+};
+
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "profile-overview", label: "Profile", icon: "account_circle" },
+  { id: "my-swaps", label: "My Swaps", icon: "swap_horiz" },
   { id: "impact", label: "Impact", icon: "monitoring" },
   { id: "preferences", label: "Preferences", icon: "tune" },
   { id: "activity", label: "Activity", icon: "history" },
   { id: "account", label: "Settings", icon: "shield_lock" },
 ];
 
-const FALLBACK_SERIES = [180, 210, 200, 260, 320, 340];
 const DEFAULT_CUISINES = ["Italian", "Japanese", "Thai"];
 const DEFAULT_INGREDIENTS = ["Jackfruit protein", "Millet dosa", "Kombucha glaze", "Cashew crema"];
-const DEFAULT_SWAP_TIMESTAMPS = ["3h ago", "Yesterday", "2 days ago", "Last week"];
 
 const toList = (value?: string[] | null, fallback: string[] = []) => {
   if (!value) return fallback;
@@ -84,6 +115,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
+  const [swapHistory, setSwapHistory] = useState<SwapHistoryItem[]>([]);
+  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
+  const [impactSummary, setImpactSummary] = useState<ImpactSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSidebar, setActiveSidebar] = useState<string>(SIDEBAR_ITEMS[0].id);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -96,32 +130,68 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!mounted) return;
     const checkSession = async () => {
-      const res = await fetch("/api/auth/session", {
-        method: "GET",
-        credentials: "include"
-      });
+      try {
+        const res = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
 
-      if (res.status !== 200) {
-        router.replace("/auth");
-        return;
+        if (res.status !== 200) {
+          router.replace("/auth");
+          return;
+        }
+
+        const data = await res.json();
+        setUser(data.user);
+
+        const [
+          preferencesRes,
+          swapsRes,
+          progressRes,
+          impactRes,
+        ] = await Promise.all([
+          supabase
+            .from("user_preferences")
+            .select("*")
+            .eq("user_id", data.user.id)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          fetch("/api/swaps/recent?limit=50", { credentials: "include", cache: "no-store" }),
+          fetch("/api/dashboard/progress", { credentials: "include", cache: "no-store" }),
+          fetch("/api/dashboard/impact", { credentials: "include", cache: "no-store" }),
+        ]);
+
+        if (preferencesRes.data) {
+          setProfile(preferencesRes.data);
+        }
+
+        if (swapsRes.ok) {
+          const swapsPayload = await swapsRes.json();
+          setSwapHistory(Array.isArray(swapsPayload?.swaps) ? swapsPayload.swaps : []);
+        } else {
+          setSwapHistory([]);
+        }
+
+        if (progressRes.ok) {
+          const progressPayload = await progressRes.json();
+          if (!progressPayload?.error) {
+            setProgressSummary(progressPayload);
+          }
+        }
+
+        if (impactRes.ok) {
+          const impactPayload = await impactRes.json();
+          if (!impactPayload?.error) {
+            setImpactSummary(impactPayload);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to initialize profile page", error);
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await res.json();
-
-      setUser(data.user);
-
-      const { data: preferences } = await supabase
-        .from("user_preferences")
-        .select("*")
-        .eq("user_id", data.user.id)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (preferences) {
-        setProfile(preferences);
-      }
-
-      setIsLoading(false);
     };
 
     checkSession();
@@ -138,14 +208,50 @@ export default function ProfilePage() {
     return { dietList, cuisines, ingredients, spice };
   }, [profile]);
 
-  const impactMetrics = useMemo(() => ({
-    water: profile?.water_saved_liters ?? 1250,
-    co2: profile?.co2_reduced_kg ?? 45,
-    land: profile?.land_saved_sqm ?? 12,
-    swaps: profile?.swaps_completed ?? 324,
-    growth: profile?.swaps_growth_pct ?? 15,
-    series: (profile?.swap_series?.length ? profile.swap_series : FALLBACK_SERIES).slice(0, 6),
-  }), [profile]);
+  const impactMetrics = useMemo(() => {
+    const meals = impactSummary?.meals ?? progressSummary?.total_meals_replaced ?? swapHistory.length;
+    const co2 = impactSummary?.co2_saved_kg ?? Number((meals * 2.5).toFixed(1));
+    const water = impactSummary?.water_saved_liters ?? meals * 1500;
+    const land = profile?.land_saved_sqm ?? Math.round(meals * 0.7);
+
+    const dayBuckets = new Map<string, number>();
+    swapHistory.forEach((swap) => {
+      const key = new Date(swap.createdAt).toISOString().slice(0, 10);
+      dayBuckets.set(key, (dayBuckets.get(key) ?? 0) + 1);
+    });
+    const sortedDays = Array.from(dayBuckets.entries()).sort(([a], [b]) => a.localeCompare(b));
+    const recentDays = sortedDays.slice(-6);
+    let cumulative = 0;
+    const series = recentDays.length
+      ? recentDays.map(([, count]) => {
+          cumulative += count;
+          return cumulative;
+        })
+      : [Math.max(meals, 0)];
+
+    const now = Date.now();
+    const currentWeekCutoff = now - 7 * 24 * 60 * 60 * 1000;
+    const previousWeekCutoff = now - 14 * 24 * 60 * 60 * 1000;
+    const currentWeekCount = swapHistory.filter((swap) => new Date(swap.createdAt).getTime() >= currentWeekCutoff).length;
+    const previousWeekCount = swapHistory.filter((swap) => {
+      const time = new Date(swap.createdAt).getTime();
+      return time >= previousWeekCutoff && time < currentWeekCutoff;
+    }).length;
+    const growth = previousWeekCount > 0
+      ? Math.round(((currentWeekCount - previousWeekCount) / previousWeekCount) * 100)
+      : currentWeekCount > 0
+        ? 100
+        : 0;
+
+    return {
+      water,
+      co2,
+      land,
+      swaps: meals,
+      growth,
+      series,
+    };
+  }, [impactSummary, progressSummary, profile?.land_saved_sqm, swapHistory]);
 
   const chartPath = useMemo(() => {
     const series = impactMetrics.series;
@@ -165,24 +271,37 @@ export default function ProfilePage() {
   }, [impactMetrics]);
 
   const swapEntries = useMemo<SwapEntry[]>(() => {
-    const dishes = DISH_CATALOG.slice(0, 4);
-    return dishes.map((dish, index) => ({
-      from: dish.replaces?.[0] ?? "Standard meal",
-      to: dish.name,
-      time: DEFAULT_SWAP_TIMESTAMPS[index] ?? "Recently",
-      savings: `-${5 + index * 3}% cost`,
-    }));
-  }, []);
+    return swapHistory.slice(0, 8).map((swap) => {
+      const createdAt = new Date(swap.createdAt);
+      const diffMs = Date.now() - createdAt.getTime();
+      const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+      const timeLabel =
+        diffHours < 1 ? "Just now" : diffHours < 24 ? `${diffHours}h ago` : diffDays < 7 ? `${diffDays}d ago` : createdAt.toLocaleDateString();
+
+      return {
+        id: swap.id,
+        from: swap.fromDish,
+        to: swap.toDish,
+        time: timeLabel,
+        savings: typeof swap.rating === "number" ? `Rated ${swap.rating}/5` : null,
+        rating: swap.rating,
+        fromCategory: swap.fromCategory,
+        toCategory: swap.toCategory,
+        imageUrl: swap.imageUrl,
+      };
+    });
+  }, [swapHistory]);
 
   const chefHighlights = useMemo<ChefHighlight[]>(() => {
-    return DISH_CATALOG.slice(0, 3).map((dish, index) => ({
-      id: dish.slug,
-      name: dish.name,
-      description: dish.replaces?.[0] ? `Swap from ${dish.replaces[0]} to ${dish.name}` : "Chef special",
-      tags: dish.categories?.slice(0, 2) ?? [],
-      trend: `+${((dish.name.length + index * 7) % 10) + 5}%`,
+    return swapHistory.slice(0, 4).map((swap) => ({
+      id: swap.id,
+      name: swap.toDish,
+      description: `Meal replaced: ${swap.fromDish} -> ${swap.toDish}`,
+      tags: [swap.fromCategory ?? "swap", swap.toCategory ?? "plant-forward"].filter(Boolean),
+      trend: typeof swap.rating === "number" ? `${swap.rating}/5` : "Recorded",
     }));
-  }, []);
+  }, [swapHistory]);
 
   const displayName = user?.full_name?.trim() ? user.full_name : "OffRamp Member";
   const firstName = (displayName.split(" ")[0] ?? "Member").trim() || "Member";
@@ -264,18 +383,10 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => router.push("/profile-setup")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
               >
                 <span className="material-symbols-outlined text-sm">edit</span>
                 Edit Profile
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/preferences")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-6 py-4 text-[0.65rem] font-black uppercase tracking-[0.35em] text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
-              >
-                <span className="material-symbols-outlined text-sm">tune</span>
-                Preferences
               </button>
             </div>
           </div>
@@ -297,14 +408,14 @@ export default function ProfilePage() {
         <ProfileMain />
         <div className="grid gap-4 md:grid-cols-3">
           {([
-            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
-            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
-            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
+            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters` },
+            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg` },
+            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M` },
           ]).map((metric) => (
             <div key={metric.label} className="rounded-3xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">
                 <span>{metric.label}</span>
-                <span className="text-emerald-600">{metric.trend}</span>
+                <span className="text-emerald-600">{impactMetrics.growth >= 0 ? `+${impactMetrics.growth}%` : `${impactMetrics.growth}%`}</span>
               </div>
               <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
             </div>
@@ -339,6 +450,64 @@ export default function ProfilePage() {
     </div>
   );
 
+  const renderMySwapsSection = () => (
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Swap history</p>
+            <h3 className="text-2xl font-black text-slate-900">My Swaps</h3>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1 text-xs font-semibold text-slate-500">
+            {swapEntries.length} recent
+          </span>
+        </div>
+        {swapEntries.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm font-semibold text-slate-600">
+            No swaps recorded yet. Use the swap flow to add your first meal replacement.
+          </div>
+        ) : (
+          <div className="mt-6 space-y-3">
+            {swapEntries.map((swap) => (
+              <div key={swap.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                {swap.imageUrl ? (
+                  <img
+                    src={swap.imageUrl}
+                    alt={swap.to}
+                    className="h-14 w-14 rounded-xl border border-slate-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400">
+                    <span className="material-symbols-outlined text-base">restaurant</span>
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {swap.from} {"->"} {swap.to}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {swap.time}
+                    {swap.rating !== null ? ` - rating ${swap.rating}/5` : ""}
+                  </p>
+                  {(swap.fromCategory || swap.toCategory) && (
+                    <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500">
+                      {(swap.fromCategory ?? "unknown").toUpperCase()} {"->"} {(swap.toCategory ?? "unknown").toUpperCase()}
+                    </p>
+                  )}
+                </div>
+                {swap.savings && (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {swap.savings}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderImpactSection = () => (
     <div className="space-y-6">
       <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
@@ -351,14 +520,14 @@ export default function ProfilePage() {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {([
-            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters`, trend: "+12%" },
-            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg`, trend: "+8%" },
-            { label: "Land Saved", value: `${impactMetrics.land.toLocaleString()} Sq M`, trend: "+5%" },
+            { label: "Water Saved", value: `${impactMetrics.water.toLocaleString()} Liters` },
+            { label: "CO2 Reduced", value: `${impactMetrics.co2.toLocaleString()} kg` },
+            { label: "Land Impact", value: `${impactMetrics.land.toLocaleString()} Sq M` },
           ]).map((metric) => (
             <div key={metric.label} className="rounded-3xl border border-slate-100 bg-slate-50 px-5 py-4">
               <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
                 <span>{metric.label}</span>
-                <span className="text-emerald-600">{metric.trend}</span>
+                <span className="text-emerald-600">{impactMetrics.growth >= 0 ? `+${impactMetrics.growth}%` : `${impactMetrics.growth}%`}</span>
               </div>
               <p className="mt-3 text-3xl font-black text-slate-900">{metric.value}</p>
             </div>
@@ -369,7 +538,9 @@ export default function ProfilePage() {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Swaps over time</p>
               <p className="text-4xl font-black text-slate-900">{impactMetrics.swaps.toLocaleString()}</p>
-              <p className="text-xs font-semibold text-emerald-600">+{impactMetrics.growth}% vs last 6 months</p>
+              <p className="text-xs font-semibold text-emerald-600">
+                {impactMetrics.growth >= 0 ? `+${impactMetrics.growth}%` : `${impactMetrics.growth}%`} vs previous week
+              </p>
             </div>
             <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-600">Updated {lastUpdated}</span>
           </div>
@@ -386,9 +557,9 @@ export default function ProfilePage() {
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          "Saved 320 liters vs avg cafeteria line",
-          "2.4kg CO2 spared per serving swap",
-          "12 sq m land restored via jackfruit trays",
+          `${impactMetrics.swaps.toLocaleString()} meals replaced from your swap history`,
+          `${impactMetrics.co2.toLocaleString()} kg estimated CO2 reduction`,
+          `${progressSummary?.completion_percentage ?? 0}% transition progress tracked`,
         ].map((highlight) => (
           <div key={highlight} className="rounded-3xl border border-slate-100 bg-white px-5 py-4 text-sm text-slate-600 shadow">
             <p className="font-semibold text-slate-900">{highlight}</p>
@@ -408,7 +579,7 @@ export default function ProfilePage() {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/preferences")}
+            onClick={() => router.push("/profile-setup")}
             className="rounded-full border-2 border-slate-200 bg-slate-50 px-5 py-3 text-[0.65rem] font-black uppercase tracking-[0.35em] text-slate-700 transition hover:-translate-y-0.5"
           >
             Update
@@ -450,13 +621,13 @@ export default function ProfilePage() {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Chef threads</p>
-              <h3 className="text-2xl font-black text-slate-900">Live swaps</h3>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Activity stream</p>
+              <h3 className="text-2xl font-black text-slate-900">Recent actions</h3>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">Campus feed</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">Live user data</span>
           </div>
           <div className="mt-4 space-y-4">
-            {chefHighlights.map((highlight, index) => (
+            {chefHighlights.length ? chefHighlights.map((highlight, index) => (
               <div key={`${highlight.id}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -473,7 +644,11 @@ export default function ProfilePage() {
                   ))}
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                No activity yet. Your swaps and ratings will appear here.
+              </div>
+            )}
           </div>
         </div>
         <div className="space-y-6">
@@ -492,21 +667,28 @@ export default function ProfilePage() {
               </button>
             </div>
             <ul className="mt-4 space-y-4">
-              {swapEntries.map((swap) => (
-                <li key={`${swap.from}-${swap.to}`} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              {swapEntries.length ? swapEntries.map((swap) => (
+                <li key={swap.id} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600">
                     <span className="material-symbols-outlined text-base">autorenew</span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-slate-900">{swap.from}</p>
-                    <p className="text-xs text-slate-500">{swap.to}</p>
+                    <p className="font-semibold text-slate-900">Swap performed</p>
+                    <p className="text-xs text-slate-500">{swap.from} {"->"} {swap.to}</p>
+                    {swap.rating !== null && (
+                      <p className="mt-1 text-xs text-slate-500">Rating submitted: {swap.rating}/5</p>
+                    )}
                   </div>
                   <div className="text-right text-xs text-slate-400">
                     <p>{swap.time}</p>
-                    <p className="text-emerald-600">{swap.savings}</p>
+                    <p className="text-emerald-600">{swap.savings ?? "Meal replaced"}</p>
                   </div>
                 </li>
-              ))}
+              )) : (
+                <li className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                  No swap timeline records yet.
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -590,6 +772,8 @@ export default function ProfilePage() {
 
   const renderSection = () => {
     switch (activeSidebar) {
+      case "my-swaps":
+        return renderMySwapsSection();
       case "impact":
         return renderImpactSection();
       case "preferences":

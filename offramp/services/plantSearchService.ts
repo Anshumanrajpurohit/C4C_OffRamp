@@ -95,6 +95,7 @@ export type PlantHealthResponse = {
 export type SearchAlternativesResponse = {
   dishes: DishDetail[];
   raw: PlantSearchResult[];
+  warning?: string;
 };
 
 type RequestOptions = {
@@ -368,8 +369,11 @@ export const searchPlantAlternatives = async ({
     signal,
   });
 
-  const payload = await handleResponse<{ results?: PlantSearchResult[] } | PlantSearchResult[]>(response);
+  const payload = await handleResponse<
+    { results?: PlantSearchResult[]; warning?: string } | PlantSearchResult[]
+  >(response);
   const rows = Array.isArray(payload) ? payload : Array.isArray(payload.results) ? payload.results : [];
+  const warning = Array.isArray(payload) ? undefined : typeof payload.warning === "string" ? payload.warning : undefined;
   debugLog("/search", rows);
   const detailedDishes = await Promise.allSettled(
     rows.map(async (item) => {
@@ -405,6 +409,7 @@ export const searchPlantAlternatives = async ({
   return {
     raw: rows,
     dishes,
+    warning,
   };
 };
 

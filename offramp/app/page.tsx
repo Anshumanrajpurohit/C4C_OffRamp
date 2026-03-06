@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import PrimaryCTAButton from "@/app/components/PrimaryCTAButton";
 import SiteFooter from "@/app/components/SiteFooter";
@@ -30,11 +30,31 @@ const defaultMetrics: LandingMetrics = {
   live_swaps: 0,
 };
 
+const LANDING_BASELINES = {
+  users: 50,
+  swaps: 120,
+  activeUsers: 10,
+  weeklySwaps: 40,
+  liveSwaps: 5,
+} as const;
+
 export default function Home() {
   const animatedElements = useRef(new WeakSet<HTMLElement>());
   const [metrics, setMetrics] = useState<LandingMetrics>(defaultMetrics);
+  const displayMetrics = useMemo(
+    () => ({
+      total_users: LANDING_BASELINES.users + Math.max(0, metrics.total_users),
+      total_swaps: LANDING_BASELINES.swaps + Math.max(0, metrics.total_swaps),
+      active_users_today: LANDING_BASELINES.activeUsers + Math.max(0, metrics.active_users_today),
+      weekly_swaps: LANDING_BASELINES.weeklySwaps + Math.max(0, metrics.weekly_swaps),
+      live_swaps: LANDING_BASELINES.liveSwaps + Math.max(0, metrics.live_swaps),
+    }),
+    [metrics]
+  );
   const liveActivityPercent =
-    metrics.weekly_swaps > 0 ? Math.min(100, Math.round((metrics.live_swaps / metrics.weekly_swaps) * 100)) : 0;
+    displayMetrics.weekly_swaps > 0
+      ? Math.min(100, Math.round((displayMetrics.live_swaps / displayMetrics.weekly_swaps) * 100))
+      : 0;
 
   useEffect(() => {
     document.documentElement.classList.add("scroll-smooth");
@@ -334,7 +354,7 @@ export default function Home() {
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">water_drop</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={metrics.total_users}
+                  data-target={displayMetrics.total_users}
                   data-format="int"
                 >
                   0
@@ -350,7 +370,7 @@ export default function Home() {
                 </span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={metrics.total_swaps}
+                  data-target={displayMetrics.total_swaps}
                   data-format="int"
                 >
                   0
@@ -361,7 +381,7 @@ export default function Home() {
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">swap_horiz</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={metrics.active_users_today}
+                  data-target={displayMetrics.active_users_today}
                   data-format="int"
                 >
                   0
@@ -372,7 +392,7 @@ export default function Home() {
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">trending_up</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={metrics.weekly_swaps}
+                  data-target={displayMetrics.weekly_swaps}
                   data-format="int"
                   data-suffix=" /WK"
                 >
@@ -384,7 +404,7 @@ export default function Home() {
                 <span className="material-symbols-outlined mb-4 text-5xl animate-bounce-slow">restaurant</span>
                 <div
                   className="counter text-5xl font-impact uppercase"
-                  data-target={metrics.live_swaps}
+                  data-target={displayMetrics.live_swaps}
                   data-format="int"
                   data-suffix=" LIVE"
                 >
@@ -413,7 +433,7 @@ export default function Home() {
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL USERS</p>
                       <p
                         className="counter counter-swaps font-impact text-4xl text-black"
-                        data-target={metrics.total_users}
+                        data-target={displayMetrics.total_users}
                         data-format="int"
                       >
                         0
@@ -423,7 +443,7 @@ export default function Home() {
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-400">TOTAL SWAPS</p>
                       <p
                         className="counter counter-score font-impact text-4xl text-accent"
-                        data-target={metrics.total_swaps}
+                        data-target={displayMetrics.total_swaps}
                         data-format="int"
                       >
                         0
@@ -435,7 +455,7 @@ export default function Home() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Active Users Today</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-black"
-                        data-target={metrics.active_users_today}
+                        data-target={displayMetrics.active_users_today}
                         data-format="int"
                       >
                         0
@@ -445,7 +465,7 @@ export default function Home() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Weekly Swaps</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-accent"
-                        data-target={metrics.weekly_swaps}
+                        data-target={displayMetrics.weekly_swaps}
                         data-format="int"
                       >
                         0
@@ -455,7 +475,7 @@ export default function Home() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live Swaps</p>
                       <p
                         className="counter counter-dashboard font-impact text-3xl text-primary"
-                        data-target={metrics.live_swaps}
+                        data-target={displayMetrics.live_swaps}
                         data-format="int"
                       >
                         0
@@ -484,7 +504,7 @@ export default function Home() {
             <span className="material-symbols-outlined text-primary">apartment</span>
             <span
               className="counter counter-micro font-impact text-2xl text-primary"
-              data-target={metrics.total_users}
+              data-target={displayMetrics.total_users}
               data-format="int"
               data-suffix=" USERS ON PLATFORM"
             >
@@ -554,7 +574,7 @@ export default function Home() {
               <span className="material-symbols-outlined text-white">bolt</span>
               <span
                 className="counter counter-micro font-impact text-2xl text-white"
-                data-target={metrics.live_swaps}
+                data-target={displayMetrics.live_swaps}
                 data-format="int"
                 data-suffix=" LIVE SWAPS NOW"
               >
