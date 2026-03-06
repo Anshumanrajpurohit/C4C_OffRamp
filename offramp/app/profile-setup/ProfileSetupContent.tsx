@@ -44,6 +44,7 @@ const upcomingAllergies = ["Gluten", "Shellfish", "Mustard"];
 
 const transitionCardOptions = [
   { label: "Non-veg -> Veg", from: "non-veg", to: "veg" },
+  { label: "Non-veg -> Veg", from: "non-veg", to: "veg" },
   { label: "Veg -> Vegan", from: "veg", to: "vegan" },
   { label: "Vegan -> Jain", from: "vegan", to: "jain" },
   { label: "Jain -> Keto", from: "jain", to: "keto" },
